@@ -1,0 +1,86 @@
+#+TITLE: literate-agent
+#+SUBTITLE: Shared literate-programming rules, skills, and hooks for AI agents
+
+Literate-programming doctrine — rules, skills, hooks, and templates —
+packaged as a Claude Code plugin and as a =CLAUDE.md=-importable
+aggregator. Designed to be agent-neutral (Claude Code today, OpenCode
+/ Codex / Gemini ACP tomorrow).
+
+* Why this exists
+
+Multiple repositories were duplicating the same =.claude/rules/*.md=
+files and =CLAUDE.md= sections that codified literate-programming
+discipline. Every doctrine update required editing N repos. This
+repo is the single source of truth.
+
+* What's inside
+
+| Directory | Loaded by | Purpose |
+|-----------+-----------+---------|
+| =rules/= | =CLAUDE.md= =@=-import | Rule files — doctrine the agent should follow |
+| =skills/= | Claude Code plugin | Auto-invoking skills (=docs-first=, =audit-prose=, =lp-section-shape=) |
+| =hooks/= | Claude Code plugin | =PreToolUse= / =PostToolUse= hooks (block edits to tangle outputs, auto-tangle on .org edit) |
+| =commands/= | Claude Code plugin | Slash commands (=/lp-check=, =/lp-section=) |
+| =templates/= | manual reference | Boilerplate (new module .org, new skill .org) |
+| =docs/= | manual reading | Background — LP philosophy, design history |
+
+* Install
+
+** Assumption
+
+You clone this repo to =~/projects/literate-agent=. All =@=-import
+paths in =CLAUDE.md= use that location.
+
+#+begin_src bash
+cd ~/projects
+git clone https://github.com/jingtaozf/literate-agent.git
+#+end_src
+
+** As CLAUDE.md doctrine (zero-config)
+
+In your consuming repo's =CLAUDE.md=, add one line:
+
+#+begin_example
+@~/projects/literate-agent/CLAUDE.md
+#+end_example
+
+Claude Code inlines the aggregator and all rules at load time. No
+=.claude/rules/= duplication, no =CLAUDE.md= drift.
+
+** As Claude Code plugin (for skills, hooks, slash commands)
+
+[TODO when plugin manifest is finalised — see =/lp-check= command
+once installed]
+
+* Bring-your-own-config
+
+Hooks read environment variables so each consuming project tunes them:
+
+| Variable | Purpose | Default |
+|----------+---------+---------|
+| =LITERATE_AGENT_TANGLED_OUTPUT_GLOBS= | Globs the =block-tangled-edit= hook rejects | =*.py= |
+| =LITERATE_AGENT_TANGLE_SOURCE_GLOBS= | =.org= files that trigger auto-tangle | =*.org= |
+| =LITERATE_AGENT_TANGLE_MAKE_TARGET= | =make= target the tangle hook runs | =tangle= |
+| =LITERATE_AGENT_NO_AUTO_TANGLE= | Set to =1= to disable the auto-tangle hook | unset |
+
+* What's NOT in this repo
+
+Project-specific rules that don't generalise — e.g. cmux dev-build
+notes, e2e test infrastructure, secrets policy — stay in each
+consuming repo's local =.claude/rules/=.
+
+* Layout
+
+#+begin_example
+literate-agent/
+├── README.org                    ← you are here
+├── CLAUDE.md                     ← aggregator; consumers @-import this
+├── .claude-plugin/
+│   └── plugin.json               ← Claude Code plugin manifest
+├── rules/                        ← 9 LP rules
+├── skills/                       ← docs-first, audit-prose, lp-section-shape
+├── hooks/                        ← hooks.json + parameterised .sh
+├── commands/                     ← /lp-check, /lp-section
+├── templates/                    ← new-module.org, new-skill.org
+└── docs/                         ← philosophy.org, history.org
+#+end_example

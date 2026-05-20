@@ -1,0 +1,69 @@
+#+TITLE: <Module Name> — <one-line role>
+#+PROPERTY: header-args:elisp :tangle no
+#+OPTIONS: toc:nil num:nil
+
+# This is the literate-agent template for a new LP module.
+# Replace every <PLACEHOLDER> with project-specific content.
+# Delete this comment block before committing.
+
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: overview
+:END:
+
+<Motivation paragraph: what this module exists to prevent or
+enable. One short paragraph.>
+
+<Invariant paragraph: what's true about this module that callers
+can rely on. One short paragraph.>
+
+** Concerns owned
+:PROPERTIES:
+:CUSTOM_ID: concerns
+:END:
+
+| Concern | Where in this file |
+|---------+--------------------|
+| <concern 1> | [[#<anchor-1>][<section name>]] |
+| <concern 2> | [[#<anchor-2>][<section name>]] |
+
+** Load-order constraint
+:PROPERTIES:
+:CUSTOM_ID: load-order
+:END:
+
+<One sentence on when this module must load relative to others. If
+nothing constrains load order, write "no constraint".>
+
+** Dependencies
+:PROPERTIES:
+:CUSTOM_ID: dependencies
+:END:
+
+#+BEGIN_SRC elisp
+(require '<dependency-1>)
+(require '<dependency-2>)
+#+END_SRC
+
+* <First Concept>
+:PROPERTIES:
+:CUSTOM_ID: <kebab-case>
+:END:
+
+<1–3 sentence prose preamble: the WHY, the trade-off, the rejected
+alternative.>
+
+#+BEGIN_SRC elisp
+;; First code block — one meaningful step.
+#+END_SRC
+
+* <Second Concept>
+:PROPERTIES:
+:CUSTOM_ID: <kebab-case>
+:END:
+
+<Prose preamble.>
+
+#+BEGIN_SRC elisp
+;; Second code block.
+#+END_SRC

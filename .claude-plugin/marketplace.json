@@ -1,0 +1,32 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "literate-agent",
+  "description": "Literate-programming rules, skills, and hooks for AI agents — dual-audience documents that work for both human readers and AI agents.",
+  "owner": {
+    "name": "Jingtao Xu",
+    "email": "jt@jingtao.net"
+  },
+  "metadata": {
+    "description": "Shared LP doctrine. For local development use `claude --plugin-dir /path/to/literate-agent`. Once published to GitHub, register via `claude plugin marketplace add <repo>` and install with `claude plugin install literate-agent@literate-agent --scope user`."
+  },
+  "plugins": [
+    {
+      "name": "literate-agent",
+      "source": "./",
+      "description": "Shared LP doctrine — rules, language hints, tangle hooks, build scripts — auto-imported via @CLAUDE.md and plugin-loaded skills/hooks/commands.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Jingtao Xu",
+        "email": "jt@jingtao.net"
+      },
+      "category": "literate-programming",
+      "homepage": "https://github.com/jingtaozf/literate-agent",
+      "tags": [
+        "literate-programming",
+        "ai-agent",
+        "dual-audience",
+        "org-mode"
+      ]
+    }
+  ]
+}

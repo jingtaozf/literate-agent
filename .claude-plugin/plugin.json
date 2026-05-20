@@ -1,0 +1,20 @@
+{
+  "name": "literate-agent",
+  "version": "0.1.0",
+  "description": "Literate-programming rules, skills, and hooks for AI agents. Dual-audience documents that work for both human readers and AI agents.",
+  "author": {
+    "name": "Jingtao Xu",
+    "email": "jt@jingtao.net"
+  },
+  "homepage": "https://github.com/jingtaozf/literate-agent",
+  "license": "MIT",
+  "keywords": [
+    "literate-programming",
+    "ai-agent",
+    "claude-code",
+    "dual-audience",
+    "org-mode",
+    "skills",
+    "hooks"
+  ]
+}

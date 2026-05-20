@@ -1,0 +1,109 @@
+#+TITLE: Tangle-Map Cache — File Format and Regeneration
+#+OPTIONS: toc:nil num:nil
+
+The =block-tangled-edit.sh= and =block-bash-tangle-write.sh= hooks
+consult a per-project cache file when refusing an edit, to point
+the agent at the *exact* =.org= source section that owns the
+tangled output path. This file documents the cache schema and how
+to regenerate it.
+
+* Location
+
+#+begin_example
+<project-root>/.cache/tangle-map.tsv
+#+end_example
+
+* Format
+
+Two-column TSV (tab-separated), one row per tangled output file:
+
+#+begin_example
+<tangled-path-rel-to-project-root>\t<org-source-path-rel-to-project-root>
+#+end_example
+
+Example rows (single-repo Python LP layout):
+
+#+begin_example
+python/claude_agent/options.py	claude-agent-python.org
+python/claude_agent/backend.py	claude-agent-python.org
+python/claude_agent/acp_backend.py	claude-agent-python.org
+#+end_example
+
+Example rows (multi-submodule layout):
+
+#+begin_example
+repos/skill-scout-server/skill_scout/foo.py	lp/skill-scout-server/foo.org
+repos/skill-scout-server/skill_scout/bar.py	lp/skill-scout-server/bar.org
+#+end_example
+
+* What the hook does on a block
+
+When the agent attempts to edit (say) =python/claude_agent/options.py=:
+
+1. =is_in_block_scope()= confirms the extension is LP-managed
+   (=.py= by default, configurable via =LITERATE_AGENT_TANGLED_OUTPUT_EXTS=).
+2. =load_map()= reads =.cache/tangle-map.tsv= for an exact match.
+3. If found, the rejection message names the owning =.org= and the
+   exact =make tangle FILE=...= incantation to re-tangle it.
+4. If *not* found, =rebuild_map()= shells out to
+   =scripts/build_tangle_map.py= to refresh the cache, then retries.
+5. If still not found, =best_guess_org()= ranks =.org= files in
+   =lp/<sub>/= by shared-path-segment overlap and suggests the most
+   likely candidate(s).
+
+* Regeneration
+
+The hook expects a =scripts/build_tangle_map.py= in each consuming
+project, with a contract roughly like:
+
+#+begin_src python
+"""Scan all .org files in the project and emit .cache/tangle-map.tsv.
+
+For each #+begin_src block with a :tangle <path> header, resolve <path>
+relative to the .org file's directory and write one TSV row:
+
+    <resolved-path-rel-to-project-root>\t<org-source-rel-to-project-root>
+"""
+#+end_src
+
+A reference implementation lives in edo-literate at
+=scripts/build_tangle_map.py= — it handles the multi-submodule
+=lp/<sub>/= layout. Single-repo projects can use a simpler version
+that walks one =.org= file's tangle headers.
+
+* When the cache is stale
+
+The hook will *self-heal* on a miss — see =rebuild_map()= in
+=hooks/lib/tangle_lookup.py=. The self-heal:
+
+1. Runs =python3 scripts/build_tangle_map.py= with a 30s timeout.
+2. Emits a one-line stderr breadcrumb ("cache self-healed — now N
+   entries, +M since miss") so the agent sees *why* the answer
+   suddenly appeared after the initial miss.
+3. Re-loads the cache and tries the lookup again.
+
+If =scripts/build_tangle_map.py= doesn't exist, the hook still
+rejects the edit but falls back to the best-guess heuristic
+instead of the exact-match path.
+
+* Configuration
+
+The hook reads four env vars (set in the host project's shell or
+=.envrc=):
+
+| Variable | Default | Purpose |
+|----------+---------+---------|
+| =LITERATE_AGENT_TANGLED_OUTPUT_EXTS= | =.py= | Comma-separated extensions to block |
+| =LITERATE_AGENT_TANGLED_ROOTS= | (empty) | Comma-separated prefixes ("" = whole repo) |
+| =LITERATE_AGENT_LP_ROOT= | =lp= | Where the =.org= sources live |
+| =LITERATE_AGENT_TANGLED_WHITELIST_FRAGMENTS= | =/alembic/versions/= | Comma-separated substrings exempted |
+
+* Maintenance
+
+- Run =make build-tangle-map= (or the project equivalent) after
+  *any* =.org= edit that adds, removes, or moves a =:tangle <path>=
+  header. The hook self-heals on miss, but the breadcrumb cost is
+  one subprocess call per edit until the next manual rebuild.
+- Quarterly: diff =.cache/tangle-map.tsv= against a fresh rebuild.
+  Drift means an =.org= renamed without a corresponding cache
+  refresh.

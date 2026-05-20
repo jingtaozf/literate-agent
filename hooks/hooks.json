@@ -1,0 +1,39 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \"${CLAUDE_PROJECT_DIR}/.claude/hooks/_env.sh\" ] && { set -a; source \"${CLAUDE_PROJECT_DIR}/.claude/hooks/_env.sh\"; set +a; }; exec \"${CLAUDE_PLUGIN_ROOT}/hooks/block-tangled-edit.sh\"'"
+          },
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \"${CLAUDE_PROJECT_DIR}/.claude/hooks/_env.sh\" ] && { set -a; source \"${CLAUDE_PROJECT_DIR}/.claude/hooks/_env.sh\"; set +a; }; exec \"${CLAUDE_PLUGIN_ROOT}/hooks/block-bare-star-in-src.sh\"'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \"${CLAUDE_PROJECT_DIR}/.claude/hooks/_env.sh\" ] && { set -a; source \"${CLAUDE_PROJECT_DIR}/.claude/hooks/_env.sh\"; set +a; }; exec \"${CLAUDE_PLUGIN_ROOT}/hooks/block-bash-tangle-write.sh\"'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \"${CLAUDE_PROJECT_DIR}/.claude/hooks/_env.sh\" ] && { set -a; source \"${CLAUDE_PROJECT_DIR}/.claude/hooks/_env.sh\"; set +a; }; exec \"${CLAUDE_PLUGIN_ROOT}/hooks/tangle-org-buffer.sh\"'"
+          }
+        ]
+      }
+    ]
+  }
+}

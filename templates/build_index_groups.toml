@@ -1,0 +1,24 @@
+# Default groups config for `literate-agent/scripts/build_index.py`.
+#
+# Each [groups] entry maps a group name (a directory name under LP_ROOT
+# in multi-submodule layouts, or a package name in src/ layouts) to a
+# one-line elevator pitch that appears next to the group's heading in
+# the generated INDEX.org.
+#
+# Override per-project by passing `--groups-config <path>` to the
+# script. When this file is missing or empty, the index still
+# generates — just without elevator pitches.
+#
+# Format:
+#
+#   [groups]
+#   "<group-name>" = "<one-line pitch, ≤ 80 chars>"
+#
+# Example (uncomment + adapt for a multi-submodule project):
+#
+# [groups]
+# "auth-server"  = "OAuth + identity + API-key issuance backend"
+# "data-pipeline" = "Daily ETL — sources → wisdom-graph → search index"
+# "admin-ui"     = "Internal admin console (Next.js + tRPC)"
+
+[groups]

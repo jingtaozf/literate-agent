@@ -1,0 +1,54 @@
+#+TITLE: literate-agent hints
+#+SUBTITLE: Language-specific LP traps and conventions (lazy-loaded)
+#+OPTIONS: toc:nil num:nil
+
+The =hints/= folder holds *language-specific* literate-programming
+notes. Each file documents the traps, formatter conventions, and
+reload discipline for one language.
+
+* Why a separate folder
+
+The rules under =rules/= are *project-neutral LP doctrine* — they
+explain why LP, what "document first" means, what NEVER to do. They
+get eagerly loaded into Claude Code's context via the =CLAUDE.md=
+aggregator's =@-import= lines.
+
+Hints are *operational details* that only matter when actually
+editing code in a specific language. Loading them all eagerly would
+bloat the context window of a single-language project. Instead,
+each hint has a companion skill in =skills/lp-hint-<lang>/= that
+auto-activates when Claude edits a file in that language.
+
+* When to consult a hint
+
+| You're editing | Consult |
+|----------------+---------|
+| =.el= file | =hints/elisp.org= |
+| =.org= file with =#+BEGIN_SRC elisp= blocks | =hints/elisp.org= |
+| =.py= file (when tangle isn't blocking direct edits) | =hints/python.org= |
+| =.org= file with =#+BEGIN_SRC python= blocks | =hints/python.org= |
+
+Each hint file is short (under 200 lines) and structured as
+=Trap → Symptom → Workaround=. Read top-to-bottom on first
+exposure to a language; refer back when the symptom matches.
+
+* Currently shipped
+
+| Language | File | Status |
+|----------+------+--------|
+| Elisp | =elisp.org= | Stable |
+| Python | =python.org= | Stable |
+| TypeScript | =typescript.org= | (not yet) |
+| Rust | =rust.org= | (not yet) |
+| Clojure | =clojure.org= | (not yet) |
+
+* Adding a new language
+
+1. Create =hints/<lang>.org= using the structure of =elisp.org= as
+   a template (Trap → Symptom → Workaround).
+2. Create =skills/lp-hint-<lang>/SKILL.md= with frontmatter:
+   - =paths: "**/*.<ext>"= so Claude Code auto-activates the skill
+   - =description= that names the language + the highest-value trap
+   - Body that points at =hints/<lang>.org= + summarises top 3 traps
+3. Add a row to the table in this README and to the
+   "Language-specific LP hints" section in =../CLAUDE.md=.

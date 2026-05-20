@@ -1,0 +1,136 @@
+#+TITLE: Elisp LP Caveats
+#+SUBTITLE: literate-elisp-specific traps and conventions
+#+OPTIONS: toc:nil num:nil
+
+Traps that bite when editing literate-elisp =.org= files or
+=.el= sources tangled from them. Each entry: *trap* → *symptom*
+→ *workaround*.
+
+* =lexical-binding: t= in org header is IGNORED
+
+*Trap.* literate-elisp does NOT honour
+=#+PROPERTY: lexical-binding t= or =-*- lexical-binding: t -*-= in
+the file header. All code loads under *dynamic binding* regardless.
+
+*Symptom.* A closure that captures a variable from an enclosing
+=let= silently sees a different (later) value when invoked from a
+timer / process filter / callback. Often shows up as
+=void-variable= errors when the outer scope has exited.
+
+*Workaround.* Use =lexical-let= (from =cl-lib=) explicitly for
+every closure that crosses an async boundary:
+
+#+begin_example
+;; WRONG — under dynamic binding, `process` is unbound when the timer fires
+(let ((process (start-process ...)))
+  (run-at-time 1 nil
+    (lambda () (process-send-eof process))))
+
+;; CORRECT — lexical-let captures the variable
+(lexical-let ((process (start-process ...)))
+  (run-at-time 1 nil
+    (lambda () (process-send-eof process))))
+#+end_example
+
+Applies to: =run-at-time= / =run-with-timer= callbacks, process
+filters / sentinels, =add-hook= with lambdas, any deferred
+execution.
+
+* =pcase= string patterns compile differently under dynamic binding
+
+*Trap.* =(pcase x ("foo" ...))= works differently under dynamic
+vs. lexical binding. Under literate-elisp's dynamic regime, string
+literal patterns can match unexpectedly or not match at all.
+
+*Symptom.* A =pcase= form that worked under =-l lexical= compiles
+fails or always falls through under literate-elisp.
+
+*Workaround.* For string dispatch, use =cond= + =equal= instead:
+
+#+begin_example
+;; AVOID under literate-elisp
+(pcase msg-type
+  ("assistant" (handle-assistant msg))
+  ("user" (handle-user msg))
+  (_ (error "Unknown: %s" msg-type)))
+
+;; SAFE under literate-elisp
+(cond
+ ((equal msg-type "assistant") (handle-assistant msg))
+ ((equal msg-type "user") (handle-user msg))
+ (t (error "Unknown: %s" msg-type)))
+#+end_example
+
+* Macro re-expansion: USE-sites must reload too
+
+*Trap.* When a macro definition changes, every function body that
+*used* that macro keeps the OLD expansion until it's reloaded.
+
+*Symptom.* You edit macro =M= in =module-a.org=, reload =module-a.org=,
+and =module-b.org='s functions (which =(M ...)= ) still misbehave.
+
+*Workaround.* When changing a macro definition, reload ALL modules
+that use it, not just the module that defines it.
+
+#+begin_example
+;; After editing the macro in trace.org:
+(literate-elisp-load "claude-agent-trace.org")
+;; Then ALSO reload every caller:
+(literate-elisp-load "claude-agent-backend.org")
+(literate-elisp-load "code-agent-org.org")
+;; ... etc.
+#+end_example
+
+* Always reload after editing an =.org=
+
+*Trap.* Saving the =.org= file does NOT update the running Emacs
+image. The old function bodies are still in =obarray=.
+
+*Symptom.* You edit, save, run — and behaviour is exactly as
+before the edit.
+
+*Workaround.* After every =.org= edit, reload:
+
+#+begin_example
+M-x (literate-elisp-load "FILE.org")
+#+end_example
+
+Or from MCP / Claude Code:
+
+#+begin_example
+(literate-elisp-load "/abs/path/to/FILE.org")
+#+end_example
+
+* No =:noweb yes= in Elisp src blocks
+
+*Trap.* =literate-elisp= does NOT expand =<<chunk-name>>=
+references at load time. It loads the =.org= directly without
+running =org-babel-tangle=.
+
+*Symptom.* A =#+BEGIN_SRC elisp :noweb yes= block with =<<helper>>=
+inside loads with the literal text =<<helper>>= and breaks at runtime.
+
+*Workaround.* Define helpers at the top of the file and let normal
+Elisp scoping handle reuse. =:noweb yes= is fine for Python /
+TypeScript / Rust src blocks (those use =org-babel-tangle=).
+
+* Never run long Elisp via the =evalElisp= MCP tool
+
+*Trap.* Emacs is single-threaded. A long-running =evalElisp= call
+blocks the entire editor — redisplay, input, other MCP calls —
+until it finishes.
+
+*Symptom.* User's Emacs freezes for 30+ seconds when Claude calls
+=evalElisp= with a slow form (full test suite, =find= over a large
+tree, network calls).
+
+*Workaround.* Limit =evalElisp= to fast ops (=fboundp=, =boundp=,
+=literate-elisp-load=, reading a property). For anything > 2 s,
+shell out via the Bash tool instead.
+
+* See also
+
+- =../rules/literate-programming-document-first.md= — Elisp branch
+  of the doctrine
+- =../rules/lp-comma-escape-leading-star.md= — universal org trap
+  (=*= at column 0 inside =#+BEGIN_SRC=)
