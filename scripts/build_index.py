@@ -198,7 +198,17 @@ def group_key(entry: Entry, mode: str, lp_root: str) -> str:
 
 
 def auto_detect_mode(files: list[Path], lp_root: str, project_root: Path) -> str:
-    """Pick a sensible default --group-by based on the file layout."""
+    """Pick a sensible default --group-by based on the file layout.
+
+    Empty `lp_root` (set explicitly by single-repo projects whose .org
+    files live at the project root, e.g. claude-agent's
+    LITERATE_AGENT_LP_ROOT="") means "no LP subdirectory" → mode none.
+    Without this guard, `project_root / ""` would equal project_root
+    itself and every file would qualify as "under lp_root", flipping
+    mode to lp incorrectly.
+    """
+    if not lp_root:
+        return "none"
     lp_path = project_root / lp_root
     if lp_path.is_dir() and any(f.is_relative_to(lp_path) for f in files):
         return "lp"
