@@ -18,11 +18,12 @@ repo is the single source of truth.
 | Directory | Loaded by | Purpose |
 |-----------+-----------+---------|
 | =rules/= | =CLAUDE.md= =@=-import | Rule files — doctrine the agent should follow |
-| =skills/= | Claude Code plugin | Auto-invoking skills (=docs-first=, =audit-prose=, =lp-section-shape=) |
+| =skills/= | Claude Code plugin | Auto-invoking skills (=docs-first=, =audit-prose=, =lp-section-shape=, =lp-dual-audience-check=, =lp-hint-elisp=, =lp-hint-python=, =lp-style-refactor=, =rebuild-lp-readme=) |
 | =hooks/= | Claude Code plugin | =PreToolUse= / =PostToolUse= hooks (block edits to tangle outputs, auto-tangle on .org edit) |
-| =commands/= | Claude Code plugin | Slash commands (=/lp-check=, =/lp-section=) |
+| =commands/= | Claude Code plugin | Slash commands (=/lp-check=, =/lp-research-audit=, =/lp-section=) |
+| =hints/= | lazy via skills | Per-language traps + cross-audience checklist |
 | =templates/= | manual reference | Boilerplate (new module .org, new skill .org) |
-| =docs/= | manual reading | Background — LP philosophy, design history |
+| =docs/= | manual reading | Background — LP philosophy, =transfer-gradient.org= research synthesis |
 
 * Install
 

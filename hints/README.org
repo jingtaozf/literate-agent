@@ -34,13 +34,21 @@ exposure to a language; refer back when the symptom matches.
 
 * Currently shipped
 
-| Language | File | Status |
-|----------+------+--------|
-| Elisp | =elisp.org= | Stable |
-| Python | =python.org= | Stable |
-| TypeScript | =typescript.org= | (not yet) |
-| Rust | =rust.org= | (not yet) |
-| Clojure | =clojure.org= | (not yet) |
+| File | Scope | Status |
+|------+-------+--------|
+| =elisp.org= | language (.el) | Stable |
+| =python.org= | language (.py) | Stable |
+| =dual-audience-checklist.org= | cross-audience LP review | Stable |
+| =typescript.org= | language (.ts/.tsx) | (not yet) |
+| =rust.org= | language (.rs) | (not yet) |
+| =clojure.org= | language (.clj) | (not yet) |
+
+The =dual-audience-checklist.org= is *not* language-specific — it
+applies to any literate `.org` section regardless of the language
+inside `#+BEGIN_SRC`. It's auto-activated by the
+=lp-dual-audience-check= skill when the user asks to "review section"
+or after editing an `.org` section. See the file for the 6-point
+checklist + research grounding.
 
 * Adding a new language
 

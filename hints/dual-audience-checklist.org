@@ -1,0 +1,120 @@
+#+TITLE: Dual-Audience LP Section Checklist
+#+SUBTITLE: Quick review after writing or editing a literate .org section
+#+OPTIONS: toc:nil num:nil
+
+Six-point checklist to run after writing or editing a section in a
+literate `.org` file. Each item maps to a research-backed rule under
+=rules/= and answers a single yes/no question.
+
+Six items, ≤ 30 seconds. Run with the freshly-edited section open
+in front of you.
+
+* The checklist
+
+#+begin_example
+[ ] 1. Heading names a CONCEPT (not "Functions" / "Helpers" / "Misc")
+[ ] 2. :CUSTOM_ID: present if section is ≥2x referenced
+[ ] 3. Prose preamble answers WHY (trade-off / rejected alternative)
+[ ] 4. ONE new interacting mechanism per section, not several
+[ ] 5. Load-bearing affordances are STRUCTURAL, not typographic
+[ ] 6. A cold-start reader can find this section by stable anchor
+#+end_example
+
+* What each item checks
+
+** 1. Heading-as-concept (Foraging proximal cue)
+
+The section heading is the *proximal cue* (Pirolli & Card 1999) that
+triages whether to enter. `** Functions` says nothing about role —
+the reader (human or agent) must read the body to decide. `**
+Persistent Client Registry` says the role; the reader decides in one
+saccade or one token.
+
+*Fails*: =** Functions= / =** Helpers= / =** Utilities= / =** Misc=.
+*Passes*: any noun phrase naming the concept this section embodies.
+
+See: =rules/literate-programming-document-first.md= heading-as-concept,
+=rules/lp-load-bearing-affordances-structural.md= rule 4.
+
+** 2. :CUSTOM_ID: for ≥2 references (Recognition surface)
+
+If two or more places in this file (or other files) link to this
+section, it gets a stable `:CUSTOM_ID:`. Heading text reference
+breaks on rename; CUSTOM_ID survives.
+
+*Fails*: heading referenced twice, no :CUSTOM_ID: drawer.
+*Passes*: =[[#stable-anchor]]= cross-references all resolve via :CUSTOM_ID:.
+
+See: =rules/lp-stable-anchors-for-multi-referenced-sections.md=.
+
+** 3. WHY in prose preamble (Mental model made explicit)
+
+The 1-3 sentence preamble before the first =#+begin_src= block says
+*why this code is shaped this way*, not what it does. The code itself
+shows *what*. Rejected alternatives in one sentence if non-obvious.
+
+*Fails*: section opens with =#+begin_src= directly, OR preamble
+restates the heading, OR preamble describes what the code does.
+*Passes*: preamble names the trade-off, the constraint, or the
+rejected alternative.
+
+See: =rules/literate-programming-document-first.md= intent-before-
+implementation, =rules/lp-prose-no-self-narration.md= deletion test.
+
+** 4. One new mechanism per section (CLT element-interactivity)
+
+The section introduces *one* new interacting mechanism (concept,
+algorithm, class, protocol). If three mutually-dependent things must
+be explained, give each its own sub-section.
+
+*Fails*: section explains three abstractions all interacting with
+each other, no internal hierarchy.
+*Passes*: section explains one mechanism; dependencies on others are
+cross-references to *their* sections.
+
+See: =rules/lp-module-section-hierarchy.md= CLT grounding.
+
+** 5. Structural, not typographic, signifiers (Dual-audience layer)
+
+Load-bearing affordances (public-API status, entry-point role,
+deprecation marker, ...) are in the structural layer (=:PROPERTIES:=,
+=:CUSTOM_ID:=, concept heading), not in typography (bold, italic,
+whitespace).
+
+*Fails*: "this is the public API" expressed via bold text only.
+*Passes*: a =:CUSTOM_ID: api= or =:PROPERTIES: :PUBLIC: yes :END:=
+drawer alongside the bold.
+
+See: =rules/lp-load-bearing-affordances-structural.md=.
+
+** 6. Cold-start agent can find this section
+
+An AI agent landing on this file fresh (no prior session memory) can
+re-find this section by:
+- Stable file name (concept-named, not session-named).
+- =:CUSTOM_ID:= referenced elsewhere.
+- Concept heading text (in case CUSTOM_ID is missing).
+- Cross-link from another file's overview / decisions log.
+
+*Fails*: this section's only handle is "the one we discussed yesterday"
+or a heading text that's about to be renamed.
+*Passes*: at least one of the four anchors above is stable.
+
+See: =rules/lp-agent-persistence-hooks.md=.
+
+* When to use this checklist
+
+- *After every section edit* — 30 seconds, six yes/no questions.
+- *Before opening a PR* — full pass over each section in the diff.
+- *On a fresh module* — apply to every section of the new file.
+- *During the =/audit-prose= or =/lp-style-refactor= skill flow* —
+  the per-iteration small-step refactor naturally lands one of these
+  items per iteration.
+
+* See also
+
+- =../docs/transfer-gradient.org= — the research figure these
+  items derive from (which HI findings transfer, which don't).
+- =../rules/lp-transfer-discipline-no-weak-metaphors.md= — the
+  meta-rule for evaluating new LP rules against the transfer
+  acceptance tests.

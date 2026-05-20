@@ -271,3 +271,33 @@ Names should read as a natural-language phrase — not `block1` or `helper`.
   inherits these into descendants automatically.
 - File-level: use `#+PROPERTY:` lines in the file header for globals
   (load order, tangle target, default header args).
+
+## Dual-audience reader model
+
+LP files are read by two populations with overlapping needs:
+
+- *Human readers* — saccade-driven (Rayner 1998), perceptual grouping
+  (Gestalt), mental model accretion across sessions (Norman 1988).
+- *AI agent readers* — token-driven, no perceptual layer, cold-start
+  each session (no inter-session memory consolidation).
+
+Optimisations that serve BOTH (the *structural layer*):
+
+- `:CUSTOM_ID:` anchors for cross-reference (recognition surfaces).
+- Concept-named headings (foraging proximal cues + signifier vocabulary).
+- Prose preambles answering WHY (the designer's mental model made
+  explicit).
+- Cross-references over plain-text mentions (berry-picking navigation).
+
+Optimisations that serve ONLY humans (the *typographic layer*):
+
+- Whitespace, paragraph length, font weight (saccade economics).
+- Visual proximity / Gestalt grouping (perceptual grouping).
+- *Bold* / *italic* for emphasis (typographic signifiers).
+
+Rule of thumb: *when the affordance is load-bearing (must be
+identified by both audiences), use the structural form*. Typography
+is the polish layer on top — fine to add for human aesthetics, but
+never the sole carrier of a critical affordance. See
+`rules/lp-load-bearing-affordances-structural.md` for the full
+4-rule heuristic.

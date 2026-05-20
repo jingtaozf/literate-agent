@@ -200,3 +200,30 @@ fine if each is conceptually distinct. The depth-≤-5 cap from
 The first subsection MUST be `** import`. The second MUST be
 `** logger` (or another module-globals subsection) when the module
 has any. Classes and functions follow in source-file order.
+
+## Why one new mechanism per section (CLT grounding)
+
+Sweller's *Cognitive Load Theory* (1988) identifies *element
+interactivity* as the load multiplier for both human and AI agent
+readers. When N concepts must be held in working memory and
+understood relative to each other, the load grows with their
+*pairwise interactivity*, not just their count.
+
+The practical prescription is: *introduce one new interacting
+mechanism per section, not several*. If a module must explain three
+mutually-dependent abstractions, give each its own sub-section with
+the dependencies stated explicitly as cross-references rather than
+crammed into one paragraph. Both audiences benefit:
+
+- *Human readers* — schema construction proceeds one mechanism at a
+  time; cross-references handle the dependencies after each is
+  understood individually.
+- *AI agent readers* — each section's facts fit cleanly into a
+  retrieval; the cross-reference structure lets the agent reconstruct
+  the dependency graph from heading anchors, not from re-reading
+  dense prose.
+
+The grab-bag heading (`Functions`, `Helpers`) is the worst CLT
+violation: it combines several unrelated mechanisms under one heading,
+maximising element interactivity for no payoff. The concept-named
+heading puts ONE mechanism per section by construction.

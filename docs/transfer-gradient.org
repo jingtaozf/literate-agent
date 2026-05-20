@@ -1,0 +1,160 @@
+#+TITLE: Transfer Gradient — Which HI Findings Port to LP-with-AI
+#+SUBTITLE: Research synthesis behind literate-agent's LP doctrine
+#+OPTIONS: toc:nil num:nil
+
+Synthesised summary of a 50-iteration research loop that asked
+*which known human-interface (HI) commonalities transfer to literate
+programming with AI agents, with what completeness, and where does
+the transfer break?* The loop covered ten HI directions (information
+foraging, cognitive load theory, working memory limits, eye-tracking,
+mental models + dual-process, recognition vs recall, progressive
+disclosure, Gestalt principles, berry-picking, affordances +
+signifiers). Each direction was tested against the same six questions
+(claim → empirical basis → agent-side isomorphism → shared primitive
+→ where transfer breaks → operational takeaway).
+
+This document is the *reference doc* the literate-agent rules cite.
+It is NOT meant to be read top-to-bottom on every visit; LP authors
+arriving at a specific rule (e.g. =rules/lp-load-bearing-affordances-
+structural.md=) can follow the back-reference into the figure or
+the relevant family table.
+
+* The transfer-gradient figure
+:PROPERTIES:
+:CUSTOM_ID: figure
+:END:
+
+Two axes:
+
+- *Vertical* — substrate distance. Top = pure behaviour / decision
+  structure. Bottom = motor or perceptual mechanism.
+- *Horizontal* — transfer completeness for AI-agent reader. Left =
+  full transfer. Right = transfer breaks at some identified boundary.
+
+#+begin_example
+                    behaviour / decision structure (full transfer)
+                                    ▲
+                                    │
+                  A. info foraging  │  F. recognition/recall
+                  I. berry-picking  │  (cued-retrieval economics)
+                                    │
+                                    │
+   ←──────────────────────────────  ┼  ──────────────────────────────→
+   full transfer                    │                    transfer breaks
+                                    │
+                  E. mental models  │   G. progressive disclosure
+                  (partial-high)    │   (partial-high, persistence break)
+                                    │
+                  B. cognitive load │   J. affordances + signifiers
+                  (partial-mid;     │   (partial-high; perception
+                  schema break)     │    layer breaks; signifiers OK)
+                                    │
+                  C. working memory │   D. eye-tracking + saccades
+                  (partial-low;     │   (human-only; substrate-bound)
+                  numerical const   │
+                  do not transfer)  │   H. Gestalt principles
+                                    │   (human-only; perceptual substrate)
+                                    ▼
+                    substrate / perceptual mechanism (transfer breaks)
+#+end_example
+
+Three directions (A, F, I) cluster in the *upper-left full-transfer
+quadrant*. Two directions (D, H) cluster in the *lower-right
+human-only quadrant*. The remaining five spread along the partial-
+transfer diagonal, each breaking at a different mechanism layer.
+
+* Six shared-primitive families
+:PROPERTIES:
+:CUSTOM_ID: families
+:END:
+
+The directions that transfer (or partially transfer) share small
+families of primitives. A LP rule citing a specific primitive should
+name the family so the family's transfer profile is visible.
+
+| Family | Members | Primitive |
+|--------+---------+-----------|
+| Foraging-economics | A, F, I | Bounded budget + unequal landscape + asymmetric proximal-distal cost; closed-form math (Charnov 1976 marginal-value theorem). |
+| Element-interactivity bound | B, C | Items × pairwise interactivity hits a finite store; structural form transfers, numerical constant does not. |
+| Cross-session state persistence | B, E, G, I | Finding requires reader to carry state from one encounter to the next; break boundary at the agent's stateless cold-start. |
+| Substrate-bound numerical constants | C, D, H | A specific number (Miller 7±2, Cowan 4±1, Rayner saccade lengths, Wertheimer grouping radii) is part of the canonical finding and derives from biological apparatus; the structural form survives but the number does not. |
+| Perceptual-substrate-only | D, H | Entire finding lives in human visual-perception apparatus; stripping the perceptual mechanism leaves nothing portable. |
+| Dual-process processing modes | E, F, G | Readers shift between fast cue-driven and slow deliberate processing depending on stake; agent traces show structural-form analogue (grep-scan vs chain-of-thought). |
+
+*F and E are cross-family hubs* — they each appear in two families.
+F's recognition asymmetry is the mechanism that makes foraging and
+dual-process design work; E's dual-process frame names F and G's
+joint structural role.
+
+* Eight cross-cutting observations
+:PROPERTIES:
+:CUSTOM_ID: observations
+:END:
+
+1. *Cross-session state persistence is a universal transfer-break
+   boundary* (B, E, G, I). Codified by =rules/lp-agent-persistence-hooks.md=.
+2. *Convergent design without lineage* — Anthropic skill SDK
+   =when_to_use= ≈ Nielsen 1995 first-screen scannability;
+   =:CUSTOM_ID:= ≈ Norman 2013 signifier; =allowed-tools:= ≈
+   Tognazzini progressive-disclosure scaffolding.
+3. *Substrate-level numerical limits do not transfer* — Miller 7±2,
+   Cowan 4±1, Rayner saccade lengths, Wertheimer grouping radii are
+   all substrate-bound constants. The structural form (limits exist)
+   is universal; the numerical value is human-only.
+4. *Behaviour and decision-structure findings transfer cleanly* —
+   A, F, I anchor the upper-left quadrant because they describe
+   behaviour shape, not substrate mechanism.
+5. *Cross-family hubs* (F, E) — directions co-locate by shared
+   underlying constraint structure, not topical proximity.
+6. *Component-level rather than direction-level transfer* — some
+   directions braid two findings with different transfer profiles
+   (B braids CLT-as-load and CLT-as-schema-construction; E braids
+   Norman's mental-model with Kahneman's dual-process).
+7. *Convergent design across substrates validates the behaviour-vs-
+   substrate axis* at meta-level — the convergent designs all live
+   in the behaviour layer, not the substrate.
+8. *Weak metaphors invite overgeneralisation* — surface analogies
+   that lack closed-form math OR behavioural-isomorphism traces
+   must NOT be codified as rules. Codified by
+   =rules/lp-transfer-discipline-no-weak-metaphors.md=.
+
+* Operational takeaways (per direction)
+:PROPERTIES:
+:CUSTOM_ID: takeaways
+:END:
+
+Each direction's *Operational takeaway* compressed to one sentence
++ the literate-agent rule(s) where it landed.
+
+| Dir | Takeaway | Lands in |
+|-----+----------+----------|
+| A. info foraging | Strengthen proximal cues (concept-named headings); reduce misleading scent; minimise patch-leave friction (cross-refs). | =literate-programming-document-first=, =lp-cross-file-link-form=, =lp-load-bearing-affordances-structural= |
+| B. cognitive load | Reduce extraneous load (no redundant prose); one new interacting mechanism per section; cross-references and revisits over single-exposure schema. | =lp-prose-no-self-narration=, =lp-module-section-hierarchy=, =lp-agent-persistence-hooks= |
+| C. working memory | Limit simultaneously-interacting concepts per section; use named chunks; do NOT chase the specific number (substrate-bound). | =lp-module-section-hierarchy=, =lp-transfer-discipline-no-weak-metaphors= |
+| D. eye-tracking | Human-only optimisation: short paragraphs, front-loaded sentences, consistent typographic cues. Load-bearing affordances must NOT live only here. | =lp-load-bearing-affordances-structural= (warning) |
+| E. mental models | Make designer's mental model explicit in prose; signal where deliberation is needed (numbered steps, named intermediate facts). | =literate-programming-document-first= (intent-before-implementation) |
+| F. recognition/recall | LP preambles provide the cue; cross-references are pure recognition surfaces; failure mode is symmetric (hallucination vs "I knew that but couldn't find it"). | =lp-stable-anchors-for-multi-referenced-sections=, =lp-load-bearing-affordances-structural= |
+| G. progressive disclosure | Multi-scale disclosure (CLAUDE.md → skills → bodies); name the trigger (`when_to_use`); decision-time disclosure transfers, skill-building disclosure does not. | Plugin =skills/= shape, =rules/literate-programming-document-first= |
+| H. Gestalt | Typographic infrastructure serves humans only; structural infrastructure serves both audiences. Don't trade structural for typographic when they compete. | =lp-load-bearing-affordances-structural= |
+| I. berry-picking | Design for path-dependent (grep-arrived) reading; support sufficient-not-optimal stopping; provide explicit persistence hooks for agent readers. | =lp-cross-file-link-form=, =lp-stable-anchors-for-multi-referenced-sections=, =lp-agent-persistence-hooks= |
+| J. affordances + signifiers | 4-rule heuristic — dense in structural signifiers; structural > typographic for load-bearing; layer signifier vocabularies; heading-as-concept restated. | =lp-load-bearing-affordances-structural= (THIS direction is the rule's primary source) |
+
+* When to consult this doc
+
+- When adding a new LP rule: check against the figure (does it
+  derive from a quadrant?) and the families (does it apply a shared
+  primitive?), and verify against =rules/lp-transfer-discipline-no-
+  weak-metaphors.md='s acceptance tests.
+- When debating whether a typographic vs structural change is worth
+  doing: check the family table for the affordance you're moving.
+- When onboarding a new LP author: this doc is the *background*
+  context for "why does literate-agent's doctrine look this way."
+
+* Source
+
+Synthesised from a 50-iteration research loop (May 2026, source
+notebook gitignored in the original research project). Each iteration
+produced one section per direction across five rounds (skeleton,
+deepen, synthesise, cite + verify, polish + trim). All non-trivial
+empirical claims were verified via primary-source citation in
+Round 4.

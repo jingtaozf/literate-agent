@@ -122,3 +122,24 @@ Trigger phrases reviewers should grep for:
 - `As shown (above|below)`
 - `The (diagram|table|code) above`
 - `In this section`, `First, let's`, `Hopefully`
+
+## Why this works (cognitive grounding)
+
+The deletion test is Sweller's *Cognitive Load Theory* (1988) applied
+to LP prose. *Extraneous load* is information that occupies working
+memory without contributing to schema construction. Self-narration,
+filler parentheticals, and mechanism-without-action prose ALL produce
+extraneous load: the reader spends attention parsing the prose, finds
+no new information, and the cognitive budget is poorer for the next
+section. The CLT prescription is: *eliminate extraneous load before
+expanding the document*.
+
+The same principle applies to AI agent readers, but the failure mode
+is different. For agents, low-information prose consumes context-window
+tokens that could have carried decision-relevant facts. Both audiences
+lose; the deletion test is one of the few rules that improves the
+artefact for both with the same edit.
+
+See `rules/lp-transfer-discipline-no-weak-metaphors.md` for why CLT
+qualifies as a transferring HI finding (partial — structural form
+transfers, numerical capacity bound does not).

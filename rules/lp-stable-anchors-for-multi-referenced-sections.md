@@ -67,3 +67,29 @@ Mechanically caught by
 without `:CUSTOM_ID:`). Reviewed on PR. Add via the `lp-style-refactor`
 skill's standard iteration; see the skill's
 `references/org-link-cheatsheet.md` for forms.
+
+## Why ≥ 2 references (recognition-over-recall grounding)
+
+Tulving & Thomson 1973's *encoding specificity* finding established
+that recognition (cue-present retrieval) is dramatically cheaper than
+recall (cue-absent retrieval). Nielsen 1994 made this Heuristic #6
+("recognition rather than recall") in his canonical 10-heuristic list.
+
+A `:CUSTOM_ID:` is a *recognition surface* — both audiences arrive
+at the cross-reference with the cue (`[[#stable-anchor]]`) already
+in hand. The alternative — recalling the heading text from memory or
+grepping for fragments — is *recall* and produces the symmetric
+failure mode: hallucination in agents, "I knew that but couldn't
+find it" in humans.
+
+The ≥ 2-references trigger is not arbitrary: it captures the empirical
+break-even point where the cost of typing one `:CUSTOM_ID:` line
+beats the per-reference cost of resolving the link via heading text
+(which silently breaks on rename). Anchors used only once may rely
+on heading text; anchors crossed twice or more pay for themselves
+the first time the heading is edited.
+
+This makes `:CUSTOM_ID:` one of the *cleanest dual-audience
+optimisations* in LP doctrine — same edit serves both audiences with
+the same mechanism. See `rules/lp-load-bearing-affordances-structural.md`
+for the broader principle.

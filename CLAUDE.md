@@ -46,6 +46,18 @@ maintaining a local copy.
 
 @~/projects/literate-agent/rules/tests-embedded-in-narrative.md
 
+## Dual-audience design (research-grounded)
+
+These three rules derive from the 50-iteration transfer-gradient
+research; see `docs/transfer-gradient.org` for the figure + the
+6 shared-primitive families + the catalogued anti-patterns.
+
+@~/projects/literate-agent/rules/lp-load-bearing-affordances-structural.md
+
+@~/projects/literate-agent/rules/lp-agent-persistence-hooks.md
+
+@~/projects/literate-agent/rules/lp-transfer-discipline-no-weak-metaphors.md
+
 ## Design-record discipline
 
 @~/projects/literate-agent/rules/design-stays-in-org.md
@@ -90,6 +102,12 @@ when you edit a matching file type:
 
 When editing a literate `.org` file that contains `#+BEGIN_SRC <lang>`
 blocks, also consult `hints/<lang>.org` for that language's traps.
+
+There is also a *cross-audience* hint:
+
+| Topic | Auto-activates on | Hint file |
+|-------|-------------------|-----------|
+| Dual-audience section review | user asks to "review section" / "check this section" (skill: `lp-dual-audience-check`) | `hints/dual-audience-checklist.org` |
 
 See `hints/README.org` for the convention and how to add a new
 language.
