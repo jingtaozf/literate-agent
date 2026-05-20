@@ -49,8 +49,39 @@ Claude Code inlines the aggregator and all rules at load time. No
 
 ** As Claude Code plugin (for skills, hooks, slash commands)
 
-[TODO when plugin manifest is finalised — see =/lp-check= command
-once installed]
+Pass =--plugin-dir= when launching Claude Code:
+
+#+begin_src bash
+cd /path/to/consuming-repo
+claude --plugin-dir ~/projects/literate-agent
+#+end_src
+
+Plugin auto-registers:
+
+- =skills/=:auto-trigger via =description= + =paths:= frontmatter.
+  Loaded as =literate-agent:<skill-name>= (e.g. =literate-agent:lp-hint-python=).
+- =hooks/hooks.json=:PreToolUse blocks edits to tangle outputs (=.py=,
+  =.ts=, etc.) and rejects bare =* = at column 0 inside =#+BEGIN_SRC=.
+  PostToolUse auto-tangles =.org= edits when =LP_AUTO_TANGLE=1=.
+- =commands/=:slash commands like =/lp-check=.
+
+Project-specific env overrides live in
+=<consuming-repo>/.claude/hooks/_env.sh=. The plugin hooks
+automatically source that file if it exists, so per-project tangle
+targets, LP root paths, language extensions etc. reach the shared
+hook scripts.
+
+*** Future: marketplace install (once published)
+
+Once =literate-agent= is on a stable GitHub release tag:
+
+#+begin_src bash
+claude plugin marketplace add jingtaozf/literate-agent
+claude plugin install literate-agent@literate-agent --scope user
+#+end_src
+
+Then =--plugin-dir= is no longer needed; every project's
+=_env.sh= still provides per-project overrides.
 
 * Bring-your-own-config
 

@@ -1,0 +1,68 @@
+name: ci
+
+# Minimal syntax checks. literate-agent has no compile/test step of
+# its own — the consuming projects (claude-agent, edo-literate, …) run
+# the real tests because they're the ones with .org sources to lint
+# and code to tangle. CI here catches the cheapest class of bug:
+# broken syntax in shipped scripts/hooks/configs.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python syntax check
+        run: |
+          # Hooks named .sh but contain `#!/usr/bin/env python3` —
+          # py_compile catches syntax errors before runtime.
+          for f in scripts/*.py hooks/lib/*.py; do
+            python3 -m py_compile "$f"
+          done
+          for f in hooks/*.sh; do
+            if head -1 "$f" | grep -q "python"; then
+              python3 -m py_compile "$f"
+            fi
+          done
+
+      - name: Bash syntax check
+        run: |
+          for f in hooks/*.sh scripts/*.sh; do
+            if head -1 "$f" | grep -q "bash"; then
+              bash -n "$f"
+            fi
+          done
+
+      - name: JSON syntax check
+        run: |
+          for f in .claude-plugin/plugin.json \
+                   .claude-plugin/marketplace.json \
+                   hooks/hooks.json; do
+            python3 -m json.tool < "$f" > /dev/null
+          done
+
+      - name: TOML syntax check
+        run: |
+          python3 -c "import tomllib; tomllib.loads(open('templates/build_index_groups.toml').read())"
+
+      - name: Org-mode load check
+        # `emacs -batch` exits 0 if the .org file is parseable in
+        # org-mode (covers headings, src blocks, property drawers).
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -qq emacs-nox
+          for f in $(find . -name '*.org' -not -path './.git/*'); do
+            echo "checking $f"
+            emacs -batch --eval "(progn (find-file \"$f\") (org-mode))" 2>&1 \
+              | (grep -E "error|Error" && exit 1 || true)
+          done
