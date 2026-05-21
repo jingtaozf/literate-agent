@@ -82,6 +82,24 @@ question. The proposed deepening loop is documented at
 
 @~/projects/literate-agent/rules/lp-cowork-boundary-object-evolution.md
 
+## Agent-native phenomena (research-grounded)
+
+These five rules derive from the third research loop on phenomena
+that exist /because/ an AI agent participates — no human-human
+research precedent strong enough to anchor on. See
+`docs/agent-native-phenomena.org` for the figure + 6 families + 8
+observations.
+
+@~/projects/literate-agent/rules/lp-agent-internal-citation-verification.md
+
+@~/projects/literate-agent/rules/lp-agent-capability-aware-task-assignment.md
+
+@~/projects/literate-agent/rules/lp-agent-convergent-regression-defence.md
+
+@~/projects/literate-agent/rules/lp-agent-multi-agent-coordination.md
+
+@~/projects/literate-agent/rules/lp-agent-long-horizon-audit-cadence.md
+
 ## Design-record discipline
 
 @~/projects/literate-agent/rules/design-stays-in-org.md

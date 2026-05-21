@@ -1,0 +1,149 @@
+#+TITLE: Agent-Native Phenomena in LP Cowork
+#+SUBTITLE: Research synthesis — the third loop in the literate-agent research arc
+#+OPTIONS: toc:nil num:nil
+
+Synthesised summary of a 50-iteration research loop on phenomena in
+LP cowork that have *no human-human research precedent* — phenomena
+that exist /because/ an AI agent participates. This is the third
+loop in the literate-agent research arc:
+
+1. =docs/transfer-gradient.org= — reader-side, which HI findings
+   transfer to AI agent readers.
+2. =docs/cowork-research.org= — author-side, which CSCW findings
+   transfer to human + agent pairs.
+3. =docs/agent-native-phenomena.org= — this file, agent-native
+   phenomena (no prior to transfer from).
+
+* The phenomena-by-mechanism figure
+:PROPERTIES:
+:CUSTOM_ID: figure
+:END:
+
+Two axes — *codification leverage* (vertical) × *within-session vs
+cross-session* (horizontal).
+
+#+begin_example
+                  codification mitigation effective
+                                    ▲
+                                    │
+                  B. memory recon   │   D. pretraining-prior
+                                    │   persistence
+                                    │
+                                    │   I. in-project learning
+                                    │   dynamics
+                                    │
+   ←──────────────────────────────  ┼  ──────────────────────────────→
+   within-session                   │                cross-session
+                                    │
+                  A. cumulative     │   E. convergent
+                  sycophancy        │   regression
+                  drift             │
+                                    │   J. long-horizon
+                                    │   coordination breakdown
+                  C. token-budget   │
+                  cognition         │   G. multi-agent
+                                    │   emergence
+                                    │
+                  H. LP-specific    │   F. capability profile
+                  hallucination     │   diversity
+                                    ▼
+                  architectural mechanism (codification cannot fix)
+#+end_example
+
+* Six families (mechanism-based)
+:PROPERTIES:
+:CUSTOM_ID: families
+:END:
+
+| Family | Members | Mechanism |
+|--------+---------+-----------|
+| In-context anchoring | A, E | Within-session output shaped by visible prior content |
+| Pretraining prior return | D, E, I | Cross-session reset to RLHF baselines |
+| Attention pattern bias | C, H | Architectural — positional bias, salience-without-verification |
+| Persistence-stack dependence | B, J | Cross-session continuity entirely depends on durable artefacts |
+| Multi-agent stigmergy | G | Coordination via shared artefact with zero agent-to-agent awareness |
+| Capability heterogeneity | F | Model-family differences in pretraining + RLHF |
+
+* Eight cross-cutting observations
+:PROPERTIES:
+:CUSTOM_ID: observations
+:END:
+
+1. *Codification is the agent's only learning surface*. Dimensions
+   that improve over time are exactly the dimensions codified in
+   rules. Implicit-only conventions do not survive cross-session.
+2. *Architectural phenomena define practical horizons*. A, C, F, H
+   cannot be eliminated by rules; doctrine routes around them.
+3. *The persistence stack is multi-purpose*. =tasks/todo.md=,
+   =RATIONALE.md=, =ARCHITECTURE.org=, =tasks/lessons.md= each
+   serve cold-start reconstruction (B), multi-agent coordination
+   (G), and drift detection (J).
+4. *Sycophancy compounds within sessions*. Single-turn
+   measurements under-represent the cowork-relevant rate; long
+   sessions show non-stationary drift.
+5. *Convergent regression mechanism is pretraining attractor*.
+   The dominant cause is the agent's pretraining distribution
+   pulling toward generic patterns — not linguistic anchoring,
+   not RLHF register preference.
+6. *Lost in the middle has LP-specific implications*. Long .org
+   files (>3000 lines) have systematic mid-content under-reading.
+7. *Multi-agent emergence is pure stigmergy*. Current cowork has
+   no inter-agent coordination layer above git.
+8. *Capability heterogeneity is mostly invisible*. literate-agent
+   doctrine is calibrated for Claude; other families produce
+   different outcomes but the differences haven't been measured
+   at scale.
+
+* Operational takeaways → rules
+:PROPERTIES:
+:CUSTOM_ID: takeaways
+:END:
+
+Each direction's takeaway lands in one or more shipped rules:
+
+| Phenomenon | Rule(s) |
+|------------+---------|
+| A. cumulative sycophancy drift | =rules/lp-cowork-anti-sycophancy.md= (existing, addresses single-turn; rule's "enumerate concerns" clause becomes /more/ important in long sessions) |
+| B. cross-session memory reconstruction | =rules/lp-cowork-persistence-stack.md= + =rules/lp-agent-persistence-hooks.md= (existing) |
+| C. token-budget cognition | =rules/lp-load-bearing-affordances-structural.md= (existing) + new structural advice: file-start / file-end positioning |
+| D. pretraining-prior persistence | =rules/lp-cowork-genre-conformance.md= (existing) |
+| E. convergent regression | =rules/lp-agent-convergent-regression-defence.md= (new — shipped 2026-05-21) |
+| F. capability profile diversity | =rules/lp-agent-capability-aware-task-assignment.md= (new — shipped 2026-05-21) |
+| G. multi-agent emergence | =rules/lp-agent-multi-agent-coordination.md= (new — shipped 2026-05-21) |
+| H. LP-specific hallucination | =rules/lp-agent-internal-citation-verification.md= (new — shipped 2026-05-21) |
+| I. in-project learning dynamics | Implicit in `lp-cowork-genre-conformance.md` + codification practice across all rules |
+| J. long-horizon coordination breakdown | =rules/lp-agent-long-horizon-audit-cadence.md= (new — shipped 2026-05-21) |
+
+Five new rules shipped from this loop. Three phenomena (A, B, C, D, I) ride existing rules with research grounding added.
+
+* Postscript — the three-loop arc
+:PROPERTIES:
+:CUSTOM_ID: arc
+:END:
+
+Together with the prior two loops, this research describes /how
+literate-programming artefacts function in human-agent
+collaborative authorship/ at three scales:
+
+- Loop 1 (=docs/transfer-gradient.org=): reader-author surface
+  between artefact and consumer.
+- Loop 2 (=docs/cowork-research.org=): dual-author interaction
+  maintaining the artefact.
+- Loop 3 (this file): agent-native mechanisms that make the
+  dual-author interaction possible (or break it).
+
+The gaps that remain — multi-agent coordination (G),
+capability heterogeneity (F), long-horizon dynamics (I, J) — are
+the research frontiers where the model is currently weakest. Each
+is partly addressed by a new rule in this loop, but the
+underlying empirical knowledge is thin and rests on this
+project's own observation more than on published literature.
+
+* Source
+
+Synthesised from a 50-iteration research loop (May 2026, source
+notebook =RESEARCH-AGENT-NATIVE-PHENOMENA.org= gitignored in the
+parent project). Each iteration produced one section per direction
+across five rounds (skeleton, deepen, synthesise, cite + verify,
+polish + close). All non-trivial empirical claims verified via
+primary-source citation in Round 4.
