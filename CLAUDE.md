@@ -76,6 +76,12 @@ question. The proposed deepening loop is documented at
 
 @~/projects/literate-agent/rules/lp-cowork-persistence-stack.md
 
+@~/projects/literate-agent/rules/lp-cowork-review-expectation.md
+
+@~/projects/literate-agent/rules/lp-cowork-genre-conformance.md
+
+@~/projects/literate-agent/rules/lp-cowork-boundary-object-evolution.md
+
 ## Design-record discipline
 
 @~/projects/literate-agent/rules/design-stays-in-org.md
