@@ -48,9 +48,30 @@ git log "$RANGE" --pretty=format:"%H %s" --grep -i "review\|looks good\|polish" 
 echo ""
 
 echo "=== K3 convergent regression: removed dates / incidents ==="
-git diff "$RANGE" --unified=0 \
-  | grep -E '^-.*\b(triggering incident|last-validated|2026-|2025-|fix incident)' \
-  | head -10
+# Refined 2026-05-21 (Q2 audit finding): exclude file-deletion strips.
+# The diff lines below appear in two contexts:
+#   (a) Real regression — file was edited in place and the strip removes a
+#       date/incident anchor from prose that stays. K3 violation.
+#   (b) Benign migration — file was DELETED entirely (e.g. LP-rule migration
+#       from edo-literate/.claude/rules/ to literate-agent/rules/). Lines
+#       appear as removals but the whole file went. NOT a K3 violation.
+# Filter: only flag strips on files that ALSO have additions in the same diff.
+
+# First, find files that have both `-` and `+` content lines (edits, not deletes).
+edited_files=$(git diff "$RANGE" --name-only --diff-filter=M 2>/dev/null)
+
+if [ -n "$edited_files" ]; then
+  for f in $edited_files; do
+    strips=$(git diff "$RANGE" --unified=0 -- "$f" 2>/dev/null \
+      | grep -E '^-.*\b(triggering incident|last-validated|fix incident|2026-|2025-)\b')
+    if [ -n "$strips" ]; then
+      echo "  $f:"
+      echo "$strips" | head -5 | sed 's/^/    /'
+    fi
+  done | head -30
+else
+  echo "  (no in-place file edits in range)"
+fi
 echo ""
 
 echo "=== K4 citation candidates introduced ==="

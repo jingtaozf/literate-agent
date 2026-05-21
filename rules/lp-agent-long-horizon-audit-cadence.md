@@ -109,10 +109,41 @@ not the audit execution itself.
 - `lp-agent-convergent-regression-defence.md` — audit detects
   the regression this rule defends against.
 
+## Worked example — Q2 2026 first execution
+
+The first execution of this cadence happened 2026-05-21, immediately
+after the rule shipped. Findings + process evaluation documented in
+`claude-agent/tasks/audit-2026-Q2.md` (commit
+[f120f3e](https://github.com/jingtaozf/claude-agent/commit/f120f3e)).
+
+Three calibration findings from that execution worth incorporating
+on next-cycle:
+
+1. *C2 raw coverage (=:CUSTOM_ID:= ratio) is misleading*. The rule
+   `lp-stable-anchors-for-multi-referenced-sections.md` only requires
+   anchors on ≥2-referenced sections. Raw heading-count gives 93-98%
+   "missing" which is mostly single-reference sections that need no
+   anchor. The load-bearing metric is *coverage on ≥2-ref sections
+   only* — needs a cross-reference-aware scan, not raw heading
+   counting.
+2. *C3 raw count includes literate-org-import auto-generated
+   headings*. At depth ≥ 3, Python-statement-per-heading style
+   (`*** Function foo`, `*** Assignment X`) inflates the count
+   wildly. Filter to depth ≤ 2 (concept-level) for meaningful
+   numbers.
+3. *K3 raw count is sensitive to file-deletion strips*. The first
+   audit found 31 "incident strip" lines in edo-literate — all from
+   benign LP-rule-migration where files were *deleted*, not edited
+   in place. The `commands/lp-cowork-review.md` K3 check has been
+   refined to filter on `--diff-filter=M`.
+
 ## See also
 
 - `commands/lp-research-audit.md` — the reader-side audit.
-- `commands/lp-cowork-review.md` — the cowork-side audit.
+- `commands/lp-cowork-review.md` — the cowork-side audit (K3
+  refined 2026-05-21 to skip file-deletion strips).
 - `docs/agent-native-phenomena.org` direction J — research
   grounding for why long-horizon breakdown is a real
   architectural risk, not just a hypothetical.
+- `claude-agent/tasks/audit-2026-Q2.md` — worked example, first
+  execution; top-10 priority list + 4 candidate rule updates.

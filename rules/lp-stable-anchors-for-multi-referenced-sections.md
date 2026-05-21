@@ -68,6 +68,39 @@ without `:CUSTOM_ID:`). Reviewed on PR. Add via the `lp-style-refactor`
 skill's standard iteration; see the skill's
 `references/org-link-cheatsheet.md` for forms.
 
+### Mechanical scan command
+
+For ad-hoc check across a tree of .org files, find headings whose
+text is cross-referenced ≥ 2 times but lack a `:CUSTOM_ID:`:
+
+```bash
+# Step 1: list every heading text in the tree.
+find <dir> -name "*.org" \
+  | xargs awk '/^\*+ / { sub(/^\*+ +/, ""); print FILENAME":"$0 }'
+
+# Step 2: for each heading text, count cross-references in prose
+# (lines containing `[[*<text>]]` or `[[file:...::*<text>]]`).
+# Sections referenced ≥ 2 times AND missing `:CUSTOM_ID:` are
+# violations.
+```
+
+The audit script generalises this and emits a per-file ratio. See
+[Q2 2026 audit findings](../docs/agent-native-phenomena.org) — the
+raw heading-count metric (93-98% missing) is *misleading*; only
+sections referenced ≥ 2 times need anchors. Real violation rate
+is lower (sample suggests 5-15% of concept-level headings).
+
+### Target threshold
+
+Healthy project state: **≥ 95% of multi-referenced
+(≥ 2-reference) sections have `:CUSTOM_ID:` anchors**. Anything
+below ≥ 90% suggests backfill work — but only on the
+multi-referenced subset, never on every heading.
+
+The threshold is calibrated to allow per-PR fluctuation while
+catching systemic drift. Track over time via the quarterly
+audit cadence (`rules/lp-agent-long-horizon-audit-cadence.md`).
+
 ## Why ≥ 2 references (recognition-over-recall grounding)
 
 Tulving & Thomson 1973's *encoding specificity* finding established
