@@ -45,7 +45,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lib.tangle_lookup import is_in_block_scope, reject_message_for  # noqa: E402
+from lib.tangle_lookup import (  # noqa: E402
+    is_in_block_scope_anywhere,
+    reject_message_for,
+)
 
 
 def main() -> int:
@@ -58,10 +61,24 @@ def main() -> int:
         return 0
     if not path:
         return 0
-    if not is_in_block_scope(path):
+    # Cross-project-aware scope check.  ``is_in_block_scope_anywhere``
+    # walks up from ``path`` to find the OWNING LP project (any dir
+    # containing ``.claude/hooks/_env.sh``), sources its LP config, and
+    # evaluates scope in that frame.  This closes the 2026-05-21 incident
+    # where ``CLAUDE_PROJECT_DIR=mind-ai/dev-agent`` let an absolute path
+    # into ``mind-ai/edo-literate/repos/.../*.py`` slip past the block
+    # because the file wasn't under the agent's own project root.
+    blocked, project, env = is_in_block_scope_anywhere(path)
+    if not blocked:
         return 0
 
-    print(reject_message_for(path, action_verb="edit"), file=sys.stderr)
+    print(
+        reject_message_for(
+            path, action_verb="edit",
+            project_root=project, env=env if env else None,
+        ),
+        file=sys.stderr,
+    )
     return 2
 
 

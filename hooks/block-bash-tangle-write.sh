@@ -39,7 +39,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lib.tangle_lookup import (  # noqa: E402
     REPO_ROOT,
-    is_in_block_scope,
+    is_in_block_scope_anywhere,
     reject_message_for,
 )
 
@@ -328,32 +328,46 @@ def opaque_writer_in(cmd: str) -> str | None:
 
 # ── target → LP-scope decision ───────────────────────────────────────────────
 
-def is_blocked_target(target: str) -> tuple[bool, str | None]:
+def is_blocked_target(target: str) -> tuple[bool, str | None, "Path | None", dict]:
     """Resolve ``target`` to an absolute path and ask the shared lib.
 
-    Returns ``(blocked, abs_path_or_None)``. ``abs_path`` is what the reject
-    message will quote.
+    Returns ``(blocked, abs_path_or_None, owning_project_or_None, env_dict)``.
+    The two extra fields let the caller render the reject message in the
+    *owning* project's frame (the 2026-05-21 cross-project fix) — when
+    they're None/empty the caller falls back to the CLAUDE_PROJECT_DIR
+    frame, which is what the single-project Edit/Write tests expect.
     """
     if target.startswith("__"):
-        return False, None  # sentinel — caller handles separately
+        return False, None, None, {}  # sentinel — caller handles separately
     p = Path(target)
     if not p.is_absolute():
         p = REPO_ROOT / target
     abs_str = str(p)
-    return is_in_block_scope(abs_str), abs_str
+    blocked, project, env = is_in_block_scope_anywhere(abs_str)
+    return blocked, abs_str, project, env
 
 
 # ── reject-message formatters ────────────────────────────────────────────────
 
-def format_blocked(targets: list[str], full_cmd: str) -> str:
-    if len(targets) == 1:
-        head = reject_message_for(targets[0], action_verb="write to (via Bash)")
-    else:
-        # Multi-target: render the first, append a footer listing the rest.
-        head = reject_message_for(targets[0], action_verb="write to (via Bash)")
+def format_blocked(
+    targets: list[tuple[str, "Path | None", dict]], full_cmd: str
+) -> str:
+    """Render the reject message for the FIRST blocked target.
+
+    ``targets`` is a list of ``(abs_path, owning_project_or_None, env)``
+    tuples so each target can be rendered in its own owning-project
+    frame.  Additional targets are listed by path only (no per-frame
+    detail) to keep the message scannable.
+    """
+    first_path, first_project, first_env = targets[0]
+    head = reject_message_for(
+        first_path, action_verb="write to (via Bash)",
+        project_root=first_project, env=first_env if first_env else None,
+    )
+    if len(targets) > 1:
         head += (
             "\n\nAdditional LP-managed paths the same command would write:\n"
-            + "\n".join(f"  - {t}" for t in targets[1:])
+            + "\n".join(f"  - {t[0]}" for t in targets[1:])
         )
     head += (
         "\n\nThis was a Bash hook reject (matcher: Bash) — the Edit/Write\n"
@@ -392,7 +406,11 @@ def main() -> int:
     if not cmd:
         return 0
 
-    blocked_targets: list[str] = []
+    # Each entry is ``(abs_path, owning_project_or_None, env_dict)`` so
+    # ``format_blocked`` can render each target in its own LP frame
+    # (post-2026-05-21 cross-project change).
+    blocked_targets: list[tuple[str, "Path | None", dict]] = []
+    seen_paths: set[str] = set()
     opaque_hit: str | None = None
 
     for sub in all_subcommands(cmd):
@@ -400,10 +418,10 @@ def main() -> int:
         for target in extract_write_targets(sub):
             if target.startswith("__"):
                 continue
-            blocked, abs_path = is_blocked_target(target)
-            if blocked and abs_path is not None:
-                if abs_path not in blocked_targets:
-                    blocked_targets.append(abs_path)
+            blocked, abs_path, project, env = is_blocked_target(target)
+            if blocked and abs_path is not None and abs_path not in seen_paths:
+                blocked_targets.append((abs_path, project, env))
+                seen_paths.add(abs_path)
         # Catch-all heuristic.
         if opaque_hit is None:
             kw = opaque_writer_in(sub)
