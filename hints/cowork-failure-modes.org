@@ -1,0 +1,131 @@
+#+TITLE: LP Cowork Failure Modes — Diagnosis and Mitigation
+#+SUBTITLE: Drift modes unique to human+agent collaborative authoring
+#+OPTIONS: toc:nil num:nil
+
+Five drift modes that emerge in LP cowork loops but *do not appear*
+when only one population (human OR agent) authors the doc. Each has
+a fixed diagnosis pattern and a codified mitigation.
+
+This hint is *lazy-loaded* — auto-activates when the user mentions
+PR review, doc drift, cross-session work, or any of the failure-mode
+symptoms below.
+
+* Five cowork-specific drift modes
+
+** 1. Sycophancy drift
+
+*Symptom*: agent reviews substantial prose and returns "looks good,
+minor polish suggestions only" without engaging the central claim.
+Over multiple sessions, errors codify into doctrine because the
+review never pushed back.
+
+*Diagnosis*:
+- Search agent's review output for terms of agreement without
+  matching specific concerns or citation checks.
+- If a review section has 0 enumerated concerns AND 0 citation
+  verifications, slow mode probably wasn't engaged.
+
+*Mitigation*: =rules/lp-cowork-anti-sycophancy.md= — agent MUST
+either enumerate ≥ 1 specific concern OR re-derive the central
+claim from primary sources before declaring review complete.
+
+** 2. Tone drift
+
+*Symptom*: agent's verbose textbook-style prose slowly displaces the
+project's terse idiomatic voice. After 5-10 cowork iterations on
+the same module, the prose reads like generic AI output instead of
+the project's house style.
+
+*Diagnosis*:
+- =git log --stat <file>= shows many small commits, each making the
+  prose "more standard." Each individual diff looks reasonable;
+  the cumulative drift is the failure.
+- =diff= the current file against an early commit (say, 6 months
+  ago). Whole-file flavour shift > word-level shift.
+
+*Mitigation*: =rules/lp-cowork-anti-sycophancy.md= rule 3 ("defend
+the human's voice") — agent's edit budget goes to *clarity* +
+*deletion test*, NOT *normalisation*. Idiomatic phrasing stays.
+
+** 3. Convergent regression
+
+*Symptom*: novel ideas that don't match a known textbook pattern
+get rewritten into standard patterns by the agent's pretraining
+priors. The project's specific doctrine gets magnetised toward
+generic best-practice advice.
+
+*Diagnosis*:
+- A specific rule the project ships (e.g. "comma-escape leading-star
+  in src blocks") gets rewritten by the agent as a generic
+  "follow org-mode best practices" — the specific actionable
+  content erodes.
+- Cross-references to the project's own decision history get
+  replaced with cross-references to general literature.
+
+*Mitigation*: =rules/lp-transfer-discipline-no-weak-metaphors.md=
+applied in reverse — the agent must defend project-specific findings
+against generic-pattern replacement. If a rule has a triggering
+incident date + reference, that grounds it as *this project's*
+finding; replacing with generic guidance violates the discipline.
+
+** 4. Citation hallucination
+
+*Symptom*: agent introduces citations (Sweller 1988, Nielsen 1995,
+"per the foraging research") without verifying they exist or say
+what's claimed. Human verification cost is high, so checks often
+get skipped, and fake citations accumulate.
+
+*Diagnosis*:
+- =/lp-research-audit= flags citations that match no entry in any
+  known reference cache.
+- WebSearch the cited author/year/title; if no match, citation is
+  suspect.
+
+*Mitigation*: =rules/lp-transfer-discipline-no-weak-metaphors.md= —
+every non-trivial citation must pass either closed-form-math or
+behavioural-isomorphism acceptance tests. =rules/lp-cowork-anti-
+sycophancy.md= rule 2 — citations get checked, not waved through.
+
+** 5. Stake mismatch
+
+*Symptom*: human treats a section as load-bearing; agent treats it
+as boilerplate (or vice versa). Edits collide — agent "cleans up"
+prose the human wrote carefully; or human carefully reviews prose
+the agent threw away seconds ago.
+
+*Diagnosis*:
+- Agent commits with no `Risk:` declaration when the diff actually
+  touches a high-stake area.
+- Human's PR feedback says "this section was important" repeatedly
+  on different changes.
+
+*Mitigation*: =rules/lp-cowork-stake-declaration.md= — every
+non-trivial change opens with the `Risk: <tier> — <reason>` line.
+Mismatch is then *visible* and resolvable before edit lands.
+
+* Cross-reference: which rule mitigates which mode
+
+| Failure mode | Primary rule | Supporting rules |
+|--------------+--------------+------------------|
+| Sycophancy drift | =lp-cowork-anti-sycophancy.md= | =lp-cowork-propose-before-edit.md= |
+| Tone drift | =lp-cowork-anti-sycophancy.md= rule 3 | =lp-prose-no-self-narration.md= |
+| Convergent regression | =lp-transfer-discipline-no-weak-metaphors.md= | =lp-cowork-anti-sycophancy.md= |
+| Citation hallucination | =lp-transfer-discipline-no-weak-metaphors.md= | =lp-cowork-anti-sycophancy.md= rule 2 |
+| Stake mismatch | =lp-cowork-stake-declaration.md= | =lp-cowork-propose-before-edit.md= |
+
+* When to consult this hint
+
+- Right after a PR cycle that "felt off" — pattern-match the
+  symptoms against the five modes.
+- Periodically (quarterly?) on long-running LP modules — sample the
+  =git log= history and check for drift signals.
+- Before merging a large agent-authored refactor — pre-flight check.
+
+* See also
+
+- =../docs/transfer-gradient.org= — the reader-side research that
+  motivated the dual-audience framing the cowork chapter builds on.
+- =../docs/cowork-research.org= — proposed 50-iter loop to deepen
+  the cowork findings (currently a research plan, not findings).
+- =../rules/lp-cowork-*.md= — the five cowork rules this hint
+  cites as mitigations.

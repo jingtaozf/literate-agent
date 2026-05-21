@@ -39,6 +39,7 @@ exposure to a language; refer back when the symptom matches.
 | =elisp.org= | language (.el) | Stable |
 | =python.org= | language (.py) | Stable |
 | =dual-audience-checklist.org= | cross-audience LP review | Stable |
+| =cowork-failure-modes.org= | human+agent cowork drift modes | Stable |
 | =typescript.org= | language (.ts/.tsx) | (not yet) |
 | =rust.org= | language (.rs) | (not yet) |
 | =clojure.org= | language (.clj) | (not yet) |
@@ -49,6 +50,12 @@ inside `#+BEGIN_SRC`. It's auto-activated by the
 =lp-dual-audience-check= skill when the user asks to "review section"
 or after editing an `.org` section. See the file for the 6-point
 checklist + research grounding.
+
+The =cowork-failure-modes.org= is for *cowork* situations
+(human + AI agent author pair) and documents the five drift modes
+unique to that mode (sycophancy / tone drift / convergent regression
+/ citation hallucination / stake mismatch). Use the =/lp-cowork-review=
+command to mechanise the diagnoses on a PR diff or git range.
 
 * Adding a new language
 

@@ -1,0 +1,158 @@
+#+TITLE: LP Cowork Research — Proposed 50-Iter Loop
+#+SUBTITLE: Status — plan; loop not yet executed
+#+OPTIONS: toc:nil num:nil
+
+This document is the *plan* for a new 50-iteration research loop
+that extends the transfer-gradient research (=docs/transfer-gradient.org=)
+from the reader-side dual-audience question to the author-side
+human+agent cowork question.
+
+*Status*: 2026-05-21 — plan only. The five MVP rules (=rules/lp-cowork-*.md=)
+were shipped first, grounded in 6+ months of observed practice. The
+loop's purpose is to *validate and deepen* the MVP, not to bootstrap
+from scratch.
+
+* Why this loop now
+
+Symmetry with the reader-side research:
+
+| Reader-side (done) | Author-side (this loop) |
+|--------------------+--------------------------|
+| Seed: NN/g 1997-2017 reader research transfers to AI agents | Seed: 6+ months of claude-agent + edo + cmux cowork practice produces stable patterns |
+| 10 HI directions (foraging, CLT, ...) | 10 CSCW / co-authoring / collaboration directions |
+| 5 rounds × 6 questions per direction | Same structure |
+| Output: figure + families + 8 observations + 6 doctrine rules | Output: figure + families + observations + N new doctrine rules |
+| Question: which HI findings transfer to AI agent readers? | Question: which CSCW + co-author findings transfer to human-agent author pairs? |
+
+The MVP rules were derived from *practice*. The loop derives them
+from *research*. The two paths cross-validate.
+
+* Ten proposed directions
+
+| Dir | Theme | Canonical source |
+|-----+-------+------------------|
+| A. Articulation work | Suchman 1987, Schmidt & Bannon 1992 — invisible coordination labour | Strauss 1985 *Work and the Division of Labor* |
+| B. Common ground | Clark 1996 *Using Language* — interlocutors maintaining shared belief | Clark & Brennan 1991 grounding constraints |
+| C. Trust calibration | Lee & See 2004 *Trust in automation* — appropriate reliance on agents | Hoff & Bashir 2015 review |
+| D. Code review dynamics | Bacchelli & Bird 2013 *Expectations, Outcomes and Challenges* — what makes review work | Czerwonka et al 2015 (large-scale Microsoft) |
+| E. Sycophancy in LLMs | Sharma et al 2023 (Anthropic) — measurable sycophancy across model families | Perez et al 2023 *Discovering Language Model Behaviors* |
+| F. Pair programming dynamics | Williams 2001 — driver/navigator roles, knowledge transfer | Bryant et al 2008 (review) |
+| G. Genre conventions in technical writing | Bazerman 1988 *Shaping Written Knowledge* — discipline-specific genre as coordination tool | Berkenkotter & Huckin 1995 |
+| H. Stigmergy | Theraulaz & Bonabeau 1999 — indirect coordination via shared artefact | Heylighen 2016 (review) |
+| I. Cognitive offloading | Risko & Gilbert 2016 — using external structure to extend cognition | Carruthers 2015 |
+| J. Boundary objects | Star & Griesemer 1989 — artefacts that serve multiple communities | Star 2010 *This is not a boundary object* (revision) |
+
+Each direction answers the same 6 questions as the reader-side
+research:
+
+1. Specific claim (named principle + canonical wording).
+2. Empirical basis (study, N, method, year).
+3. Does the agent-as-author show isomorphic behaviour?
+4. If yes — shared primitive?
+5. If no — transfer break? (substrate / asymmetric capability / stake / tacit knowledge?)
+6. Operational takeaway for the LP cowork author.
+
+* Five rounds (same shape as transfer-gradient)
+
+1. *Round 1 (iters 1-10)*: skeleton — one section per direction, 5 sub-headers each.
+2. *Round 2 (iters 11-20)*: deepen — canon excerpts, empirical findings, first transfer assessment.
+3. *Round 3 (iters 21-30)*: synthesise — cowork-gradient figure, shared-primitive families, cross-cutting observations.
+4. *Round 4 (iters 31-40)*: cite + verify — WebSearch/WebFetch every non-trivial claim; populate Sources.
+5. *Round 5 (iters 41-50)*: polish + trim; remove working-log scaffolding.
+
+* Anticipated outputs
+
+| Output | Lands in |
+|--------+----------|
+| Cowork-gradient figure | =docs/cowork-gradient.org= (new) |
+| Shared-primitive families (likely 4-6) | Same doc, families section |
+| Cross-cutting observations | Same doc, observations section |
+| New doctrine rules (estimated 2-4 beyond the 5 MVP) | =rules/lp-cowork-*.md= additions |
+| Updates to MVP rules with research grounding | In-place "Why this works" sections |
+| Hint extensions for newly-found failure modes | =hints/cowork-failure-modes.org= additions |
+
+* Open questions before launching the loop
+
+These are the points I want to confirm with the human before
+running 50 iters. Pre-loop alignment prevents wasted iterations.
+
+** Q1: scope — author-author OR collaboration-broader
+
+The reader-side research stayed narrowly in HI / web-reader
+territory. The cowork-side question can be framed two ways:
+
+- *Narrow*: HCI / CSCW research on *human-human* co-authoring,
+  asking which findings transfer to *human-agent* pairs. Tight
+  analog to the reader-side question. Directions A, B, D, F, G are
+  in this scope.
+- *Broad*: also include LLM-specific findings (sycophancy
+  measurement, calibration, etc.) where there is no human-human
+  precedent but the failure mode is real. Directions C, E expand
+  the scope.
+
+The proposed table above mixes both. Need user input on whether to
+narrow.
+
+** Q2: validation — observational OR experimental
+
+Reader-side research was 100% *observational* (citation review +
+agent-trace inspection). Cowork-side could:
+
+- Stay observational (same level of evidence as reader-side; cheaper).
+- Add controlled experiments (e.g. measure sycophancy rate before
+  vs after =lp-cowork-anti-sycophancy.md= adoption; needs a corpus
+  + scoring).
+
+Experimental data would lift the rigour but cost time.
+
+** Q3: rules-as-input — MVP fixed OR revisable
+
+The MVP rules (=lp-cowork-stake-declaration=, =-propose-before-edit=,
+=-anti-sycophancy=, =-handoff-template=, =-persistence-stack=) were
+shipped from practice before the research. Two stances:
+
+- *MVP fixed*: research deepens and adds *new* rules; MVP rules
+  stay as-is (with optional "Why this works" grounding sections
+  added per Phase 2 pattern).
+- *MVP revisable*: research can rewrite or merge MVP rules if it
+  finds the practice was off.
+
+Reader-side precedent: the 4 existing rules from claude-agent got
+"Why this works" grounding sections added but were not rewritten.
+Defaulting to MVP-fixed unless user prefers otherwise.
+
+** Q4: deliverable shape — one .org OR multi-file
+
+Reader-side delivered one large .org (3243 lines). Could deliver
+cowork-side the same way, or split into multiple smaller files
+(one per direction, with =docs/cowork-research/= subdir).
+
+** Q5: loop runtime — synchronous OR cron-paced
+
+Reader-side ran *synchronously* (50 turns in one extended session).
+Could also use the =/loop= or cron mechanism for ~1 iter every few
+hours over days.
+
+Cron-paced has the advantage of natural break + re-grounding
+between iters; synchronous has the advantage of cache continuity.
+
+* Pre-launch checklist
+
+Before kicking off the loop:
+
+- [ ] Q1-Q5 resolved with user input.
+- [ ] Target file path decided (likely =docs/cowork-gradient.org=
+      similar to reader-side gitignored research location).
+- [ ] Iter counter location decided (mirror =~/.claude/.research-hi-
+      iter-counter= pattern).
+- [ ] Progress log location decided.
+- [ ] Initial direction list confirmed (the 10 above? alternatives?).
+
+* See also
+
+- =docs/transfer-gradient.org= — the reader-side research this
+  loop extends.
+- =hints/cowork-failure-modes.org= — practice-grounded failure modes
+  the loop will cite as ground truth observations.
+- =rules/lp-cowork-*.md= — the 5 MVP rules the loop will
+  validate / extend.

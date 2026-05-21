@@ -58,6 +58,24 @@ research; see `docs/transfer-gradient.org` for the figure + the
 
 @~/projects/literate-agent/rules/lp-transfer-discipline-no-weak-metaphors.md
 
+## Cowork (human + AI agent author pair)
+
+These five rules codify the protocols that emerged across 6+ months
+of claude-agent + edo-literate + cmux cowork practice. They extend
+the dual-audience reader research to the dual-author authoring
+question. The proposed deepening loop is documented at
+`docs/cowork-research.org`.
+
+@~/projects/literate-agent/rules/lp-cowork-stake-declaration.md
+
+@~/projects/literate-agent/rules/lp-cowork-propose-before-edit.md
+
+@~/projects/literate-agent/rules/lp-cowork-anti-sycophancy.md
+
+@~/projects/literate-agent/rules/lp-cowork-handoff-template.md
+
+@~/projects/literate-agent/rules/lp-cowork-persistence-stack.md
+
 ## Design-record discipline
 
 @~/projects/literate-agent/rules/design-stays-in-org.md
