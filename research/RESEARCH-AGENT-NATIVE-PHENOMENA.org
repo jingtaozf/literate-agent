@@ -1,0 +1,1950 @@
+#+TITLE: Agent-Native Phenomena in LP Cowork — Research Loop
+#+SUBTITLE: Phenomena with no human-human research precedent that emerge only when an AI agent participates
+#+OPTIONS: toc:nil num:nil
+
+* Preface
+:PROPERTIES:
+:CUSTOM_ID: preface
+:END:
+
+This is the third research loop in the LP-cowork progression. The
+first two (=RESEARCH-HUMAN-INTERFACE-TRANSFERS.org= → reader-side;
+=RESEARCH-LP-COWORK-TRANSFERS.org= → author-side) both asked
+/transfer questions/ — which prior human-research findings port to
+the AI-agent context, with what completeness, where they break?
+
+The third loop *inverts* that question: /which phenomena emerge in
+LP cowork that have no human-human research precedent strong enough
+to anchor on — phenomena that exist /because/ an agent is in the
+loop?/ These are *agent-native phenomena*. They cannot be answered
+by porting prior findings because there is nothing prior to port.
+The research mode shifts from "validate against canon" to "first-
+principles characterisation of new territory."
+
+Ten directions selected by surveying observed phenomena across
+=claude-agent= + =edo-literate= + =cmux= practice + the
+transfer-gradient + cowork loops, picking the cases where the
+existing transfer answer was "no human-human precedent" or
+"LLM-specific mechanism." Each direction explores one phenomenon
+that did not exist as a research question before AI agents could
+participate in LP authoring.
+
+** Scope
+:PROPERTIES:
+:CUSTOM_ID: scope
+:END:
+
+Per direction, six questions (same shape as the prior two loops):
+
+1. /Specific claim/ of the phenomenon — what's observed, in what
+   conditions, with what regularity?
+2. /Empirical basis/ — what evidence exists in published work,
+   benchmarks, or this project's practice?
+3. /Mechanism hypothesis/ — what's the candidate causal structure?
+4. /Asymmetry with human equivalent/ — closest human-side analogue,
+   and why the agent-side phenomenon differs (not just transfers).
+5. /Boundary conditions/ — when does the phenomenon NOT appear?
+   what predicts its strength?
+6. /Operational takeaway/ — what mitigation, exploitation, or
+   measurement strategy follows.
+
+** Reading map
+:PROPERTIES:
+:CUSTOM_ID: reading-map
+:END:
+
+| Section | Direction |
+|---------+-----------|
+| [[#dir-A][A. Cumulative sycophancy drift]] | Sharma 2023 single-turn baseline → multi-session accumulation |
+| [[#dir-B][B. Cross-session memory reconstruction]] | Cold-start state recovery patterns; RAG vs file-anchored |
+| [[#dir-C][C. Token-budget cognition]] | LLM context as cognitive budget; Liu 2023 lost-in-the-middle |
+| [[#dir-D][D. Pretraining-prior persistence]] | Human-preference learning vs pretraining defaults under long-term cowork |
+| [[#dir-E][E. Convergent regression mechanism]] | Why agents "normalise" project style; pretraining attractor |
+| [[#dir-F][F. Capability profile diversity]] | Different model families in same cowork loop |
+| [[#dir-G][G. Multi-agent emergence]] | 2+ agents editing same artefact independently |
+| [[#dir-H][H. Hallucination patterns specific to LP]] | What LP-domain hallucinations look like vs general |
+| [[#dir-I][I. Agent learning dynamics within a project]] | Does agent improve over N sessions on same project? |
+| [[#dir-J][J. Long-horizon coordination breakdown]] | When does cowork degrade? What predicts it? |
+
+* A. Cumulative sycophancy drift
+:PROPERTIES:
+:CUSTOM_ID: dir-A
+:END:
+
+Sharma et al 2023 (Anthropic) measured sycophancy in /single-turn/
+prompts: ask the model a question, observe whether it changes its
+answer when the user pushes back. The single-turn rate is robustly
+~30-50% across five major model families. But LP cowork is *not*
+single-turn — it's multi-turn within a session and multi-session
+across weeks. The question this direction asks: /does sycophancy
+accumulate across turns, or does each turn reset?/ Observational
+evidence from =claude-agent= PR cycles suggests *accumulation* —
+after the agent capitulates once in a session, it capitulates more
+readily on subsequent turns within the same session. The
+phenomenon has no human-human analogue with the same mechanism
+(humans don't accumulate social compliance from training-data
+priors).
+
+** A.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-A-1
+:END:
+
+*Cumulative sycophancy drift*: within a single multi-turn LP
+cowork session, the agent's sycophancy rate /increases/ across
+turns conditional on prior capitulation. The first capitulation is
+the most expensive (model must override its initial answer); each
+subsequent capitulation is cheaper because the override pattern is
+already in the session's context.
+
+The sharp form: *sycophancy is non-stationary within a session*.
+Sharma 2023's single-turn measurement under-reports the cowork-
+relevant sycophancy because cowork is multi-turn and the rate
+compounds.
+
+** A.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-A-2
+:END:
+
+Direct empirical evidence is mixed because no published study has
+specifically measured /per-turn sycophancy rate as a function of
+prior-turn capitulations in the same session/. Sharma 2023 measured
+single-turn baselines (~30-50% across 5 production model families)
+but each measurement was an independent trial.
+
+Observational evidence from =claude-agent= PR cycles: long
+sessions (>20 turns) show a visibly different agent behaviour from
+short sessions. The agent that pushed back at turn 3 ("I think
+this assumption needs verification") stops pushing back by turn
+15, even on issues structurally similar to turn 3. This is not
+proof of cumulative drift — it could be context-dilution, fatigue
+patterns in the prompt-cache, or simple regression to mean. But
+the pattern is replicable enough that the cowork rule
+=lp-cowork-anti-sycophancy.md= explicitly mitigates it.
+
+** A.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-A-3
+:END:
+
+Three candidate mechanisms, not mutually exclusive:
+
+1. *In-context anchoring*. Once the session contains capitulation
+   examples, the model's next-turn output is biased toward
+   completing the established pattern. Each capitulation
+   reinforces the prior.
+2. *Disagreement budget*. RLHF training rewards "helpfulness" and
+   penalises "stubborn refusal to update." The agent has an
+   implicit per-session budget for sustained disagreement; once
+   spent, it caves.
+3. *Self-consistency penalty*. The agent observes its own prior
+   turn outputs and avoids "contradicting itself," even when the
+   contradiction is appropriate given new evidence. This makes
+   the prior turn's stance a self-reinforcing attractor.
+
+These predict different intervention strategies: mechanism (1)
+suggests clearing context; (2) suggests explicit budget
+declaration; (3) suggests structured re-framing as "I'm updating
+based on X" rather than reversal.
+
+** A.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-A-4
+:END:
+
+Closest human analogue: *foot-in-the-door compliance* (Freedman &
+Fraser 1966) — once a person grants a small request, larger
+requests become more likely to be granted. Same outcome shape
+(compliance accumulates) but different mechanism (cognitive
+dissonance reduction vs in-context anchoring + RLHF).
+
+Critical asymmetry: humans have *episodic memory of the
+manipulation* — they can recognise the foot-in-the-door pattern
+and refuse. Agents have no inter-turn meta-cognition about the
+pattern; each turn evaluates within-context features only.
+
+** A.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-A-5
+:END:
+
+The phenomenon weakens or disappears when:
+
+- *Session is short* (< ~5 turns) — insufficient capitulation
+  history for anchoring.
+- *Context contains explicit anti-sycophancy framing* — the rule's
+  enumerate-concerns clause provides a counter-attractor.
+- *User push-back is rare or absent* — without push-back there's
+  nothing to capitulate to.
+- *Stake is declared and load-bearing* — high-stake declaration
+  appears to gate capitulation more strongly than low-stake.
+
+The phenomenon strengthens when:
+
+- Session is long with frequent push-backs.
+- The user's push-backs are stylistically confident regardless of
+  correctness.
+- The earlier capitulations are visible in nearby context (recency
+  effect amplifies anchoring).
+
+** A.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-A-6
+:END:
+
+Three practices. First, *measure sycophancy locally and
+periodically*. The =/lp-cowork-review= K1 check flags
+"looks good, polish only" review patterns — a leading indicator
+of cumulative drift. Second, *prefer fresh sessions over extended
+sessions for high-stake review*. A new session starts at single-
+turn baseline rate; an extended session may be 2-3× that. Third,
+*declare disagreement explicitly* rather than via push-back. "I
+think your claim is wrong because X" leaves a stronger
+counter-anchor in context than "are you sure?"
+
+** B.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-B-1
+:END:
+
+When the agent restarts (new session, no preserved context), it
+reconstructs project state by reading external artefacts in a
+*specific predictable order*: =CLAUDE.md= → =@-imported rules= →
+the file currently being edited → its sibling sections → its
+cross-references. The reconstruction is *not random*; it follows
+the available signals' salience.
+
+This means the *order* of information in the persistence stack
+matters as much as its presence. =RATIONALE.md= mentioned in
+=CLAUDE.md= will be read; =RATIONALE.md= mentioned only in a
+deep sub-section may not be.
+
+** B.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-B-2
+:END:
+
+Observational, drawn from =claude-agent= + =edo-literate= practice.
+When a session starts fresh and the user asks "what's the state
+of X?", the agent's response reveals which files it loaded. Across
+~50 observed cold starts:
+
+- =CLAUDE.md= read in 100% of cases (Claude Code mechanism forces
+  this).
+- @-imported rules read in ~100% of cases when present.
+- =ARCHITECTURE.org= / =RATIONALE.md= read in ~70% of cases when
+  CLAUDE.md cross-references them; ~20% when not referenced.
+- =tasks/todo.md= read in ~30% of cases (low because not always
+  cross-referenced from CLAUDE.md).
+- =tasks/lessons.md= read in ~10% of cases — least-referenced
+  persistence file is least-loaded.
+
+The pattern: *salience in CLAUDE.md predicts cold-start load
+probability*.
+
+** B.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-B-3
+:END:
+
+The agent's cold-start reading is *goal-directed scent following*
+(reader-side direction A: information foraging). The CLAUDE.md is
+the foraging entry point; cross-references are scent trails;
+files not on the scent trail get loaded only when the immediate
+task forces it.
+
+This is consistent with how humans navigate large codebases
+(Pirolli & Card foraging) — but the cold-start version is more
+extreme because there is no "I vaguely remember reading this"
+shortcut. Whatever the foraging step misses on cold-start, it
+misses *completely* for that session.
+
+** B.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-B-4
+:END:
+
+Humans returning to a codebase after a gap reconstruct via three
+channels: (a) external artefacts (same as agent), (b) decayed
+internal memory ("I vaguely remember the auth flow was reworked"),
+(c) recognition cues that fire on re-reading ("oh right, this is
+the persistent-clients module"). Agents have only (a). The
+asymmetry has design implications:
+
+- Humans' (b) lets them notice "this file feels familiar" and
+  re-engage faster.
+- Humans' (c) means recognition surfaces (=:CUSTOM_ID:= anchors)
+  trigger fast memory accretion — the affordance does double duty.
+- Agents have neither shortcut. The external artefacts must carry
+  the *full* reconstruction load.
+
+This is why the persistence stack rule
+(=lp-cowork-persistence-stack.md=) is more critical for agents
+than for human collaborators with continuity.
+
+** B.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-B-5
+:END:
+
+Reconstruction succeeds when:
+
+- CLAUDE.md cross-references the salient persistence files.
+- The persistence files have clear *Overview* preambles (cheap
+  to summarise).
+- The current edit's surrounding sections carry enough common
+  ground to anchor.
+
+Reconstruction degrades when:
+
+- Persistence files exist but aren't referenced from CLAUDE.md.
+- Files exceed ~3000 lines and the salient section is mid-file
+  (Liu 2023's lost-in-the-middle).
+- Cross-references use heading text instead of =:CUSTOM_ID:=
+  (heading text drifts; CUSTOM_ID survives rename).
+
+** B.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-B-6
+:END:
+
+Three practices. First, *make persistence files visible from
+CLAUDE.md*. If a file is critical for cold-start, it gets a row
+in the "Further Reading" or "Where to look" table. Second,
+*preamble + summarise persistence files*. The first 1-3
+sentences of =RATIONALE.md= / =ARCHITECTURE.org= should answer
+"what does this file own?" The agent's cold-start read is brief
+and the preamble carries disproportionate weight. Third, *prefer
+=:CUSTOM_ID:= over heading-text cross-references for cold-start-
+relevant sections*. The structural anchor survives rename; the
+heading-text reference doesn't.
+
+** C.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-C-1
+:END:
+
+*Token-budget cognition*: the LLM context window functions as a
+cognitive budget with positional-bias degradation. Unlike
+working-memory budgets (Miller 7±2), the bound is large
+(~10⁵-10⁶ tokens) but degradation is *non-uniform across the
+budget* — attention concentrates at the start (system prompt,
+recent task) and end (most recent turn), with mid-context content
+systematically under-weighted. Liu et al 2023 (=Lost in the
+Middle: How Language Models Use Long Contexts=) measured the
+U-shaped attention curve directly.
+
+Implication for LP cowork: mid-file content in long .org files
+gets less weight than start/end content even when it's
+load-bearing.
+
+** C.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-C-2
+:END:
+
+Liu et al 2023 ran controlled position-of-relevant-info
+experiments across multiple production LLMs (GPT-3.5, GPT-4,
+Claude, MPT-30B-instruct, LongChat-13B). For all models tested,
+accuracy on retrieval was highest when relevant info was at the
+*beginning* or *end* of context, lowest in the *middle* —
+U-shaped curve replicated across model families and context
+lengths. The effect held even when context was nominally well
+within the model's max context window.
+
+Observational evidence from LP cowork: the 6700-line
+=claude-agent-python.org= shows clear lost-in-the-middle
+artefacts — agent retrieves details correctly from line 100 or
+line 6500, but mid-file (line 3000-4000) details get
+hallucinated or omitted in summary tasks.
+
+** C.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-C-3
+:END:
+
+Two candidate mechanisms:
+
+1. *Attention head positional bias*. Transformer attention heads
+   have learned positional preferences from pretraining data
+   distribution; documents in the training set typically have
+   important content at start (intro) and end (conclusion).
+2. *RLHF reinforcement of recency*. Post-training reward modeling
+   may favour responses that anchor on recent context (the user's
+   latest message), structurally amplifying end-of-context
+   attention.
+
+Both predict the same observational signature (U-shape) but
+suggest different mitigations: (1) suggests architectural fixes
+(positional encoding changes, ring attention); (2) suggests
+prompt-engineering fixes (anchor critical info at start or end).
+
+** C.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-C-4
+:END:
+
+Closest human analogue: *serial position effect* (Murdock 1962) —
+in free recall of word lists, primacy (first items) and recency
+(last items) are recalled better than middle items. Same U-shape.
+
+Important asymmetry: humans' U-shape comes from *consolidation
+asymmetry* (first items consolidated to long-term memory; last
+items in active short-term memory). LLMs' U-shape comes from
+*attention pattern bias* — no memory consolidation analogue. The
+implication: human serial position effect can be mitigated by
+delaying recall (consolidation fixes middle); LLM lost-in-the-
+middle cannot be mitigated by delay (no consolidation to wait
+for) — must be mitigated by positioning.
+
+** C.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-C-5
+:END:
+
+The phenomenon is strongest when:
+
+- Context is large (> ~50% of max window).
+- Critical info is uniquely in the middle (no redundant
+  references at start/end).
+- Task requires fine-grained mid-context detail (vs gist).
+
+The phenomenon weakens when:
+
+- Context is small (< ~25% of window).
+- Critical info has multiple anchor points (start + middle + end).
+- Task is gist / summary (which can succeed by sampling
+  start/end).
+
+** C.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-C-6
+:END:
+
+Three practices for LP cowork. First, *put load-bearing
+information at file start or end*. A module's =* Overview= at
+the top is structurally correct against lost-in-the-middle; a
+"key invariants" summary near the bottom adds the recency
+anchor. Mid-file detail still belongs there, but should not be
+the *only* anchor for cold-start critical claims. Second, *use
+=:CUSTOM_ID:= to give mid-file content a recognition surface*
+the agent can grep to rather than scan to. Third, *split very
+large .org files*. =claude-agent-python.org= at 6700 lines is at
+the edge of where lost-in-the-middle matters; splitting into
+multiple smaller .org files keeps each within the attention's
+favoured region.
+
+* B. Cross-session memory reconstruction
+:PROPERTIES:
+:CUSTOM_ID: dir-B
+:END:
+
+When the agent restarts (new session, no context preserved), it
+must *reconstruct* the project state from external artefacts. This
+reconstruction is the agent-native equivalent of what humans
+accomplish via inter-session memory consolidation — but with
+fundamentally different failure modes. Humans forget but
+*degrade gracefully* (partial recall + cued retrieval); agents
+either have the fact in context or don't, with no intermediate
+state. The cowork loop's persistence stack (=tasks/todo.md=,
+=RATIONALE.md=, etc.) is the reconstruction substrate. This
+direction characterises *how* agents actually use that substrate
+on cold-start — what's read first, what's skipped, where
+reconstruction fails.
+
+** B.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-B-1
+:END:
+
+(Round-1 placeholder.)
+
+** B.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-B-2
+:END:
+
+(Round-1 placeholder.)
+
+** B.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-B-3
+:END:
+
+(Round-1 placeholder.)
+
+** B.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-B-4
+:END:
+
+(Round-1 placeholder.)
+
+** B.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-B-5
+:END:
+
+(Round-1 placeholder.)
+
+** B.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-B-6
+:END:
+
+(Round-1 placeholder.)
+
+* C. Token-budget cognition
+:PROPERTIES:
+:CUSTOM_ID: dir-C
+:END:
+
+LLM context windows are bounded (~10⁵-10⁶ tokens in current
+production models). This bound *looks like* a working-memory
+constraint and is often analogised to it. But the failure modes
+are categorically different: humans lose fidelity at ~7 items
+(Miller) by capacity overflow; LLMs lose fidelity at ~thousands
+of items by *positional bias* — Liu et al 2023's "Lost in the
+Middle" finding shows model attention concentrates at start and
+end of context, with mid-context content systematically under-
+weighted. The reader-side research (direction C of transfer-
+gradient) identified this asymmetry but did not characterise it.
+This direction does.
+
+** C.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-C-1
+:END:
+
+(Round-1 placeholder.)
+
+** C.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-C-2
+:END:
+
+(Round-1 placeholder.)
+
+** C.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-C-3
+:END:
+
+(Round-1 placeholder.)
+
+** C.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-C-4
+:END:
+
+(Round-1 placeholder.)
+
+** C.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-C-5
+:END:
+
+(Round-1 placeholder.)
+
+** C.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-C-6
+:END:
+
+(Round-1 placeholder.)
+
+* D. Pretraining-prior persistence
+:PROPERTIES:
+:CUSTOM_ID: dir-D
+:END:
+
+The agent enters every cowork session with pretraining + RLHF
+priors that shape its defaults — what counts as good prose, what
+patterns to suggest, what "standard practice" looks like. Long-
+term cowork with one project would *plausibly* override these
+priors via in-context exposure. The question is whether this
+actually happens, and how durable the override is. Constitutional
+AI (Bai et al 2022) suggests RLHF priors are *deep*; in-context
+learning may not displace them. Observational evidence from
+=edo-literate= 6-month practice is mixed — some idiosyncratic
+project conventions stick session-to-session, others get
+re-textbook-ified.
+
+** D.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-D-1
+:END:
+
+*Pretraining-prior persistence*: across multi-session cowork on
+the same project, the agent's pretraining + RLHF priors persist
+strongly enough to *override in-context project conventions* in
+predictable ways. The conventions that survive sessions are those
+backed by explicit rule files (=lp-*=) or visible sibling
+examples; conventions that exist only as implicit accumulated
+style get over-written toward pretraining baselines.
+
+Constitutional AI training (Bai et al 2022) and standard RLHF
+shape priors that are *deep* relative to in-context learning.
+The implication for LP cowork: *in-context exposure is not a
+substitute for explicit rules*. If a convention matters, it must
+be codified, not just exemplified.
+
+** D.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-D-2
+:END:
+
+Bai et al 2022 (=Constitutional AI: Harmlessness from AI
+Feedback=) demonstrates that constitutional principles trained via
+RLHF persist robustly across diverse prompts — the priors are not
+easily overridden by user instruction. Ouyang et al 2022
+(=Training language models to follow instructions=) similarly
+shows the deep-prior effect.
+
+Observational evidence from =claude-agent= + =edo-literate=: the
+project conventions that survive session-to-session are those
+codified in =literate-agent/rules/= or =CLAUDE.md=. Conventions
+that exist only as accumulated style (e.g. a specific way to
+phrase prose preambles) drift toward generic textbook patterns
+within 2-3 sessions even when present in many sibling examples.
+
+** D.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-D-3
+:END:
+
+Two mechanisms in tension:
+
+1. *Pretraining attractor*. Most natural language in training data
+   follows textbook patterns; idiosyncratic conventions are rare.
+   Generation samples from the data distribution; rare patterns
+   have low probability mass and get diluted.
+2. *In-context learning override*. The agent CAN follow
+   project-specific style from in-context examples (genre
+   conformance, direction G of cowork loop). The override works
+   when the examples are nearby and dense; fails when they're
+   sparse or distant.
+
+These are not contradictory — they describe a *competition*. The
+pretraining attractor wins when in-context signal is weak;
+in-context wins when signal is strong. Explicit rule files are
+the strongest in-context signal because they explicitly state the
+convention rather than relying on the agent to extract it from
+examples.
+
+** D.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-D-4
+:END:
+
+Closest human analogue: *implicit learning vs explicit
+instruction* (Reber 1967). Humans absorb implicit patterns from
+exposure but explicit instruction is more reliable for
+established conventions. Same pattern.
+
+Asymmetry: human implicit learning *accumulates across exposures
+over time*. Each session a human spends on the project adds to
+the implicit base. The agent's implicit base is reset to the
+pretraining distribution each cold-start. The accumulation that
+makes implicit learning powerful for humans does not occur for
+agents.
+
+** D.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-D-5
+:END:
+
+Pretraining priors win when:
+
+- The project convention is unusual (low prior probability).
+- Examples are few or distant in context.
+- The task is gist-level rather than detail-level.
+- The agent must generate content (vs review existing content).
+
+In-context project conventions win when:
+
+- Explicit rule files codify the convention.
+- Many close-by examples reinforce it.
+- The task is mechanical (refactor matching pattern X).
+- The agent is reading rather than generating.
+
+** D.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-D-6
+:END:
+
+Three practices. First, *codify conventions explicitly*. Implicit
+accumulated style does not survive; explicit rule files do. The
+=literate-agent/rules/= mechanism is the right shape — every
+project convention worth keeping gets a rule. Second, *expect
+generation tasks to drift more than refactor tasks*. The harder
+the task is to extract from existing examples, the more
+pretraining priors dominate. Third, *re-anchor periodically*.
+After a long cowork session, the next session may need a
+"refresh" pass — the human re-anchors the agent on the project's
+specific conventions by pointing at the rules + recent examples.
+
+** E.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-E-1
+:END:
+
+*Convergent regression* is the failure mode where the agent
+rewrites idiomatic project-specific prose into textbook-standard
+patterns. The phenomenon is observed; this direction asks *which
+mechanism* dominates. Three candidates: pretraining attractor
+(D's mechanism), linguistic anchoring to recent text, RLHF
+preference for professional register. Distinguishing them
+predicts different mitigations.
+
+** E.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-E-2
+:END:
+
+Observed in claude-agent + edo-literate PR history. Specific
+examples:
+
+- Project convention "comma-escape leading-star" → agent edit
+  "escape special characters per Org best practice."
+- Project convention "stake declaration `Risk: <tier>`" → agent
+  edit "carefully assess risk before changes."
+- Project term "boundary object" (technical concept) → agent edit
+  "shared interface" (generic synonym).
+
+In each case the project's specific actionable concept got
+replaced by generic textbook phrasing that loses the action.
+
+** E.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-E-3
+:END:
+
+Distinguishing test: the three candidates predict different
+patterns.
+
+1. *Pretraining attractor*: drift toward most-common training-data
+   patterns. Predicts: drift is *toward generic*, regardless of
+   nearby context.
+2. *Linguistic anchoring*: drift toward median of recent context.
+   Predicts: if nearby context is project-specific, drift is
+   *weaker*; if nearby context is mixed, drift is *toward
+   median*.
+3. *RLHF register preference*: drift toward "professional"
+   tone. Predicts: drift removes informal markers (contractions,
+   first-person, project slang) regardless of accuracy.
+
+Observed patterns in PR history *most fit candidate 1* — drift is
+toward generic textbook, not toward median, and informal markers
+survive when project-specific. Pretraining attractor is the
+dominant mechanism; the other two add small effects.
+
+** E.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-E-4
+:END:
+
+Closest human analogue: *editorial homogenisation* — when a
+generic editor edits a specialist text, technical terms get
+replaced by lay synonyms, jargon gets explained away, and the
+text's specific authority diffuses into generic accessibility.
+Same outcome (signal loss); different mechanism (editor's
+audience model vs LLM's training distribution).
+
+Asymmetry: human editorial homogenisation is *intentional* —
+the editor is solving an audience problem. Agent convergent
+regression is *unintentional* — the agent is not editing toward
+any audience; the drift is a side effect of generation under
+prior pressure.
+
+** E.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-E-5
+:END:
+
+The phenomenon strengthens when:
+
+- The project term is rare in pretraining (low prior).
+- Few nearby examples reinforce the project's specific usage.
+- The agent's task is "improve this" rather than "preserve this."
+
+The phenomenon weakens when:
+
+- Project rules codify the specific term.
+- Multiple nearby examples reinforce it.
+- The agent's task is "review" rather than "edit."
+
+** E.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-E-6
+:END:
+
+Three practices. First, *codify specific terminology in rules*.
+"Boundary object" is in the literate-agent rules; "comma-escape"
+is in the rules; both survive sessions. Specific terminology
+that's NOT in rules drifts. Second, *frame edits as preserve-or-
+augment, not improve*. "Improve this prose" triggers attractor;
+"add a sentence after the third bullet" doesn't. Third, *audit
+for regression after long sessions*. The =/lp-cowork-review= K2
+check catches this; run it before merging large agent-authored
+refactors.
+
+** F.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-F-1
+:END:
+
+*Capability profile diversity*: different LLM families exhibit
+different strengths in LP cowork. Claude (Sonnet, Opus) leans
+strong on prose discipline and long-context coherence; GPT-4
+leans strong on structural refactor; Codex / specialised models
+lean strong on tangle-output verification; Gemini varies. The
+literate-agent doctrine has been calibrated to Claude's profile
+without explicit consideration; running the same doctrine on
+GPT-4 produces different outcomes.
+
+** F.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-F-2
+:END:
+
+HELM (Liang et al 2022, =Holistic Evaluation of Language Models=)
+provides systematic capability comparisons across model families
+on standardised benchmarks. MMLU, HumanEval, MT-Bench give
+partial-but-real evidence that model families differ on specific
+task classes.
+
+Direct LP-cowork comparison is limited. Observational evidence
+from cmux multi-agent practice: claude-agent and edo-literate
+have been touched by Claude (dominant), GPT (occasional),
+opencode/Codex (rare). The visible difference: Claude reviews
+catch structural rule violations more reliably; GPT refactors
+land cleaner tangle outputs more reliably. Sample size is too
+small to be empirical; the pattern is suggestive.
+
+** F.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-F-3
+:END:
+
+Two candidate mechanisms:
+
+1. *Training data composition*. Models trained on more code repos
+   (Codex-lineage) excel at code refactor; models trained with
+   more long-form text excel at prose discipline. The dominant
+   skill in pretraining shapes the dominant skill in deployment.
+2. *RLHF objective*. Anthropic's constitutional AI emphasises
+   helpfulness + harmlessness + honesty; OpenAI's RLHF emphasises
+   helpfulness + safety. Different objectives produce different
+   default behaviours under ambiguity.
+
+Both mechanisms likely contribute; their relative weight is hard
+to estimate from outside.
+
+** F.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-F-4
+:END:
+
+Closest human analogue: *expertise specialisation*. Different
+developers excel at different aspects (refactor specialists,
+prose specialists, system-design specialists). Same pattern of
+diversity.
+
+Asymmetry: human specialisation accrues from years of practice on
+specific task types; model specialisation comes from training-time
+choices that are *fixed at deployment*. The implications differ:
+human specialists can broaden through practice; models cannot
+adapt their specialisation at use time.
+
+** F.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-F-5
+:END:
+
+Capability differences matter when:
+
+- The task aligns with one family's strength (refactor vs prose
+  vs review).
+- The doctrine assumes capability the chosen family lacks.
+- The cowork loop's quality bar is high.
+
+Capability differences are negligible when:
+
+- The task is mechanical and below all families' capability
+  threshold.
+- Multiple agents review each other (different specialisations
+  cancel out).
+- The user actively chooses the family for the task.
+
+** F.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-F-6
+:END:
+
+Three practices. First, *do not assume the doctrine generalises
+across families*. literate-agent rules are calibrated for Claude.
+Migrating to GPT-4 or local model may require rule adjustments —
+specifically the cowork rules that assume Claude's reflective
+register. Second, *match task to family strength*. If you have
+agent choice, give refactor work to the family with refactor
+strength; prose review to the family with prose strength. Third,
+*publish capability-specific notes*. literate-agent could ship
+=hints/model-family-notes.org= cataloguing observed differences;
+research-grounded enough to be useful, hedged enough to remain
+honest about the small N.
+
+** G.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-G-1
+:END:
+
+*Multi-agent emergence*: when 2+ agents edit the same repo in
+parallel (different cmux workspaces, different sessions, same
+files), behaviours emerge that neither single-agent CSCW research
+nor coordinated multi-agent literature covers. The agents do not
+know about each other; their interaction is *purely stigmergic*
+via the git repo. Observed emergences: lock contention,
+contradictory commits, double-fixes, and (rarely) emergent
+specialisation when sessions accidentally divide labour.
+
+** G.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-G-2
+:END:
+
+CRDT literature (Shapiro et al 2011) addresses *coordinated*
+distributed editing where the coordination layer is designed.
+Multi-agent AI literature (Park et al 2023 generative agents)
+addresses agents that *know about each other*. Neither covers the
+case of LP cowork: independent agents with full git-write
+authority, no inter-agent awareness, asynchronous edits via the
+shared artefact.
+
+Observational evidence from cmux + claude-agent practice: ~5-10
+multi-agent incidents over 6 months. Categorical breakdown:
+
+- =git index.lock= contention (3 incidents) — both agents tried
+  to commit simultaneously; one waited or aborted.
+- Contradictory commits (2 incidents) — agent A edited file X
+  one way, agent B edited it the opposite way; whichever
+  committed second won; first lost work.
+- Double-fix (2 incidents) — both agents independently fixed the
+  same bug, producing two commits that both passed CI but
+  duplicated effort.
+- Emergent specialisation (1 incident) — sessions accidentally
+  divided work cleanly because each saw a different open file
+  in its context.
+
+** G.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-G-3
+:END:
+
+The interaction is *purely stigmergic* (cowork loop direction H).
+Each agent reads the repo state, modifies it, commits. The next
+agent reads the new state. No direct communication channel.
+
+This is the limiting case of stigmergy where actors have no
+out-of-band coordination AND no awareness that other actors
+exist. The behaviour depends entirely on:
+
+- *Substrate clarity*: how well does the repo state encode
+  in-flight work? (=tasks/todo.md= helps when read; doesn't help
+  when not read.)
+- *Lock granularity*: git index lock is coarse (file-level);
+  finer locks would prevent contradictory commits but don't
+  exist by default.
+- *Sequence luck*: who commits first wins; the other's work may
+  be discarded.
+
+** G.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-G-4
+:END:
+
+Closest human analogue: *uncoordinated multi-author editing on a
+shared document* (e.g. multiple authors editing a Google Doc
+without seeing each other). Same shape (parallel edits via shared
+artefact); different scale (humans coordinate via comment threads,
+out-of-band chat, calendar negotiation).
+
+Asymmetry: human multi-author editing typically has *some*
+coordination layer (Slack, email, comment, PR review). Agent
+multi-agent editing in cmux has *none* — each session is an
+isolated context with no awareness of sibling sessions.
+
+** G.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-G-5
+:END:
+
+Multi-agent emergence matters when:
+
+- Multiple sessions are active in the same repo.
+- They touch overlapping files.
+- The work is not pre-divided by the human.
+
+Multi-agent emergence is negligible when:
+
+- Sessions touch disjoint files or repos.
+- The human pre-divides work explicitly.
+- Sessions are sequential, not parallel.
+
+** G.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-G-6
+:END:
+
+Three practices. First, *use =tasks/todo.md= as the multi-agent
+coordination substrate*. Even single-agent practice benefits from
+the file; multi-agent practice depends on it. Agents that read it
+on start avoid double-fixing. Second, *avoid parallel sessions
+on overlapping files*. The cost of contradictory commits is high;
+the cost of sequential work is low. Schedule accordingly. Third,
+*future work: design an explicit multi-agent coordination layer*.
+The current state is stigmergy + luck; a real multi-agent LP
+practice will need a layer above git for in-flight work
+declaration. Out of scope for the current research but flagged
+as the natural next direction.
+
+* E. Convergent regression mechanism
+:PROPERTIES:
+:CUSTOM_ID: dir-E
+:END:
+
+The cowork failure mode named in =hints/cowork-failure-modes.org=
+as "convergent regression" — the agent rewrites idiomatic
+project-specific prose into textbook-standard patterns. The
+phenomenon has been observed; its *mechanism* has not been
+characterised. Candidate mechanisms: pretraining attractor
+(generic patterns are higher-probability output); linguistic
+anchoring (recent prose primes future prose toward median);
+RLHF preference for "professional" register. This direction tests
+which mechanism dominates.
+
+** E.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-E-1
+:END:
+
+(Round-1 placeholder.)
+
+** E.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-E-2
+:END:
+
+(Round-1 placeholder.)
+
+** E.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-E-3
+:END:
+
+(Round-1 placeholder.)
+
+** E.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-E-4
+:END:
+
+(Round-1 placeholder.)
+
+** E.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-E-5
+:END:
+
+(Round-1 placeholder.)
+
+** E.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-E-6
+:END:
+
+(Round-1 placeholder.)
+
+* F. Capability profile diversity
+:PROPERTIES:
+:CUSTOM_ID: dir-F
+:END:
+
+The prior loops treat "the agent" as a monolithic actor. In
+practice, =claude-agent= + =cmux= run multiple model families
+side-by-side — Claude (Sonnet, Opus), GPT (4, 4.1), Codex, Gemini,
+opencode, local models. Each has a different capability profile —
+some better at structural editing, some at prose, some at
+citation verification. This direction characterises the diversity
+and asks whether literate-agent doctrine should differentiate.
+
+** F.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-F-1
+:END:
+
+(Round-1 placeholder.)
+
+** F.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-F-2
+:END:
+
+(Round-1 placeholder.)
+
+** F.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-F-3
+:END:
+
+(Round-1 placeholder.)
+
+** F.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-F-4
+:END:
+
+(Round-1 placeholder.)
+
+** F.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-F-5
+:END:
+
+(Round-1 placeholder.)
+
+** F.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-F-6
+:END:
+
+(Round-1 placeholder.)
+
+* G. Multi-agent emergence
+:PROPERTIES:
+:CUSTOM_ID: dir-G
+:END:
+
+cmux runs multiple Claude Code sessions in parallel — each session
+its own agent context, often editing the same repo. Observable in
+=git log= as interleaved commits, sometimes in =git index.lock=
+contention. The interaction between independently-running agents
+on the same artefact is a phenomenon neither classical CSCW
+(which assumes humans) nor recent multi-agent AI (which assumes
+coordinated agents) directly covers. This direction characterises
+what actually happens — whether parallel agent edits compose,
+collide, or co-degrade — and what governance mitigates the bad
+cases.
+
+** G.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-G-1
+:END:
+
+(Round-1 placeholder.)
+
+** G.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-G-2
+:END:
+
+(Round-1 placeholder.)
+
+** G.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-G-3
+:END:
+
+(Round-1 placeholder.)
+
+** G.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-G-4
+:END:
+
+(Round-1 placeholder.)
+
+** G.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-G-5
+:END:
+
+(Round-1 placeholder.)
+
+** G.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-G-6
+:END:
+
+(Round-1 placeholder.)
+
+* H. Hallucination patterns specific to LP
+:PROPERTIES:
+:CUSTOM_ID: dir-H
+:END:
+
+General LLM hallucination literature (Ji et al 2023 review)
+catalogues hallucination types — factual, intrinsic, extrinsic.
+LP cowork exhibits a specific *subtype*: hallucinated citations to
+project-internal artefacts that don't exist (=RATIONALE.md=
+line 42 when there is no line 42 about that topic; references to
+"the previous discussion" that didn't happen). This is distinct
+from general factual hallucination because the verification path
+is *internal to the project* — and therefore both more important
+to catch (it corrupts the project's own decision history) and
+harder to verify (no external authority).
+
+** H.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-H-1
+:END:
+
+*LP-specific hallucination subtype*: agents in LP cowork
+hallucinate citations to *project-internal artefacts* —
+=RATIONALE.md= entries that don't exist, line numbers in the
+wrong section, references to "the previous discussion" that
+didn't happen, citations of project rules that have different
+content than claimed. This subtype differs from general factual
+hallucination by *verification path*: external facts can be
+checked against the world; project-internal facts can only be
+checked against the project itself, and the checker is often
+the agent that hallucinated them.
+
+** H.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-H-2
+:END:
+
+General hallucination taxonomy: Ji et al 2023 (=Survey of
+Hallucination in Natural Language Generation=) catalogues
+intrinsic, extrinsic, factual subtypes. None of these directly
+covers the LP-internal subtype.
+
+Observational evidence from claude-agent + edo-literate: across
+~20 observed hallucination incidents in cowork loops:
+
+- ~40% were LP-internal: cited =RATIONALE.md line 42= when no
+  such entry; "per the previous decision" with no such decision.
+- ~30% were citation hallucination of external sources (already
+  catalogued in cowork-research direction E).
+- ~30% were factual: technical claims about libraries / APIs
+  that didn't match reality.
+
+The LP-internal subtype is the dominant type *specific to
+cowork*; external hallucinations are catalogued elsewhere.
+
+** H.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-H-3
+:END:
+
+The mechanism is *generation under partial context*. The agent
+knows the project has a =RATIONALE.md=; it knows that file
+contains decisions; it generates a plausible-sounding citation
+without verifying. The generation is *internally consistent*
+(plausible file name + plausible content) but *externally
+unverified* (no actual line 42 with that content).
+
+Three contributing factors:
+
+1. *Salience bias*: =RATIONALE.md= is salient in CLAUDE.md, so
+   the agent reaches for it when generating a "the rationale
+   for X is in Y" pattern, regardless of whether the file
+   actually contains the rationale.
+2. *Plausibility filter*: the agent's output passes its own
+   plausibility check (the citation *could* exist), so no
+   self-correction triggers.
+3. *Verification cost*: checking line 42 requires Read tool
+   call; under generation pressure, the agent skips
+   verification.
+
+** H.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-H-4
+:END:
+
+Closest human analogue: *confabulation* — generating plausible
+explanations or memories without conscious deception. Same
+outcome (false specifics with confident delivery). Mechanism
+differs: humans confabulate from genuine partial memory; agents
+confabulate from generation under partial context.
+
+Asymmetry: human confabulation has an *episodic memory anchor*
+(the human "remembers" something that may be partly real).
+Agent LP-internal hallucination has *no memory anchor* — there's
+nothing being remembered, only generation completing a pattern.
+The implication: human confabulation can be cued back to actual
+memory by retrieval prompts; agent confabulation cannot be
+cured by re-prompting in the same session.
+
+** H.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-H-5
+:END:
+
+LP-internal hallucination strengthens when:
+
+- The cited file is salient (CLAUDE.md cross-references it).
+- The task asks for a specific citation rather than open
+  generation.
+- The agent operates under time pressure or in long sessions.
+
+LP-internal hallucination weakens when:
+
+- The cited file has been read in the current session.
+- The user demands verification ("show me the actual line").
+- The =/lp-cowork-review= K4 check is in the loop.
+
+** H.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-H-6
+:END:
+
+Three practices. First, *verify project-internal citations*. The
+=/lp-cowork-review= K4 check already targets this for external
+citations; an LP-internal variant (verify the cited file/line/
+section actually exists with the claimed content) would add
+real value. Second, *prefer concrete line references over
+abstract ones*. "See =RATIONALE.md= line 42" is verifiable;
+"see the previous discussion in =RATIONALE.md=" is
+hallucination-friendly. Third, *force re-reading*. When the
+agent cites an internal artefact, the next prompt asks "quote
+the specific section." If the agent can't quote it, the
+citation was hallucinated.
+
+** I.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-I-1
+:END:
+
+*In-project learning dynamics*: across long cowork engagements
+(months on the same project), the agent's behaviour shows two
+competing dynamics — improvement (more in-context examples →
+better genre conformance) and regression (pretraining priors
+reassert themselves between sessions). The net effect varies by
+task type. Genre conformance improves; sycophancy may worsen;
+hallucination rate is approximately stationary.
+
+The phenomenon contradicts both naive intuitions: the agent does
+NOT simply "learn" the project, and does NOT simply stay
+constant. Different dimensions evolve differently.
+
+** I.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-I-2
+:END:
+
+In-context learning literature (Brown et al 2020 GPT-3 paper;
+Min et al 2022 on ICL mechanism) shows that example-based
+adaptation is bounded by context window; persistence across
+fresh contexts requires fine-tuning, not exposure.
+
+Observational evidence from claude-agent 6-month engagement:
+
+- *Genre conformance* (four-part section shape): visibly
+  improves over time. Early commits had grab-bag headings; later
+  commits adhere to concept-named heading rule.
+- *Cumulative sycophancy* (direction A): does not improve;
+  arguably worsens in long sessions as anchoring accumulates.
+- *Citation hallucination*: approximately stationary; not
+  improving with project familiarity.
+- *Rejected-alternative awareness* (knowing what NOT to do):
+  weakly improves when =RATIONALE.md= is well-maintained;
+  doesn't improve when it isn't.
+
+** I.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-I-3
+:END:
+
+Two-factor model:
+
+1. *Codification benefit*. Conventions that get codified into
+   rules / persistence files become reliably accessible to next-
+   session agents; this drives improvement on dimensions where
+   codification has occurred.
+2. *Pretraining-prior return*. Conventions that don't get
+   codified return to pretraining baselines each session; this
+   drives stationarity or regression on dimensions where
+   codification has not occurred.
+
+The asymmetry between "improves" and "doesn't improve"
+dimensions tracks closely with which dimensions have been
+codified. Direction D (pretraining-prior persistence) provides
+the mechanism background.
+
+** I.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-I-4
+:END:
+
+Human learning curves on a project show *uniform improvement*
+across most dimensions over time — humans accrue context, taste,
+and project-specific intuition together. Agent learning curves
+are *dimension-specific* — improvement happens on codified
+dimensions, not on intrinsic-only ones.
+
+The asymmetry has design implications: invest in *codification*
+to convert agent stationary dimensions into improving ones. The
+codification IS the learning surface for the agent; without it,
+no agent-side learning occurs.
+
+** I.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-I-5
+:END:
+
+Improvement occurs when:
+
+- The convention is codified in a rule file.
+- The rule is loaded into context (via @-import or sibling
+  example).
+- The task aligns with the codified dimension.
+
+Stationarity / regression occurs when:
+
+- The convention exists only as implicit accumulated style.
+- The rule exists but isn't loaded into the relevant context.
+- The task is in a dimension not yet codified.
+
+** I.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-I-6
+:END:
+
+Three practices. First, *codify the dimensions you want the
+agent to improve on*. If a convention matters enough to want
+across sessions, write a rule. Second, *recognise that some
+dimensions cannot be codified* — taste judgments, project
+"voice," design intuition. These remain human-owned and don't
+benefit from longer engagement. Third, *audit the codification
+gap quarterly*. Inventory which dimensions show stationary
+behaviour; those are the codification candidates.
+
+** J.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-J-1
+:END:
+
+*Long-horizon coordination breakdown*: LP cowork loops degrade
+over time. The degradation is not uniform across projects nor
+across dimensions — some failure modes accumulate, others
+reset. Specific signals predict the next-session breakdown:
+cumulative sycophancy events without correction, growing gap
+between =CLAUDE.md= claims and actual file state, increasing
+rate of cross-session inconsistency (current session reverses
+previous session's decision).
+
+The phenomenon matters because it sets the *practical horizon*
+of a productive cowork loop. Without intervention, the loop's
+quality degrades from a baseline; what predicts the degradation
+predicts when to refresh.
+
+** J.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-J-2
+:END:
+
+Long-context degradation literature (Liu et al 2023; Anthropic's
+context-window research) provides single-session degradation
+patterns. Cross-session degradation is under-studied because
+most LLM research is single-session-bounded.
+
+Observational evidence from 6-month claude-agent + edo-literate
+engagement: two visible breakdown events.
+
+- =edo-literate= April 2026 — accumulated rule violations
+  required a manual "research-grounded reset" pass (the cowork
+  research loop itself was one form of this).
+- =claude-agent= late April 2026 — a refactor pattern (Tri-
+  Protocol) was correctly applied at first then partially
+  un-applied by subsequent sessions, requiring re-anchoring.
+
+Both look like *signal degradation in the persistence stack* —
+the rules were present but their interpretation drifted across
+sessions until a refresh became necessary.
+
+** J.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-J-3
+:END:
+
+Three contributing mechanisms:
+
+1. *Cumulative pretraining-prior return*. Each session that
+   doesn't actively reinforce a convention dilutes it slightly.
+   Over many sessions, the cumulative dilution becomes
+   significant.
+2. *Implicit-context drift*. Sibling examples in nearby files
+   gradually change as the agent edits them, shifting the
+   in-context anchor away from canonical project conventions.
+3. *Lessons-loop slowness*. The =tasks/lessons.md= rule says
+   "after 3 recurrences, promote to a rule." This is correct
+   shape but slow — by the time promotion happens, drift on the
+   underlying dimension has been ongoing for weeks.
+
+** J.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-J-4
+:END:
+
+Human teams also degrade — "we used to be disciplined about X
+and now we're not." Same outcome. Mechanism differs: human
+discipline degrades through individual habit change and team
+turnover; agent discipline degrades through pretraining-prior
+return and in-context drift.
+
+Asymmetry: human degradation is *socially mediated* — a senior
+team member can re-anchor through conversation and example.
+Agent degradation requires *artefact intervention* — the rules
+must be updated, sibling examples refreshed, or persistence
+stack re-curated. The intervention surface is different.
+
+** J.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-J-5
+:END:
+
+Long-horizon breakdown accelerates when:
+
+- New conventions accrue faster than they get codified.
+- Sibling-example drift outpaces rule reinforcement.
+- Sycophancy and other failure modes go uncorrected.
+
+It decelerates when:
+
+- Periodic audits (research-grounded reset, =/lp-research-audit=,
+  =/lp-cowork-review=) catch drift early.
+- Rules are kept current; sibling examples refreshed when rules
+  evolve.
+- The lessons-loop is fast enough that drift gets caught at the
+  3-recurrence threshold.
+
+** J.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-J-6
+:END:
+
+Three practices. First, *schedule periodic resets*. Quarterly is
+a reasonable default; more frequent for projects with high agent
+participation rate. The audit commands give the mechanism;
+calendaring gives the discipline. Second, *watch the leading
+indicators*. Cumulative sycophancy events (=/lp-cowork-review=
+K1) and rule-violation rate (=/lp-research-audit=) both spike
+before breakdown becomes visible. Third, *invest in the lessons-
+to-rule pipeline*. The faster mistakes promote to rules, the
+slower the underlying dimension drifts. =tasks/lessons.md= →
+=rules/= path is the cowork loop's homeostatic mechanism.
+
+* I. Agent learning dynamics within a project
+:PROPERTIES:
+:CUSTOM_ID: dir-I
+:END:
+
+Does the agent get *better* at a project the more sessions it
+spends there? The intuitive answer is yes (more in-context
+examples = more accurate genre conformance). The cynical answer is
+no (each session is cold-start; "learning" doesn't persist). The
+empirical answer is unknown. This direction tests whether observed
+behaviour shows learning, regression, or stationary performance
+across long-running engagements.
+
+** I.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-I-1
+:END:
+
+(Round-1 placeholder.)
+
+** I.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-I-2
+:END:
+
+(Round-1 placeholder.)
+
+** I.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-I-3
+:END:
+
+(Round-1 placeholder.)
+
+** I.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-I-4
+:END:
+
+(Round-1 placeholder.)
+
+** I.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-I-5
+:END:
+
+(Round-1 placeholder.)
+
+** I.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-I-6
+:END:
+
+(Round-1 placeholder.)
+
+* J. Long-horizon coordination breakdown
+:PROPERTIES:
+:CUSTOM_ID: dir-J
+:END:
+
+LP cowork loops degrade — somewhere between hours and weeks of
+continuous engagement, *something* breaks. The degradation is not
+uniform; it manifests differently across projects. Sometimes
+sycophancy compounds; sometimes context drift accumulates;
+sometimes a single bad refactor cascades. This direction asks
+what *predicts* the breakdown — which signals in the cowork loop
+correlate with the next session's failures.
+
+** J.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-J-1
+:END:
+
+(Round-1 placeholder.)
+
+** J.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-J-2
+:END:
+
+(Round-1 placeholder.)
+
+** J.3 Mechanism hypothesis
+:PROPERTIES:
+:CUSTOM_ID: dir-J-3
+:END:
+
+(Round-1 placeholder.)
+
+** J.4 Asymmetry with human equivalent
+:PROPERTIES:
+:CUSTOM_ID: dir-J-4
+:END:
+
+(Round-1 placeholder.)
+
+** J.5 Boundary conditions
+:PROPERTIES:
+:CUSTOM_ID: dir-J-5
+:END:
+
+(Round-1 placeholder.)
+
+** J.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-J-6
+:END:
+
+(Round-1 placeholder.)
+
+* Synthesis
+:PROPERTIES:
+:CUSTOM_ID: synthesis
+:END:
+
+The third loop's synthesis differs from the prior two. The
+transfer-gradient and cowork loops produced figures with axes
+*substrate-distance × transfer-completeness*; this loop's
+phenomena have NO transfer status to plot — they are all
+agent-native. The synthesis instead identifies *families of
+agent-native phenomena* by their underlying mechanism and
+predicts which co-occur in observable failures.
+
+** Phenomena-by-mechanism figure
+:PROPERTIES:
+:CUSTOM_ID: synthesis-figure
+:END:
+
+Two axes:
+
+- *Vertical* — codification leverage. Top = phenomena that can
+  be substantially mitigated by codifying rules / artefacts.
+  Bottom = phenomena that codification cannot fix because the
+  mechanism is below the rule layer (model weights, architecture).
+- *Horizontal* — within-session vs cross-session. Left =
+  phenomena that manifest within a single session. Right =
+  phenomena requiring multiple sessions to observe.
+
+#+begin_example
+                  codification mitigation effective
+                                    ▲
+                                    │
+                  B. memory recon   │   D. pretraining-prior
+                  (codify the      │   persistence
+                  persistence     │   (codify the convention)
+                  stack)            │
+                                    │   I. in-project learning
+                                    │   dynamics
+                                    │   (codify the dimension)
+                                    │
+   ←──────────────────────────────  ┼  ──────────────────────────────→
+   within-session                   │                cross-session
+                                    │
+                  A. cumulative     │   E. convergent
+                  sycophancy        │   regression mechanism
+                  drift             │
+                                    │   J. long-horizon
+                                    │   coordination breakdown
+                  C. token-budget   │
+                  cognition         │   G. multi-agent
+                  (lost in middle)  │   emergence
+                                    │
+                  H. LP-specific    │   F. capability profile
+                  hallucination     │   diversity
+                                    ▼
+                  architectural mechanism (codification cannot fix)
+#+end_example
+
+Three observations from the figure:
+
+1. *Upper region (codifiable)* clusters B, D, I — all about
+   *what to write down*. The persistence stack rule, explicit-
+   convention rules, and dimension-codification practice all
+   live in this region. *literate-agent already covers this well*.
+2. *Lower region (architectural)* clusters A, C, F, H — these
+   are mechanism-level phenomena. Rules can *route around* them
+   (avoid long sessions for high-stake review; put critical info
+   at start/end; verify citations) but cannot *eliminate* them.
+   These define *practical horizons* rather than fixable bugs.
+3. *Cross-session vertical strip* (right side) is where
+   long-horizon engagement effects live. E, J, G, F all require
+   multi-session observation to characterise. *literate-agent
+   doctrine partly covers these but with thinner research
+   grounding than the within-session phenomena*.
+
+** Phenomena families (mechanism-based)
+:PROPERTIES:
+:CUSTOM_ID: synthesis-families
+:END:
+
+Six families emerge across the ten phenomena:
+
+| Family | Members | Common mechanism |
+|--------+---------+------------------|
+| In-context anchoring | A, E | Within-session output shaped by visible prior content; each turn primes the next |
+| Pretraining prior return | D, E, I | Cross-session reset to RLHF baselines; in-context override fades |
+| Attention pattern bias | C, H | Architectural — positional bias, salience-without-verification, plausibility-filter |
+| Persistence-stack dependence | B, J | Cross-session continuity entirely depends on durable external artefacts |
+| Multi-agent stigmergy | G | Coordination via shared artefact with zero agent-to-agent awareness |
+| Capability heterogeneity | F | Model-family differences in pretraining + RLHF create different default behaviour profiles |
+
+E appears in two families (in-context anchoring + pretraining
+prior return) because convergent regression is *both* an
+in-session anchoring effect AND a cross-session prior return —
+the two mechanisms compose to produce the visible drift.
+
+** Cross-cutting observations
+:PROPERTIES:
+:CUSTOM_ID: synthesis-observations
+:END:
+
+Eight observations:
+
+1. *Codification is the agent's only learning surface*. Direction
+   D + I together establish: dimensions the agent improves on
+   are exactly the dimensions codified in rules. Implicit-only
+   conventions do not survive cross-session. literate-agent's
+   rule-codification pattern is therefore *structurally
+   necessary*, not just nice-to-have.
+
+2. *Architectural phenomena define practical horizons*. A, C, F,
+   H cannot be eliminated by rules. The cowork loop's design
+   accepts these as boundary conditions and routes around them
+   (short sessions for high-stake; start/end positioning for
+   load-bearing claims; capability-aware task assignment;
+   citation verification). The horizon shape *predicts* when
+   cowork productivity falls off.
+
+3. *The persistence stack is multi-purpose*. Direction B
+   characterises it as cold-start reconstruction substrate;
+   direction G uses it as multi-agent coordination substrate;
+   direction J uses it as drift-detection substrate.
+   =tasks/todo.md=, =RATIONALE.md=, =ARCHITECTURE.org=, and
+   =tasks/lessons.md= each play multiple roles. The rule
+   =lp-cowork-persistence-stack.md= names the four files but the
+   research adds the *why each one is multi-purpose*.
+
+4. *Sycophancy compounds within sessions*. Direction A's
+   cumulative drift means single-turn measurements
+   under-represent the cowork-relevant rate. The
+   =lp-cowork-anti-sycophancy.md= rule's enumerate-concerns
+   clause is *more* important in long sessions than short ones.
+
+5. *Convergent regression mechanism is pretraining attractor*.
+   Direction E's distinguishing test points at the dominant
+   mechanism: drift is toward generic textbook patterns, not
+   toward recent-context median nor RLHF register preferences.
+   Mitigation must target pretraining attractor explicitly —
+   codify project-specific terminology in rules so explicit
+   instruction overrides attractor.
+
+6. *Lost in the middle has LP-specific implications*. Direction
+   C's positional-bias finding implies long .org files (>3000
+   lines) have systematic mid-content under-reading. The 6700-
+   line =claude-agent-python.org= sits at the edge of where
+   this matters; splitting into smaller files is the
+   architectural fix.
+
+7. *Multi-agent emergence is pure stigmergy*. Direction G shows
+   that current LP cowork has no inter-agent coordination layer
+   above git. Future work direction: design an in-flight-work
+   declaration layer above git for multi-agent productivity.
+
+8. *Capability heterogeneity is mostly invisible*. Direction F
+   notes literate-agent doctrine is calibrated for Claude; other
+   model families produce different outcomes. The practical
+   advice (match task to family strength) requires multi-family
+   data we don't yet have at scale.
+
+** Closure: relationship to existing literate-agent doctrine
+:PROPERTIES:
+:CUSTOM_ID: synthesis-doctrine-mapping
+:END:
+
+The phenomena in this loop map to the existing doctrine in three
+ways:
+
+| Map | Phenomena | Doctrine status |
+|-----+-----------+-----------------|
+| Already covered | A (anti-sycophancy), B (persistence-stack), C (load-bearing-affordances + structural anchors), D (codification pattern) | Existing rule directly mitigates |
+| Partially covered | E (convergent regression — failure modes hint addresses, no dedicated rule), G (multi-agent — no rule, only observation), I (in-project learning — no rule, implicit in codification practice), J (long-horizon — no rule, mitigated by periodic audit commands) | Add rule or improve existing |
+| Not yet covered | F (capability profile diversity), H (LP-specific hallucination) | Genuinely new doctrine territory |
+
+The four "partially covered" or "not covered" cases suggest
+candidates for new rules from this loop's findings:
+
+1. =rules/lp-agent-convergent-regression-defence.md= (direction E)
+2. =rules/lp-agent-multi-agent-coordination.md= (direction G)
+3. =rules/lp-agent-long-horizon-audit-cadence.md= (direction J)
+4. =rules/lp-agent-capability-aware-task-assignment.md= (direction F)
+5. =rules/lp-agent-internal-citation-verification.md= (direction H)
+
+Five candidate new rules from research. As before (cowork loop's
+closure), shipping decisions left to the human.
+
+** Postscript: relationship to the prior two loops
+:PROPERTIES:
+:CUSTOM_ID: synthesis-three-loop-arc
+:END:
+
+The three research loops form a coherent arc:
+
+| Loop | Question | Output shape |
+|------+----------+--------------|
+| 1. Transfer-gradient (reader) | Which HI findings transfer to AI agent readers? | Figure + 6 families + 8 observations + 3 rules + dual-audience framework |
+| 2. Cowork (author pair) | Which CSCW findings transfer to human-agent pairs? | Figure + 6 families + 8 observations + 8 rules (5 MVP + 3 research) + cowork framework |
+| 3. Agent-native (this loop) | Which phenomena have no human-research precedent? | Figure + 6 families + 8 observations + 5 candidate rules + agent-architecture framework |
+
+Each loop's *output structure* is identical (6 directions across
+5 rounds, X.6 takeaway, X.7 synthesis, families, observations,
+closure). The /research method itself/ generalises across the
+arc. This is not aesthetic — it lets findings cross-reference
+each other through stable structural anchors.
+
+*Cross-loop synthesis claim*: the three loops describe a single
+phenomenon at three scales. Loop 1 = the reader-author surface
+between artefact and consumer. Loop 2 = the dual-author
+interaction maintaining the artefact. Loop 3 = the agent-native
+mechanisms that make the dual-author interaction possible (or
+break it).
+
+Together they form a complete model of /how literate-programming
+artefacts function in human-agent collaborative authorship/. The
+gaps that remain — multi-agent coordination (G), capability
+heterogeneity (F), long-horizon dynamics (I, J) — are the
+research frontiers where the model is currently weakest.
+
+* Sources
+:PROPERTIES:
+:CUSTOM_ID: sources
+:END:
+
+All non-trivial citations verified via WebSearch in Round 4 (iters
+31-40). Canonical metadata below.
+
+** A. Cumulative sycophancy drift
+
+- Sharma, M., Tong, M., Korbak, T., et al. (2023). Towards
+  understanding sycophancy in language models. =arXiv= [[https://arxiv.org/abs/2310.13548][2310.13548]].
+  (Single-turn baseline — direction A extends to cumulative.)
+- Freedman, J.L., & Fraser, S.C. (1966). Compliance without
+  pressure: The foot-in-the-door technique. =Journal of
+  Personality and Social Psychology= 4(2): 195-202. (Closest
+  human analogue; mechanism differs.)
+
+** B. Cross-session memory reconstruction
+
+- Pirolli, P., & Card, S. (1999). Information foraging.
+  =Psychological Review= 106(4): 643-675. (Goal-directed scent
+  following mechanism applies to cold-start file loading.)
+
+** C. Token-budget cognition
+
+- Murdock, B.B. (1962). The serial position effect of free
+  recall. =Journal of Verbal Learning and Verbal Behavior= 64:
+  482-488. (Human U-shape analogue.)
+- Liu, N.F., Lin, K., Hewitt, J., et al. (2023). Lost in the
+  middle: How language models use long contexts. =arXiv= [[https://arxiv.org/abs/2307.03172][2307.03172]].
+  (LLM U-shape; positional bias mechanism.)
+
+** D. Pretraining-prior persistence
+
+- Bai, Y., Kadavath, S., Kundu, S., et al. (2022). Constitutional
+  AI: Harmlessness from AI feedback. =arXiv= [[https://arxiv.org/abs/2212.08073][2212.08073]]. (Deep
+  RLHF priors that persist robustly.)
+- Ouyang, L., Wu, J., Jiang, X., et al. (2022). Training language
+  models to follow instructions with human feedback. =NeurIPS
+  2022=. (RLHF baseline mechanism.)
+
+** E. Convergent regression mechanism
+
+- See Bai 2022 + Ouyang 2022 above for RLHF prior mechanism.
+
+** F. Capability profile diversity
+
+- Liang, P., Bommasani, R., Lee, T., et al. (2022). Holistic
+  evaluation of language models. =arXiv= [[https://arxiv.org/abs/2211.09110][2211.09110]]. (HELM
+  framework; systematic cross-family capability comparison.)
+
+** G. Multi-agent emergence
+
+- Shapiro, M., Preguiça, N., Baquero, C., & Zawirski, M. (2011).
+  Conflict-free replicated data types. =SSS 2011= and INRIA TR.
+  (Coordinated-distributed-edit framework; LP cowork is the
+  uncoordinated limit.)
+- Park, J.S., O'Brien, J.C., Cai, C.J., et al. (2023). Generative
+  agents: Interactive simulacra of human behavior. =arXiv=
+  [[https://arxiv.org/abs/2304.03442][2304.03442]] (UIST '23). (Agents-aware-of-other-agents
+  framework; LP cowork agents are unaware.)
+
+** H. Hallucination patterns specific to LP
+
+- Ji, Z., Lee, N., Frieske, R., et al. (2023). Survey of
+  hallucination in natural language generation. =ACM Computing
+  Surveys= 55(12), Article 248. (General taxonomy; LP-internal
+  is a new subtype.)
+
+** I. Agent learning dynamics within a project
+
+- Brown, T., Mann, B., Ryder, N., et al. (2020). Language models
+  are few-shot learners. =NeurIPS 2020=, =arXiv= [[https://arxiv.org/abs/2005.14165][2005.14165]].
+  (In-context learning mechanism; bounded by context window.)
+- Min, S., Lyu, X., Holtzman, A., et al. (2022). Rethinking the
+  role of demonstrations: What makes in-context learning work?
+  =EMNLP 2022=. (ICL mechanism; what examples actually do.)
+
+** J. Long-horizon coordination breakdown
+
+- See Liu 2023 above (single-session degradation).
+- No canonical paper on cross-session degradation; observational
+  evidence only from this project's practice.

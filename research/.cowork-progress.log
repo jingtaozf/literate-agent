@@ -1,0 +1,50 @@
+iter#1 | dir A | round 1 | 2026-05-21T10:48:38 | skeleton: preface + reading map + A heading + 5 placeholder sub-sections
+iter#2 | dir B | round 1 | 2026-05-21T10:49:02 | skeleton: B common-ground section + 5 placeholders
+iter#3 | dir C | round 1 | 2026-05-21T10:49:24 | skeleton: C trust-calibration section + 5 placeholders
+iter#4 | dir D | round 1 | 2026-05-21T10:50:44 | skeleton: D code-review-dynamics section + 5 placeholders
+iter#5 | dir E | round 1 | 2026-05-21T10:50:44 | skeleton: E sycophancy section + 5 placeholders
+iter#6 | dir F | round 1 | 2026-05-21T10:50:44 | skeleton: F pair-programming section + 5 placeholders
+iter#7 | dir G | round 1 | 2026-05-21T10:50:44 | skeleton: G genre-conventions section + 5 placeholders
+iter#8 | dir H | round 1 | 2026-05-21T10:50:44 | skeleton: H stigmergy section + 5 placeholders
+iter#9 | dir I | round 1 | 2026-05-21T10:50:44 | skeleton: I cognitive-offloading section + 5 placeholders
+iter#10 | dir J | round 1 | 2026-05-21T10:50:44 | skeleton: J boundary-objects section + 5 placeholders
+iter#11 | dir A | round 2 | 2026-05-21T10:51:59 | deepen: A articulation work — Suchman 1987 + Strauss 1985 + Schmidt & Bannon 1992; asymmetric initiation; persistence stack as materialised articulation surface
+iter#12 | dir B | round 2 | 2026-05-21T10:53:27 | deepen: B common ground — Clark 1996, Clark & Brennan 1991; grounding cost framework; repair break = anti-sycophancy mitigation
+iter#13 | dir C | round 2 | 2026-05-21T10:53:27 | deepen: C trust calibration — Lee & See 2004, Hoff & Bashir 2015; cockpit assumption breaks for LLMs; task-type calibration
+iter#14 | dir D | round 2 | 2026-05-21T10:55:19 | deepen: D code-review — Bacchelli & Bird 2013 expectation-outcome gap; Czerwonka 2015 large-scale; agent excels at knowledge transfer + style
+iter#15 | dir E | round 2 | 2026-05-21T10:55:19 | deepen: E sycophancy — Sharma 2023 four probes across 5 model families; LLM-native; no human-human transfer of mitigation strategies
+iter#16 | dir F | round 2 | 2026-05-21T10:55:19 | deepen: F pair programming — Williams 2001 driver/navigator; stake-rotated not time-rotated; asymmetric capability
+iter#17 | dir G | round 2 | 2026-05-21T10:57:23 | deepen: G genre conventions — Bazerman 1988; LP genre as coordination tool; example-driven agent genre learning
+iter#18 | dir H | round 2 | 2026-05-21T10:57:23 | deepen: H stigmergy — Grassé 1959, Theraulaz & Bonabeau 1999, Heylighen 2016; agent is paradigmatic stigmergic actor; LP file as substrate
+iter#19 | dir I | round 2 | 2026-05-21T10:57:23 | deepen: I cognitive offloading — Risko & Gilbert 2016; persistence stack as offload; taste is non-offloadable
+iter#20 | dir J | round 2 | 2026-05-21T10:57:23 | deepen: J boundary objects — Star & Griesemer 1989, Star 2010; LP file as within-project boundary object; literate-agent as cross-project boundary object
+iter#21 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: cowork-gradient figure with 2 axes; 3 quadrant clusters identified
+iter#22 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: upper-left full-transfer cluster — A H J (coordination-substrate)
+iter#23 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: lower-right transfer-breaks zone — C E F
+iter#24 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: partial-transfer diagonal — G I, partial-boundary B D
+iter#25 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: 6 shared-primitive families catalogued + triple-cluster A B H
+iter#26 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: observation 1: initiation asymmetry
+iter#27 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: observation 2: persistence stack as cowork substrate
+iter#28 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: observation 3+4: LLM-native modes do not transfer; role is stake-conditional
+iter#29 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: observation 5+6: genre as bilateral tool; LP as paradigmatic boundary object
+iter#30 | dir synth | round 3 | 2026-05-21T10:58:36 | synth: observation 7+8: provenance display > confidence; review is knowledge transfer
+iter#31 | dir verify | round 4 | 2026-05-21T11:01:43 | verify A Schmidt & Bannon 1992 — confirmed DOI 10.1007/BF00752449
+iter#32 | dir verify | round 4 | 2026-05-21T11:01:43 | verify B Clark & Brennan 1991 — confirmed APA pp 127-149
+iter#33 | dir verify | round 4 | 2026-05-21T11:01:43 | verify C Lee & See 2004 — confirmed Human Factors 46(1) 50-80
+iter#34 | dir verify | round 4 | 2026-05-21T11:01:43 | verify D Bacchelli & Bird 2013 — confirmed ICSE 712-721
+iter#35 | dir verify | round 4 | 2026-05-21T11:01:43 | verify E Sharma 2023 — confirmed arXiv 2310.13548
+iter#36 | dir verify | round 4 | 2026-05-21T11:01:43 | verify F Williams et al — corrected 2001→2000 IEEE Software 17(4)
+iter#37 | dir verify | round 4 | 2026-05-21T11:01:43 | verify G Bazerman 1988 — confirmed UWisc Press Madison
+iter#38 | dir verify | round 4 | 2026-05-21T11:01:43 | verify H Theraulaz & Bonabeau 1999 — confirmed Artificial Life 5(2) 97-116
+iter#39 | dir verify | round 4 | 2026-05-21T11:01:43 | verify I Risko & Gilbert 2016 — confirmed TiCS 20(9) 676-688
+iter#40 | dir verify | round 4 | 2026-05-21T11:01:43 | verify J Star & Griesemer 1989 — confirmed SSS 19(3) 387-420; populate Sources section
+iter#41 | dir polish | round 5 | 2026-05-21T11:02:36 | add closure: MVP-rule research-grounding mapping table
+iter#42 | dir polish | round 5 | 2026-05-21T11:02:36 | closure: pattern 1 — knowledge-transfer-first review framing (direction D)
+iter#43 | dir polish | round 5 | 2026-05-21T11:02:36 | closure: pattern 2 — genre as bilateral coordination tool (direction G)
+iter#44 | dir polish | round 5 | 2026-05-21T11:02:36 | closure: pattern 3 — boundary-object design discipline (direction J)
+iter#45 | dir polish | round 5 | 2026-05-21T11:02:36 | polish A — articulation work prose tightened
+iter#46 | dir polish | round 5 | 2026-05-21T11:02:36 | polish B — common ground prose tightened
+iter#47 | dir polish | round 5 | 2026-05-21T11:02:36 | polish C/E — LLM-specific failure framing sharpened
+iter#48 | dir polish | round 5 | 2026-05-21T11:02:36 | polish D/F — review and pair-prog asymmetric capability framing
+iter#49 | dir polish | round 5 | 2026-05-21T11:02:36 | polish G/H/I/J — coordination-substrate cluster cross-references added
+iter#50 | dir polish | round 5 | 2026-05-21T11:02:36 | final pass: synthesis cross-cutting observations linked back to families; closure complete

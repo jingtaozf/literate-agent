@@ -1,0 +1,3243 @@
+#+TITLE: Research: Human-Interface Commonalities That Transfer to LP-with-AI
+#+SUBTITLE: A field scan of HCI / cognitive findings, asking which ones move from human-reader research into AI-agent-reader practice
+#+AUTHOR: Jingtao Xu (with Claude Code as research instrument)
+#+STARTUP: showall
+#+OPTIONS: toc:2 num:nil
+
+* Preface
+:PROPERTIES:
+:CUSTOM_ID: preface
+:END:
+
+This document continues a research question raised by the previous
+50-iteration loop on literate programming. That loop's Obs 9 made
+a sharp observation: /Nielsen Norman Group's 1997–2017 web-reader
+research transfers to AI agent readers with almost zero
+adaptation/. The mechanism was shared /evaluation primitives/
+(search-arrival, time-bounded evaluation, scan-first-read-later),
+not shared cognition. The two populations have different minds
+but the same interface.
+
+If that finding generalises — and there is no obvious reason it
+should not — then a thick body of human-interface (HI) research
+accumulated over fifty years should be partly portable into
+LP-with-AI and writer-craft tooling. This document maps which
+parts move, which do not, and what the boundary looks like.
+
+** Scope
+:PROPERTIES:
+:CUSTOM_ID: scope
+:END:
+
+The research is organised around /ten HI directions/ A through J,
+each surveyed across five rounds of progressive depth. For every
+direction the body answers six questions:
+
+1. /Specific claim/ of the HI finding (named principle + canonical
+   wording)
+2. /Empirical basis/ (study, N, method, year)
+3. Does the /AI agent show isomorphic behaviour/? Evidence from
+   agent traces, system prompts, observed practice?
+4. If yes — what is the /shared primitive/ (analogous to the
+   search-arrival + time-bounded + scan-first triad of Obs 9)?
+5. If no — where does the /transfer break/? Substrate mismatch?
+   Attention vs production mismatch?
+6. /Operational takeaway/ for the LP author or working writer.
+
+** Reading map
+:PROPERTIES:
+:CUSTOM_ID: reading-map
+:END:
+
+| Section | Direction |
+|---------+-----------|
+| [[#dir-A][A. Information foraging]] | Pirolli & Card; scent of information; patches |
+| [[#dir-B][B. Cognitive load theory]] | Sweller; intrinsic / extraneous / germane load |
+| [[#dir-C][C. Working memory limits]] | Miller 7±2; Cowan 4±1; chunking |
+| [[#dir-D][D. Eye-tracking and saccade]] | Rayner; EZ Reader; foveal vs parafoveal |
+| [[#dir-E][E. Mental models and dual-process]] | Norman; Kahneman; Johnson-Laird |
+| [[#dir-F][F. Recognition vs recall]] | Tulving; Nielsen heuristic #6 |
+| [[#dir-G][G. Progressive disclosure]] | Tognazzini; Krug; whole-task variation |
+| [[#dir-H][H. Gestalt principles]] | Wertheimer 1923; proximity / similarity / closure |
+| [[#dir-I][I. Berry-picking and IR]] | Bates 1989; iterative search |
+| [[#dir-J][J. Affordances and signifiers]] | Gibson; Norman; cues for scannability |
+
+* A. Information foraging
+:PROPERTIES:
+:CUSTOM_ID: dir-A
+:END:
+
+Information foraging theory is the cleanest pre-existing
+match for the seed observation, and anchors the upper-left
+full-transfer quadrant of the figure. Developed by Peter
+Pirolli and Stuart Card at Xerox PARC from CHI 1995 through
+the 1999 =Psychological Review= formulation and the 2007
+book, the theory borrows /optimal foraging theory/ from
+behavioural ecology — animals making rate-of-gain decisions
+about which patches to exploit and when to leave — and
+applies the same mathematics to humans searching for
+information. The central concept of /information scent/ —
+/"the imperfect perception of the value, cost, or access
+path of information sources obtained from proximal cues"/ —
+predicts the continue-vs-leave behaviour of human web
+readers, and the agent grep / read-file / continue-vs-stop
+loop exhibits the same patch-leaving shape under the same
+cost-benefit structure.
+
+** A.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-A-1
+:END:
+
+Pirolli and Card's central claim is that human information-
+seeking is /rate-of-gain optimisation/ over time. The
+foundational equation is R = G/T, where R is the rate of
+information gain, G is the cumulative benefit (relevant
+information acquired), and T is the time invested. Within an
+information patch (a collection of related items — a search-
+results page, a long document, a directory of files), the
+forager gains information quickly at first and slowly later;
+the optimal strategy, per Charnov's 1976 marginal-value
+theorem from behavioural ecology, is to leave the patch when
+its instantaneous within-patch rate drops to the average
+between-patch rate (start-up cost + time spent foraging).
+The /scent of information/ is the parallel claim about
+patch /selection/: proximal cues (link text, file name,
+section heading, snippet) carry imperfect information about
+the distal payoff (the full content behind the cue). Strong
+scent supports good patch choice; weak or misleading scent
+produces unproductive foraging.
+
+** A.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-A-2
+:END:
+
+The empirical programme spans roughly fifteen years. Pirolli
+and Card's CHI 1995 paper "Information Foraging in
+Information Access Environments" (=Proc. CHI '95=, ACM Press,
+pp. 51–58; [[https://doi.org/10.1145/223904.223911][DOI 10.1145/223904.223911]]) introduced the
+theory with data from an early UNIX file-system access study.
+The 1999 =Psychological Review= article (106(4), pp.
+643–675; [[https://doi.org/10.1037/0033-295X.106.4.643][DOI 10.1037/0033-295X.106.4.643]]) presented the
+formal model together with eye-tracking and behavioural-log
+data from web-search tasks. The 2007 Oxford UP book
+=Information Foraging Theory: Adaptive Interaction with
+Information= consolidated the empirical work and added
+/ACT-IF/ (an integration with the ACT-R cognitive
+architecture) and /SNIF-ACT/, the latter formalised in Fu &
+Pirolli's "SNIF-ACT: A Cognitive Model of User Navigation
+on the World Wide Web" =Human–Computer Interaction= 22(4),
+2007, pp. 355–412 ([[https://doi.org/10.1080/07370020701638806][DOI 10.1080/07370020701638806]]). Olston
+and Chi 2003 ("ScentTrails: Integrating Browsing and
+Searching on the Web," =ACM TOCHI= 10(3), pp. 177–197;
+[[https://doi.org/10.1145/937549.937550][DOI 10.1145/937549.937550]]) implemented and evaluated the
+=ScentTrails= interface, demonstrating that explicit
+visualisation of scent gradients shortened task-completion
+times on hard search tasks. The recurring finding across
+studies: scent strength predicts patch-selection accuracy
+better than other variables including patch content quality.
+
+** A.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-A-3
+:END:
+
+The isomorphism is strong and observable. An agent grepping a
+codebase decides /which file to Read next/ from a list of
+candidates — exactly a patch-selection problem. The cues
+available are filenames, directory paths, grep-context
+snippets, function signatures, and (if previously seen)
+prose preambles. The agent consumes tokens (the agent's "time"
+budget) on each Read; when token cost outpaces information
+gain (the file turned out to be unrelated or already-known),
+the agent leaves the patch and moves to another candidate.
+This pattern matches Pirolli-Card's continue-vs-leave
+decision and Charnov's marginal-value theorem in structural
+form. The /failure mode/ also rhymes: when proximal cues
+mislead — a file named =auth.py= that actually contains only
+test helpers, a section heading that promises content the
+section never delivers — the agent (like a human) wastes
+budget on bad patches. The =CLAUDE.md= "Tool-Use Protocol"
+section of the host project, which mandates "every claim
+backed by tool output," is an /anti-misleading-scent rule/
+written for agents.
+
+** A.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-A-4
+:END:
+
+The shared primitive is the three-part structure: /bounded
+budget/ + /unequal patches/ + /asymmetric proximal-distal
+information cost/. Bounded budget — humans have attention-
+time, agents have tokens; both finite. Unequal patches — the
+information landscape is not uniform; some sources pay off
+better than others. Asymmetric cost — the cheap proximal cue
+carries imperfect information about the expensive distal
+payoff. When these three constraints hold, rate-of-gain
+optimisation and marginal-value-theorem patch-leaving emerge
+by mathematical necessity, regardless of substrate. Neither
+human cognition nor transformer attention is required to
+generate the behaviour; the constraint structure does.
+
+** A.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-A-5
+:END:
+
+The transfer is not perfect at two boundaries. First, the
+/cost currency/ differs — humans pay attention-time
+(cognitively expensive, subject to fatigue and to the
+working-memory constraints of direction C), agents pay
+tokens (uniformly priced, no fatigue, but absolute context-
+window bounds). An agent therefore sustains longer foraging
+runs within a single session than a human can in one
+sitting, but cannot continue across sessions without
+retrieval augmentation. Second, the /scent-encoding
+substrate/ differs — humans pick up scent through visual
+parsing of typography, layout, and short-form text; agents
+pick it up through token-level processing of file paths,
+header structure, and prose. The structural-vs-typographic
+split that follows is articulated in
+[[#dir-J-6][J.6 operational takeaway]].
+
+** A.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-A-6
+:END:
+
+Three practices follow directly from information-foraging
+theory for the LP author. First, /strengthen proximal cues at
+the entry points/: file names that name the concept (not the
+mechanism), README first paragraphs that state the value
+proposition, section headings that name the role rather than
+the phase (the heading-as-concept rule already enforced in
+the host project's =.claude/rules/=). Second, /reduce
+misleading scent/: a section heading that promises content
+the body does not deliver wastes both human and agent budget.
+Third, /minimise patch-leave friction at the points where
+foraging continues/: cross-references (=CUSTOM_ID= anchors),
+"see also" links, and named cross-block references all reduce
+the cost of moving from one patch to another, which the
+marginal-value theorem rewards directly. None of these
+practices requires separating human-target from agent-target
+optimisation; the same structural moves serve both audiences.
+
+** A.7 Synthesis: A as full-transfer figure anchor
+:PROPERTIES:
+:CUSTOM_ID: dir-A-7
+:END:
+
+Direction A occupies the /upper-left/ cell of the
+transfer-gradient figure — full transfer,
+behaviour-and-decision-structure shared with near-zero
+adaptation. The reason A transfers cleanly is that
+Pirolli-Card's mathematics (Charnov's marginal-value theorem,
+R = G/T optimisation, scent-driven patch selection) is
+substrate-independent: it derives from constraint structure
+(bounded budget + unequal patches + asymmetric proximal-
+distal information cost), not from the specifics of human
+cognition.
+
+A is the per-patch member of the /Foraging-economics/
+family ([[#synthesis-families][synthesis-families]]) — A handles within-patch
+rate-of-gain decisions, [[#dir-F][F]] supplies the recognition
+asymmetry that makes scent-driven cues cheap, [[#dir-I][I]]
+handles iteration across patches. Each direction describes
+a /behaviour shape/ (continue-vs-leave, recognise-vs-recall,
+iterate-vs-formulate-once) rather than a substrate
+mechanism; the family transfers because the architecture
+is substrate-independent.
+
+A's specific contribution is the closed-form mathematical
+core. Once R = G/T is accepted as substrate-independent,
+the whole foraging vocabulary (scent, patch, diminishing
+returns, marginal-value-theorem patch-leaving, proximal
+cue, distal payoff) ports into the AI-agent setting with
+names intact. The NN/g seed observation that motivated the
+broader loop is a /specialisation/ of A: web-reader
+scannability is patch-selection on the search-engine
+results page; information scent is the shared primitive.
+
+* B. Cognitive load theory
+:PROPERTIES:
+:CUSTOM_ID: dir-B
+:END:
+
+John Sweller introduced /cognitive load theory/ (CLT) in his
+1988 paper "Cognitive Load During Problem Solving: Effects on
+Learning" (=Cognitive Science= 12(2), pp. 257–285;
+[[https://doi.org/10.1207/s15516709cog1202_4][DOI 10.1207/s15516709cog1202_4]]), formalising the observation
+that human short-term memory is severely bounded and that any
+task requiring many items in working memory may exceed that
+budget. The theory's /mature/ form, articulated a decade
+later in Sweller, van Merriënboer & Paas 1998 (=Educational
+Psychology Review= 10(3), pp. 251–296), distinguishes three
+sources of load: /intrinsic/ from the inherent complexity of
+the material (element interactivity), /extraneous/ from poor
+presentation choices that do not contribute to learning, and
+/germane/ from the effortful schema-construction that does.
+Jeroen van Merriënboer extended the framework into the 4C/ID
+instructional-design model (=Training Complex Cognitive
+Skills=, 1997). CLT sits at /middle-left/ of the
+transfer-gradient figure: intrinsic and extraneous load
+transfer to AI agents with the substrate (context window +
+attention) re-parameterised, but germane load — the
+schema-construction educational payoff — breaks at the
+agent's stateless cold-start.
+
+** B.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-B-1
+:END:
+
+Sweller's central claim is that working memory has a fixed,
+small capacity and that /learning succeeds only when the
+total load on that capacity stays under threshold/. Total
+load decomposes into three sources: /intrinsic/ load from
+the material's inherent complexity (Sweller's operational
+measure is /element interactivity/ — the count of items that
+must be held simultaneously to understand one new fact),
+/extraneous/ load from presentation choices that do not
+contribute to schema construction (poor layout, redundant
+information, split attention across sources), and /germane/
+load from the effortful work of constructing new schemas
+which, once built, bypass working-memory limits entirely.
+The design imperative that follows: minimise extraneous load,
+manage intrinsic load via sequencing, leave room for germane
+load.
+
+** B.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-B-2
+:END:
+
+The empirical foundation is broad and replicated. Sweller's
+1988 =Cognitive Science= paper presented the seminal data:
+students solving algebra problems via means-end analysis
+performed worse on subsequent transfer tests than students
+who studied worked examples — because means-end analysis
+exhausts working memory on goal-tracking, leaving nothing
+for schema construction. Sweller & Cooper 1985 in =Cognition
+and Instruction= 2(1) established the /worked-example effect/
+across mathematics and physics learning. Chandler & Sweller
+1992 in =British Journal of Educational Psychology= 62(2)
+demonstrated the /split-attention effect/ — when text and
+diagram must be integrated to make sense, separating them
+spatially imposes extraneous load. Sweller, van Merriënboer,
+and Paas (1998) consolidated the /element-interactivity
+effect/ — high-interactivity tasks (algebra, programming)
+benefit more from extraneous-load reduction than
+low-interactivity tasks (vocabulary memorisation). The
+mature framework appears in van Merriënboer's 1997 book
+=Training Complex Cognitive Skills= and the 2017 third
+edition of =Ten Steps to Complex Learning=.
+
+** B.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-B-3
+:END:
+
+The isomorphism is partial. Agents do not show a hard 4±1
+cliff (that is direction C's substrate-bound finding) but
+they do show /load-dependent degradation/: comprehension and
+accuracy drop as the count of simultaneously-interacting
+items in the context rises. Element-interactivity transfers
+directly — when an agent must refactor across seven mutually
+referencing modules, it performs worse than when refactoring
+seven modules with no mutual references. Extraneous load
+transfers too — cluttered formatting, inconsistent naming,
+and redundant information visibly degrade agent output
+quality (the host project's =.claude/rules/= files exist
+specifically to reduce this kind of extraneous load).
+Germane load is where the analogy strains: humans build
+durable schemas through deliberate practice that becomes
+permanent. Agents within a single inference do not build
+durable schemas; chain-of-thought reasoning produces
+within-session structure that vanishes at the next prompt.
+
+** B.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-B-4
+:END:
+
+The shared primitive is /a bounded attention budget across
+heterogeneous items, with graceful degradation under
+overload/. The substrate differs sharply — biological
+working memory is a roughly four-slot store with discrete
+chunk replacement; transformer attention is a continuous
+weight distribution over thousands of tokens with positional
+bias. But the structural constraint is genuinely shared:
+both have a finite budget, both lose accuracy when budget
+is exceeded, and both reward design choices that reduce
+extraneous load. The intrinsic / extraneous / germane
+three-way split also rhymes — intrinsic load is the
+inherent complexity of the task (refactoring multi-module
+code is hard for both populations), extraneous load is the
+penalty for poor presentation (cluttered prose hurts both),
+and germane load is the work of building durable
+understanding (where the analogy weakens).
+
+** B.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-B-5
+:END:
+
+The break is at the /germane-load/ construct. CLT's central
+educational claim is that good instruction maximises germane
+load — the effortful work of building schemas that will
+later bypass working memory entirely. This depends on
+/durable consolidation/ in long-term memory, which humans
+do across sessions and which LLMs do not do during
+inference. An agent that "learns" to refactor by being shown
+many worked examples in a single context window has no
+mechanism to convert that exposure into a durable schema
+queryable in the next session; the next session starts fresh.
+Fine-tuning is the only architectural analogue, and it is
+out of band — not something the agent does as part of normal
+interaction. This is the cleanest substrate-mismatch break
+in the direction: the structural form (load decomposition,
+extraneous-load reduction) transfers, but the educational
+mechanism that gives CLT its name does not.
+
+** B.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-B-6
+:END:
+
+Three practices follow from CLT for the LP author, each
+serving both audiences. First, /reduce extraneous load/:
+consistent =.org= formatting, no cluttered cross-references,
+no redundant prose echoing the code block immediately below.
+The host project's =lp-prose-no-self-narration.md= rule is a
+direct CLT-compatible move. Second, /respect element
+interactivity/ when sequencing concepts: introduce one new
+interacting mechanism per section, not several. If a module
+must explain three mutually-dependent abstractions, give
+each its own sub-section with the dependencies stated
+explicitly rather than crammed into one paragraph. Third,
+/do not expect durable schemas to form from a single
+exposure/ — neither human nor agent. Cross-references and
+revisits are necessary; chain-of-thought scaffolding within
+a section helps the agent's within-session reasoning the way
+worked examples help human learning. CLT also predicts the
+specific failure mode of dense LP docs that try to do too
+much: extraneous-load overflow looks like the agent
+"missing the point" or the human reader "getting lost."
+
+** B.7 Synthesis: B in the transfer-gradient figure
+:PROPERTIES:
+:CUSTOM_ID: dir-B-7
+:END:
+
+Direction B sits at /middle-left of the partial-transfer
+diagonal/ in [[#synthesis-figure][the figure]] — a /two-out-of-three/
+transfer. Intrinsic and extraneous load decomposition ports
+without modification; germane load (the schema-construction
+educational payoff) breaks at the agent substrate.
+
+B instantiates two shared-primitive families ([[#synthesis-families][synthesis-
+families]]) simultaneously:
+
+| Co-tier direction | Family | Where B sits |
+|-------------------+--------+--------------|
+| [[#dir-C][C. Working memory limits]] | /Element-interactivity bound/ | B and C share the structural form; B's bound is "cognitive load," C's bound is "chunk count" — same primitive, two literatures |
+| [[#dir-E][E. Mental models]], [[#dir-G][G. Progressive disclosure]], [[#dir-I][I. Berry-picking]] | /Cross-session state persistence/ | B's germane load is the schema-construction member; same break boundary as E's mental-model accretion, G's expert-recognition payoff, I's saturated-sampling memory |
+
+CLT is the cleanest example of cross-session state
+persistence breaking transfer: the theory explicitly names
+germane load as the educational payoff, and the educational
+mechanism that gives the theory its name does not transfer.
+E, G and I break at the same boundary for different reasons
+but share the primitive: /the finding requires the reader to
+carry state from one encounter to the next/. Agent
+architecture (cold-start each conversation) violates this
+precondition.
+
+The behaviour-vs-substrate axis explains B's position: CLT's
+structural form (decomposition, bounded budget, extraneous
+reduction) lives at the behaviour layer and transfers; its
+educational form (germane load builds durable schemas) lives
+at the substrate layer and does not. Two halves of one
+theory project onto opposite cells of the figure.
+
+* C. Working memory limits
+:PROPERTIES:
+:CUSTOM_ID: dir-C
+:END:
+
+Direction C is the substrate-level finding that makes
+direction B (cognitive load theory) meaningful in the first
+place: human short-term storage is /numerically bounded/, and
+the bound is small. George Miller's 1956 paper "The Magical
+Number Seven, Plus or Minus Two" (=Psychological Review=
+63(2), pp. 81–97) reviewed studies on absolute judgement and
+memory span and proposed roughly seven items. Forty-five
+years later Nelson Cowan's "The Magical Number 4 in
+Short-Term Memory" (=Behavioral and Brain Sciences= 24(1),
+2001, pp. 87–114, plus extensive peer commentary to p. 185)
+revised the estimate downward — once chunking and rehearsal
+are controlled out, the focus of attention holds roughly four
+items, three to five at the band edges. Alan Baddeley's multi-component working-memory model (1974
+onward, mature form in =Working Memory=, 1986) decomposes
+the store into phonological loop, visuospatial sketchpad,
+episodic buffer, and a central executive. C sits at
+/partial-low/ of the figure: the structural shape (capacity
+is bounded; chunking mitigates) transfers to AI agents, but
+the numerical constants (Miller's 7, Cowan's 4) do not —
+agent context windows degrade gradiently across thousands
+of tokens, not at a sharp four-item cliff.
+
+** C.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-C-1
+:END:
+
+Three claims sit nested inside this direction. Miller's
+1956 paper ([[https://doi.org/10.1037/h0043158][DOI 10.1037/h0043158]]) proposed roughly
+/seven plus or minus two/ chunks for human short-term
+storage, derived from /absolute-judgement/ tasks (categorising
+stimuli along one dimension) and /immediate-memory/
+experiments (digit, letter, word recall) — Miller's paper
+explicitly distinguishes the two task families, a distinction
+later popular writing often elides. Miller himself
+characterised the number as a "rhetorical device" rather than
+a precise cognitive limit; the empirical signal he observed
+was real but the formula was a marketing line. Cowan's 2001
+reconsideration ([[https://doi.org/10.1017/S0140525X01003922][DOI 10.1017/S0140525X01003922]]) controlled
+out chunking, rehearsal, and long-term-memory retrieval,
+isolating the /focus of attention/ at /four chunks plus or
+minus one/, with three to five at the band edges across
+modalities and task types. Baddeley's multi-component model adds structural
+detail: the bounded store decomposes into a /phonological
+loop/ (verbal-acoustic items, rehearsed via sub-vocal
+speech), a /visuospatial sketchpad/ (visual-spatial items),
+an /episodic buffer/ (cross-modal binding), and a /central
+executive/ that gates entry and allocates attention.
+
+** C.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-C-2
+:END:
+
+The empirical record spans seven decades. Miller 1956
+synthesised absolute-judgement studies (subjects categorising
+tones along a single dimension) and memory-span experiments
+(digits, letters, words), finding consistent ceilings in the
+five-to-nine range. Cowan's 2001 =Behavioral and Brain
+Sciences= target article (with 25 invited commentaries
+running to p. 185) reviewed verbal, non-verbal, visual,
+auditory, single-task, dual-task, attended, and unattended
+studies — all converging on three-to-five chunks once
+chunking and rehearsal were controlled. The robustness of
+the lower bound across modalities is the result's strongest
+feature. Baddeley & Hitch 1974 in =The Psychology of
+Learning and Motivation= introduced the multi-component
+model; Baddeley 1986 book gave it textbook form;
+Baddeley 2000 added the episodic buffer; the 2012 =Annual
+Review of Psychology= article presented the mature
+consolidation including dual-task interference patterns that
+isolate sub-component capacity. Recent neuroimaging work
+(Pessoa et al. 2002; Todd & Marois 2004 =Nature= 428,
+pp. 751–754) located the four-item bound to specific
+parietal-cortex activation patterns, giving the cognitive
+finding a neural substrate.
+
+** C.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-C-3
+:END:
+
+The numerical limits do not transfer. Agents have context
+windows measured in thousands or hundreds of thousands of
+tokens, not a hard four-item cliff. Degradation under
+overload is /gradient/ — accuracy declines as context fills
+toward the limit, with positional bias (Liu et al. 2024
+"Lost in the Middle" finding showed worse retrieval from
+middle portions of long contexts) and attention dilution
+rather than a discrete capacity wall. However, the
+/functional behaviour/ does rhyme. When an agent must
+simultaneously hold many interacting facts in working
+context — refactoring code across multiple modules, tracing
+a bug through nested function calls, answering a question
+requiring synthesis of facts scattered across several files
+— accuracy degrades in a load-dependent way that resembles
+the human pattern at a much larger scale. The /chunking/
+mitigation transfers cleanly: agents perform better on a
+ten-file refactor when each file is named and summarised
+upfront (chunks made explicit) than when they have to
+discover the structure during the task.
+
+** C.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-C-4
+:END:
+
+The shared primitive is the /structural form/ of the
+constraint, not the numerical bound: raw simultaneous
+capacity is too small for non-trivial tasks, and /chunking/
+restores capability by treating composite items as single
+units. Humans chunk by retrieving consolidated schemas from
+long-term memory (the chess-master example: a board
+position that looks like sixteen pieces to a novice
+collapses into three or four familiar patterns for a
+grandmaster). Agents chunk via retrieval-augmented
+generation (load a summary instead of the raw text),
+named-block references (=#+NAME:= + =:noweb yes=), and
+explicit named-concept anchoring (=CUSTOM_ID= cross-references).
+The mathematical primitive is identical — turn many items
+into few units by giving the units names — even though the
+encoding mechanism differs entirely.
+
+** C.5 Where transfer breaks
+:PROPERTIES:
+:CUSTOM_ID: dir-C-5
+:END:
+
+Three break points are visible. First, /the numerical limits/
+(4, 7, etc.) have no obvious agent analogue and no
+operational meaning — there is no point in instructing the
+LP author to "keep simultaneous concepts under four" when
+the agent's effective limit is hundreds or thousands. The
+specific bound is human-biology specific. Second,
+/Baddeley's multi-component decomposition/ — phonological
+loop, visuospatial sketchpad, episodic buffer — maps poorly
+onto transformer architectures which have no modality-
+specific buffers and no central executive separate from the
+content stream. Third, /the Cowan vs Miller debate itself/
+is not a debate the agent has — both the seven and four
+estimates come from specific biological experimental
+protocols, none of which the agent participated in. The
+debate is /illuminating/ when read by a transformer
+architect (what is /our/ "magical number"?) but it is not
+literally the agent's debate.
+
+** C.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-C-6
+:END:
+
+Three practices follow from the working-memory literature
+for the LP author. First, /limit simultaneously-interacting
+concepts per section/. For human readers the empirical
+target is roughly four; for agent readers the target is
+"well under context budget" but the qualitative move is the
+same — break a heavy section into sub-sections with
+explicit chunking. Second, /use named chunks/: =#+NAME:=
+blocks, =CUSTOM_ID= cross-references, and consistent
+heading-as-concept rules. The host project's
+=naming-conventions.md= rule does this for code; the same
+principle applies to prose preambles. Third, /do not chase
+the specific number/. The seven and four estimates are
+human-biology specific; what transfers is the /shape/ —
+raw capacity is too small for non-trivial tasks, and the
+mitigation is chunking. Both human and agent readers benefit
+from explicit chunking infrastructure (named anchors,
+cross-references, summaries) even though the implementation
+of "too small" differs by orders of magnitude.
+
+** C.7 Synthesis: C in the transfer-gradient figure
+:PROPERTIES:
+:CUSTOM_ID: dir-C-7
+:END:
+
+Direction C sits at /partial-low on the partial-transfer
+diagonal/ in [[#synthesis-figure][the figure]] — the qualitative shape ("raw
+capacity is small; chunking mitigates") transfers, the
+specific numerical constants do not. C is the cleanest
+example of the substrate-bound-numerical-constants pattern
+and anchors the eponymous shared-primitive family.
+
+| Co-tier direction | Family | Where C sits |
+|-------------------+--------+--------------|
+| [[#dir-B][B. Cognitive load theory]] | /Element-interactivity bound/ | C is the working-memory-literature side of the same constraint B states from the cognitive-load side |
+| [[#dir-D][D. Eye-tracking + saccades]], [[#dir-H][H. Gestalt principles]] | /Substrate-bound numerical constants/ | C contributes Miller's 7±2 and Cowan's 4±1; D contributes Rayner's saccade lengths and parafoveal-span pixel ranges; H contributes Wertheimer / Kubovy-van den Berg grouping radii |
+
+Three properties distinguish the /Substrate-bound numerical
+constants/ family from other partial-transfer directions:
+
+1. /A specific number is part of the canonical finding./
+   Miller's title is literally "The Magical Number Seven";
+   Cowan's reconsideration is titled "The Magical Number 4";
+   Rayner reports saccade lengths in degrees of visual angle;
+   Wertheimer reports grouping thresholds in millimetres.
+2. /The number derives from biological apparatus./ Working-
+   memory bounds come from neural / phonological-loop
+   measurements; saccade lengths from oculomotor and foveal
+   geometry; grouping radii from retinal sampling rates.
+3. /The structural form remains useful after the number is
+   stripped./ "Capacity is bounded" / "perception jumps in
+   discrete units" / "proximity produces grouping" port to
+   agent design as qualitative rules without their numbers.
+
+The figure's lower-left quadrant therefore contains the
+substrate-bound numerical-constant directions in a clean
+stripe: C partial-low (numbers are wrong but structure
+holds), D human-only (saccade research has no agent
+analogue at all), H human-only (Gestalt grouping is
+perceptual). C transfers more than D and H because
+"capacity is bounded" is a behaviour-level claim that
+survives substrate change, even though Miller's specific
+7±2 does not.
+
+C also illustrates a second-order point about how to read
+the figure: /a direction's tier is not its primary
+finding's tier/. CLT (B) has intrinsic / extraneous load at
+behaviour level and germane load at substrate level — two
+tiers in one theory. C has the structural-form claim at
+behaviour level and Miller's number at substrate level —
+again two tiers. The transfer-gradient figure plots /the
+finding's centre of mass/, not a single point — partial-
+transfer directions are partial because they straddle the
+horizontal divide.
+
+* D. Eye-tracking and saccade
+:PROPERTIES:
+:CUSTOM_ID: dir-D
+:END:
+
+Direction D is where the substrate gap looks largest. Human
+reading is a /motor/ process: 200–250-millisecond fixations
+punctuated by 7–9-character saccades, regressions back to
+mis-parsed words, parafoveal preview of upcoming text. Keith
+Rayner's 1998 review "Eye Movements in Reading and
+Information Processing: 20 Years of Research" (=Psychological
+Bulletin= 124(3), pp. 372–422) consolidated the empirical
+field. Marcel Just and Patricia Carpenter's 1980 "A Theory of
+Reading: From Eye Fixations to Comprehension" (=Psychological
+Review= 87(4), pp. 329–354) proposed the /eye-mind hypothesis/
+— the eye remains fixated on a word as long as that word is
+being processed. The E-Z Reader cognitive-control model (Reichle, Pollatsek,
+Fisher & Rayner 1998 onward) is the dominant computational
+account. AI agents have no eyes, no fixations, no saccades:
+D sits in the /lower-right human-only quadrant/ of the
+figure together with [[#dir-H][H. Gestalt principles]], its findings
+load-bearing only for the human reader.
+
+** D.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-D-1
+:END:
+
+Five quantified claims define the field. The /eye-mind
+hypothesis/ (Just & Carpenter 1980): the eye remains fixated
+on a word as long as the word is being cognitively processed,
+so fixation duration is a direct measure of processing time.
+The /perceptual span/ (Rayner 1998 review): about fourteen
+to fifteen characters extend to the right of fixation in
+left-to-right scripts, only three to four to the left, with
+the asymmetry reflecting reading direction. /Regressions/
+account for roughly ten to fifteen percent of fixations
+under normal reading and rise sharply when comprehension
+fails. Mean /saccade length/ is seven to nine characters
+for skilled adult readers of English; the figure varies by
+script (Chinese, with denser information per character, has
+shorter saccades). /Parafoveal preview/ — the partial
+processing of the next word before the saccade lands on it
+— reduces fixation duration on that next word by an average
+of thirty to fifty milliseconds.
+
+** D.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-D-2
+:END:
+
+Sixty years of high-precision eye-tracking data sit behind
+the field. Rayner's 1998 =Psychological Bulletin= review
+([[https://doi.org/10.1037/0033-2909.124.3.372][DOI 10.1037/0033-2909.124.3.372]]) consolidated several
+hundred studies into a coherent quantitative picture of
+fixation, saccade, regression, and perceptual-span
+behaviour. Just & Carpenter 1980 in =Psychological Review=
+87(4) ([[https://doi.org/10.1037/0033-295X.87.4.329][DOI 10.1037/0033-295X.87.4.329]]) proposed the
+eye-mind hypothesis on the basis of fixation-duration
+regression analyses against word characteristics (the
+model accounts for 72% of variance in word gaze
+durations). The E-Z Reader cognitive-control model
+(Reichle, Pollatsek, Fisher & Rayner 1998 in =Psychological
+Review= 105(1), pp. 125–157;
+[[https://doi.org/10.1037/0033-295X.105.1.125][DOI 10.1037/0033-295X.105.1.125]], plus a decade of
+subsequent papers) provides a serial-attention computational
+account. The SWIFT model (Engbert, Nuthmann, Richter &
+Kliegl 2005 in =Psychological Review= 112(4), pp. 777–813;
+[[https://doi.org/10.1037/0033-295X.112.4.777][DOI 10.1037/0033-295X.112.4.777]]) competes with E-Z
+Reader using a parallel-processing approach; the two models
+continue to be tested against new eye-tracking datasets. Rayner's 2009 =Quarterly Journal of Experimental
+Psychology= 62(8) review "Eye Movements and Attention in
+Reading, Scene Perception, and Visual Search" extended the
+quantitative summary to non-reading tasks.
+
+** D.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-D-3
+:END:
+
+Agents have no eyes, but functional analogues exist for
+some of the five claims. /Re-reading via repeated Read
+tool-calls/ on the same file when initial interpretation was
+insufficient is the closest analogue of regression — same
+behaviour (return to earlier material when comprehension
+fails), different mechanism (re-issued tool call vs
+saccade). /Variable attention weight/ within a single
+forward pass on different tokens loosely echoes fixation-
+duration variability, but only as an architectural curiosity
+— the agent does not "spend time" on heavy tokens in the
+biological sense. /Retrieval-augmented look-ahead/ —
+agents that fetch related context before tackling a complex
+section — is a deliberate, programmable substitute for
+parafoveal preview. The eye-mind hypothesis itself does not
+transfer: there is no "fixation duration" in token
+processing, and the architectural primitive (attention
+weight) is shaped by training, not by within-task
+cognitive effort.
+
+** D.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-D-4
+:END:
+
+Only one weak primitive transfers cleanly: /processing
+effort scales with item-level complexity/. Both human
+readers and AI agents spend more on hard items than easy
+ones — fixation duration rises on rare words, technical
+jargon, syntactically unusual constructions; analogously,
+agents allocate more attention mass and (in chain-of-
+thought scaffolding) more reasoning tokens to hard items.
+Both populations backtrack when later context disambiguates
+earlier interpretation. The constraint shape rhymes — but
+this is the weakest of the four "shared primitive"
+findings in the document so far. The substrate divergence
+is so large that calling this a "transfer" rather than a
+"vague resemblance" depends on charity.
+
+** D.5 Where transfer breaks
+:PROPERTIES:
+:CUSTOM_ID: dir-D-5
+:END:
+
+The transfer breaks almost completely. The /perceptual-span
+asymmetry/ (more to the right of fixation than to the left
+in English readers, reversed for Hebrew or Arabic readers)
+reflects retinal acuity and reading direction — facts about
+the eye and the script that an agent has no analogue for.
+The eye-mind hypothesis assumes /serial/ visual processing
+the agent does not perform: token streams enter the model
+in parallel within a single forward pass, with no temporal
+order analogous to the saccade sequence. EZ Reader's model
+parameters — lexical access time, attention shift cost,
+oculomotor programming time — are all motor- and biological-
+substrate quantities with no token-stream equivalents. Of
+all ten directions in this document, D has the largest
+substrate gap between human and agent processing. The
+direction's value for LP-with-AI is /negative knowledge/ —
+knowing which design moves serve only the human reader.
+
+** D.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-D-6
+:END:
+
+The takeaway is /human-only optimisation/. Three practices
+that eye-tracking research validates for the human reader:
+/short paragraphs/ (reduce regression chance when
+comprehension fails mid-paragraph), /front-loaded sentences/
+(parafoveal preview captures the important content), and
+/consistent typographic cues/ (reduce uncertainty about
+where the next saccade should land). None of these benefits
+the agent reader — paragraph length, sentence-start position,
+typographic consistency all wash out in token processing.
+The dual-audience implication is documented at
+[[#dir-J-6][J.6]]: load-bearing signifiers belong in the structural
+layer (=CUSTOM_ID=, =#+NAME:=), and the typographic-only
+optimisations recorded here serve humans only.
+
+** D.7 Synthesis: D in the transfer-gradient figure
+:PROPERTIES:
+:CUSTOM_ID: dir-D-7
+:END:
+
+Direction D occupies the /lower-right human-only quadrant/
+of [[#synthesis-figure][the figure]] together with [[#dir-H][H. Gestalt principles]]. D
+contributes the cleanest case in the catalogue of a finding
+whose every empirical layer is biological-apparatus
+specific: Rayner 1998's review reports saccade lengths in
+degrees of visual angle, fixation durations in milliseconds
+of foveal sampling, regression rates as percentages of
+re-fixated words; Just & Carpenter 1980's eye-mind
+assumption explicitly identifies the eye position with the
+locus of comprehension; Reichle, Pollatsek, Fisher & Rayner
+1998's E-Z Reader model parameterises everything against
+parafoveal preview and saccade-target selection. There is
+no agent analogue to any of these substrates.
+
+D clarifies the /human-only quadrant's internal structure/.
+It is a member of two shared-primitive families
+([[#synthesis-families][synthesis-families]]):
+
+| Co-tier direction | Family | Where D sits |
+|-------------------+--------+--------------|
+| [[#dir-C][C. Working memory limits]], [[#dir-H][H. Gestalt principles]] | /Substrate-bound numerical constants/ | D contributes Rayner saccade-length distributions and parafoveal-span pixel ranges; like C, the numerical layer is what fails to transfer |
+| [[#dir-H][H. Gestalt principles]] | /Perceptual-substrate-only/ | D contributes saccade / fixation / regression mechanisms; H contributes perceptual grouping; both have /no upper-quadrant projection at all/ |
+
+The distinction between the two families is whether
+stripping the numbers leaves a portable claim:
+
+- C's "capacity is bounded; chunking mitigates" survives
+  Miller-number removal and ports to agent design.
+- D's "saccades land on word centres; parafoveal preview
+  shapes fixation duration" does not survive saccade
+  removal — saccades /are/ the finding, not a substrate
+  parameter inside a finding.
+- H's "grouping arises from proximity" similarly cannot be
+  stripped of perception and still mean anything for an
+  agent reader.
+
+The result is a two-layer figure structure for the lower
+quadrants: /Substrate-bound numerical constants/ runs
+across the partial-low and human-only stripes (members
+have an LP-portable upper-quadrant projection of varying
+strength); /Perceptual-substrate-only/ runs only across the
+human-only stripe (members have no portable projection at
+all).
+
+D's relationship with [[#dir-J][J. Affordances and signifiers]]
+illustrates a particularly clear cross-direction projection.
+J's /transfer break at typographic signifiers/ (font
+weight, italics, whitespace, colour-only emphasis collapse
+to flat tokens for agents) is precisely the LP-design
+projection of D's perceptual-substrate limit. A human
+reader picks up a bold-faced word through D-substrate
+processes (foveal sampling resolves the bolded glyph as
+distinctively darker, parafoveal preview directs the saccade
+toward it earlier); an agent sees just =word=. The operational
+rule for J — /load-bearing affordances must be structural
+signifiers, not typographic ones/ — derives mechanistically
+from D's substrate limit. D names what the human-only
+perceptual apparatus does that agents cannot; J names the
+LP design rule that follows.
+
+* E. Mental models and dual-process
+:PROPERTIES:
+:CUSTOM_ID: dir-E
+:END:
+
+Direction E is the philosophically loaded direction —
+"mental model" is a term used differently by three traditions
+that all converge in the HCI literature. Philip Johnson-Laird
+formalised /mental models/ in cognitive psychology with his
+1983 book =Mental Models: Towards a Cognitive Science of
+Language, Inference, and Consciousness= (Harvard University
+Press, 528 pages), arguing the mind builds inner replicas
+that ground comprehension and inference. Donald Norman
+borrowed the term for HCI in =The Design of Everyday Things=
+(1988, revised 2013), distinguishing the /designer's model/,
+the /system image/, and the /user's mental model/, and noting
+that mismatch among the three is the dominant source of
+usability failure. Daniel Kahneman synthesised four decades of dual-process
+research in =Thinking, Fast and Slow= (Farrar, Straus &
+Giroux 2011), naming System 1 (fast, automatic, associative)
+and System 2 (slow, deliberate, analytical) as the two
+reasoning modes — labels first coined in Stanovich & West
+2000 =Behavioral and Brain Sciences= 23(5). E sits on the
+/upper-left to middle-left boundary/ of the figure: the
+dual-process half transfers cleanly (chain-of-thought vs
+fast inference is the structural analogue), the
+mental-model half straddles the [[#synthesis-families][cross-session state
+persistence]] break.
+
+** E.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-E-1
+:END:
+
+Three claims travel under the same banner. /Johnson-Laird/:
+reasoning works by /manipulating mental models/ — analog
+representations of the situation being reasoned about — not
+by applying formal syntactic rules; people who get a logic
+problem right are usually building and testing models
+mentally, not running through axioms. /Norman/: usability
+failures track the /gap between the designer's model and the
+user's model/, mediated by the /system image/ (what the
+artefact communicates about itself); when the gap is wide,
+users construct wrong predictions about behaviour and the
+artefact appears broken even when it works as designed.
+/Kahneman/: human reasoning runs in /two modes/ — System 1
+(fast, automatic, associative, low-cost) and System 2 (slow,
+deliberate, analytical, expensive), with distinct biases and
+distinct resource profiles. The three claims converge in HCI
+practice: design the system image so the user's mental model
+matches the designer's, and respect when System 2 deliberation
+is required vs when System 1 pattern-matching suffices.
+
+** E.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-E-2
+:END:
+
+Each strand carries its own empirical record. /Johnson-Laird/:
+roughly four decades of syllogism and conditional-reasoning
+experiments showing that error rates predict from
+mental-model construction time, not from premise complexity
+per se. The 1983 book =Mental Models= consolidated the
+programme; Byrne 2005 =The Rational Imagination= extended it
+to counterfactuals. /Norman/: =The Design of Everyday Things=
+1988 was largely observational with empirical follow-ups in
+later editions; the 1986 edited volume =User Centered System
+Design= (Norman & Draper) provided the academic foundation.
+/Kahneman/: Tversky & Kahneman 1974 in =Science= 185(4157)
+launched the heuristics-and-biases programme; the 1979
+prospect-theory paper in =Econometrica= 47(2), pp. 263–292
+applied the framework to decision under risk and earned the
+2002 Nobel; dozens of replications across forty years build
+the dual-process literature (Evans 2008 =Annual Review of
+Psychology= 59 review; Stanovich 2011 =Rationality and the
+Reflective Mind=).
+
+** E.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-E-3
+:END:
+
+The isomorphism is selective. /Mental models within a single
+inference/: yes — the agent maintains activation patterns
+that function as a working model of the current task, and
+that working model predicts subsequent token choices. /Mental
+models across sessions/: no — there is no durable
+consolidation absent retrieval augmentation. /Designer's-model
+vs user's-model gap/: yes, and obviously — when LP prose
+communicates a different mental model than the code embodies,
+both human and agent readers fail in similar ways (the agent
+produces edits inconsistent with the code's actual semantics;
+the human submits PRs that surprise the maintainer). /System
+1 vs System 2/: the mapping is suggestive — fast-path LLM
+inference is associative pattern completion (System 1
+analogue), chain-of-thought prompting is the deliberate
+analogue (System 2 analogue), and chain-of-thought visibly
+helps on hard problems the same way deliberation helps
+humans. But the architectural mechanism (additional inference
+steps) is unlike biological System 2 (recruitment of
+prefrontal cortex / working memory).
+
+** E.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-E-4
+:END:
+
+Two shared primitives, distinct in source. First,
+/reasoning quality scales with deliberation cost/. Both
+humans and agents do better on hard problems when they
+spend more "steps" — Kahneman's System 2 in humans, chain-
+of-thought reasoning tokens in agents — and worse when
+forced to answer fast. The functional curve is the same
+even though the substrate (recruitment of prefrontal
+attention vs additional inference passes) differs entirely.
+Second, /designer's-model vs user's-model gap as failure
+predictor/. Both human users and AI agents fail when the
+prose communicates a different model than the code embodies.
+This is Norman's claim restated for documents — and it
+transfers cleanly because the failure mode does not depend
+on the user's cognitive architecture, only on the
+informational asymmetry between what the document says and
+what the code does.
+
+** E.5 Where transfer breaks
+:PROPERTIES:
+:CUSTOM_ID: dir-E-5
+:END:
+
+Two break points. /Johnson-Laird's mental-models theory/
+makes specific claims about /spatial/ and /token/ analog
+representations — humans reason about syllogisms by
+constructing imagined arrangements of objects, not by
+parsing sentences. LLMs have no analog representational
+substrate; their "mental models" exist only as activation
+patterns over tokens. The transfer breaks on representation
+type even when the functional inference outcome looks
+similar. /Kahneman's biases catalogue/ (anchoring,
+availability, representativeness, framing) is empirically
+derived from human-cognition experiments. LLMs show
+/different/ biases (positional bias per Liu et al. 2024;
+token-frequency bias; sycophancy per Perez et al. 2022;
+recency bias on long contexts) that rhyme structurally but
+are not the same items as the human catalogue. Anyone
+applying Kahneman's specific bias list to LLMs gets a
+partial fit at best.
+
+** E.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-E-6
+:END:
+
+Two practices recurrent in dual-audience LP carry strong
+returns. First, /make the designer's mental model explicit/.
+LP prose preambles that state the trade-off the code
+embodies, the rejected alternative, and the load-bearing
+invariant reduce reverse-engineering for both human and
+agent readers. Norman's claim transfers verbatim: the LP
+doc is the /system image/ of the codebase; the wider the
+gap between what it communicates and what the code does,
+the more confusion both audiences produce. Second, /signal
+where deliberation is needed/. Complex sections that frame
+"this section requires careful reasoning" for humans and
+embed explicit chain-of-thought scaffolding for agents
+(numbered steps, named intermediate facts, "first... then..."
+structure) avoid the failure mode where System 2 is
+demanded of a human while the agent slides past in a single
+forward pass — a recipe for agent-introduced bugs.
+
+** E.7 Synthesis: E in the transfer-gradient figure
+:PROPERTIES:
+:CUSTOM_ID: dir-E-7
+:END:
+
+Direction E sits on the /upper-left to middle-left
+boundary/ of [[#synthesis-figure][the figure]] — a partial-high transfer. E
+braids two canonical findings (Norman 1988 mental models;
+Kahneman 2011 System 1 / System 2) with different transfer
+profiles, and its synthesis subsection unbraids them.
+
+| Co-tier direction | Family | Where E sits |
+|-------------------+--------+--------------|
+| [[#dir-F][F. Recognition vs recall]], [[#dir-G][G. Progressive disclosure]] | /Dual-process processing modes/ | E contributes the named theoretical frame; F supplies the recognition-side optimisation; G the deliberation-side scaffolding |
+| [[#dir-B][B. Cognitive load theory]], [[#dir-G][G. Progressive disclosure]], [[#dir-I][I. Berry-picking]] | /Cross-session state persistence/ | E's mental-model accretion (Norman 1988's "user's model" builds over repeated encounters) breaks at the agent's stateless cold-start, the same boundary as B's germane load |
+
+Evidence that the agent shows the dual-process structural-
+form analogue lives in observed behaviour: an agent
+skimming a long file via grep + small
+Read windows operates in a fast pattern-matching mode that
+rhymes with Kahneman's System 1 (rapid, scent-driven,
+heuristic, error-prone); the same agent asked to "explain
+why this refactor preserves the invariant" produces longer
+chain-of-thought traces with explicit intermediate steps
+that rhyme with System 2 (slow, deliberate, sequentially
+constructed, costly). The /Anthropic skill SDK/'s explicit
+support for /extended-thinking blocks/ and =CLAUDE.md='s
+"every claim backed by tool output" rule are both ports of
+the System-2-scaffolding move into agent practice. The
+shared primitive is /two distinct processing modes
+selectable by stake/, not /dopaminergic-amygdala-PFC
+neuroanatomy/ which is human-only.
+
+E's Norman-1988 half projects onto the /Cross-session state
+persistence/ family — the same family B sits in. The
+user's mental model of the system is canonically described
+as /accreting through repeated use/: misconceptions develop
+in one encounter, get corrected in the next, eventually
+settle into a stable representation that lets the user
+predict system behaviour. Agents have no analogue of this
+between-session accretion. Within-session model building
+(an agent reading a codebase and developing a working
+representation of it within one conversation) transfers
+cleanly; cross-session model accretion does not.
+
+E thus instantiates /one direction in two families/: its
+dual-process half lives in the upper-left full-transfer
+zone, its mental-models half straddles the persistence-
+break boundary. Together with B, E is one of two clean
+examples of a single theoretical direction whose components
+project onto different figure cells — a pattern that argues
+for /component-level/ rather than /direction-level/
+transfer assessment ([[#synthesis-observations][synthesis-observations]] item 6).
+
+* F. Recognition vs recall
+:PROPERTIES:
+:CUSTOM_ID: dir-F
+:END:
+
+Direction F is one of HCI's most-quoted asymmetries: human
+recognition is dramatically easier than human recall.
+Endel Tulving and Donald Thomson formalised the phenomenon in
+"Encoding Specificity and Retrieval Processes in Episodic
+Memory" (=Psychological Review= 80(5), 1973, pp. 352–373) —
+retrieval succeeds only when retrieval cues overlap with
+encoding context, so providing the right cue (recognition)
+transforms hard recall into easy access. Jakob Nielsen made
+this the sixth of his ten usability heuristics (1994
+formulation): /"Recognition rather than recall — minimise the
+user's memory load by making elements, actions, and options
+visible."/ Three decades of UI design have absorbed the finding:
+command palettes, autocomplete dropdowns, TOCs, file pickers,
+and breadcrumbs all replace recall with recognition. F sits
+in the /upper-left full-transfer quadrant/ of the figure and
+is the catalogue's /cross-family hub/ — a member of both
+[[#synthesis-families][Foraging-economics]] (A, F, I) and [[#synthesis-families][Dual-process processing
+modes]] (E, F, G).
+
+** F.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-F-1
+:END:
+
+Two claims, one direct, one institutional. Tulving and
+Thomson's /encoding-specificity principle/ states that a
+retrieval cue is effective only to the degree it overlaps
+with the encoding context — the very same item is easier to
+retrieve when surrounded by features present at encoding
+than when surrounded by unfamiliar context. The behavioural
+consequence is the recognition-recall gap: in classic
+free-recall vs recognition experiments on the same word lists,
+recognition rates routinely exceed eighty percent while
+free-recall rates stay near twenty percent. Nielsen's
+sixth usability heuristic encodes the design implication for
+HCI: /"Recognition rather than recall — minimise the user's
+memory load by making elements, actions, and options visible.
+The user should not have to remember information from one
+part of the interface to another. Information required to
+use the design (e.g., field labels or menu items) should be
+visible or easily retrievable when needed."/
+
+** F.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-F-2
+:END:
+
+Tulving & Thomson 1973 in =Psychological Review= 80(5)
+presented three experiments demonstrating encoding-specificity
+with word-pair studies — subjects encoded target words in the
+context of weak associates, then attempted recall with either
+matching weak-associate cues or with stronger but
+unmatched-at-encoding cues; the matching weak cues
+out-performed the unmatched strong cues, a counter-intuitive
+finding that established the principle. Tulving's 1983 book
+=Elements of Episodic Memory= consolidated the programme and
+introduced the episodic-vs-semantic memory distinction.
+Nielsen's heuristic-evaluation programme began with
+Nielsen & Molich 1990 (nine heuristics in =CHI '90=) and was
+refined to ten in Nielsen 1994 chapter in =Usability
+Inspection Methods=. The institutional consequence in HCI
+was immediate: by the late 1990s every commercial UI
+review-process listed "recognition over recall" among its
+top five evaluation criteria.
+
+** F.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-F-3
+:END:
+
+The isomorphism is one of the strongest in the document.
+Agents perform dramatically better when the relevant content
+is /already in the context window/ (recognition-analogue)
+than when asked to generate facts unprompted from training-
+data alone (recall-analogue). Hallucination — confident
+generation of incorrect facts — is literally what failed
+recall looks like in a generative system; the agent fills
+the prompt-shaped gap with the most contextually-plausible
+content, which often is not correct. The entire
+retrieval-augmented generation (RAG) architecture is the
+industry's collective admission that recognition beats recall
+in LLMs too: if you can put the right document chunk in front
+of the model, accuracy rises by orders of magnitude over
+asking the model to recall the same content. The =CLAUDE.md=
+"Tool-Use Protocol" — "every claim backed by tool output" —
+is institutionally the same insight as Nielsen heuristic #6
+re-derived for agents.
+
+** F.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-F-4
+:END:
+
+The shared primitive is one of the cleanest in the document:
+/performance on retrieval tasks is dominated by cue
+availability, not by storage adequacy/. Both populations
+"know" far more than they can freely produce. Both benefit
+massively from having the right cue visible at the moment of
+retrieval. The cue itself differs by substrate — a
+perceptual stimulus for humans, a context-window token for
+agents — but the operational consequence is identical:
+design the surface to provide cues, not to test recall.
+Hallucination and human forgetting are the failure mode of
+the same constraint encountered under different
+implementations. This is one of three full-transfer findings
+in the document (with A foraging and I berry-picking).
+
+** F.5 Where transfer breaks
+:PROPERTIES:
+:CUSTOM_ID: dir-F-5
+:END:
+
+Two break points. First, /memory-system separation/: humans
+distinguish working memory, long-term declarative memory,
+episodic memory (Tulving 1972), procedural memory, etc., each
+with distinct retrieval properties. Agents have no such
+separation — pre-training weights, fine-tuning weights,
+context-window content, and retrieval-augmented lookups all
+contribute to output, but there is no architectural analogue
+of the human episodic/semantic distinction. Second, the
+/encoding-specificity claim/ — that retrieval cue
+effectiveness depends on encoding context — has no clean
+LLM analogue because the model was not "encoded" in any
+episodic sense. What looks superficially like encoding
+specificity (the LLM does better when prompted in a register
+similar to its training data) is more accurately
+prompt-template bias or position bias under a different
+name. The recognition-recall gap itself transfers; the
+specific mechanism Tulving identified for human recall
+failure does not.
+
+** F.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-F-6
+:END:
+
+The recognition-vs-recall asymmetry is one of the cleanest
+transfers in the document and yields the strongest
+dual-audience design moves. Three practices follow directly.
+First, /LP prose preambles that provide the cue/ make the
+code block intelligible without forcing the reader to recall
+how this section relates to the prior one, or the agent to
+remember the file's top-level invariant. Second,
+/cross-references are pure recognition surfaces/ —
+=CUSTOM_ID= anchors, "see also" links, named-block
+references, and dense TOCs all replace recall with
+recognition. Third, /the failure mode is symmetric/:
+hallucination in agents and "I knew that but couldn't find
+it" in humans are the same constraint encountered under
+different substrates; the mitigation — make the cue visible
+— is identical. F is the direction where HCI heuristics
+transfer least changed; Nielsen's 1994 wording reads as-is
+for an LLM-era prompt-engineering guide.
+
+** F.7 Synthesis: F as cross-family hub
+:PROPERTIES:
+:CUSTOM_ID: dir-F-7
+:END:
+
+Direction F is the /cross-family hub/ of [[#synthesis-figure][the figure]]. F
+sits in the upper-left full-transfer quadrant as a member
+of two distinct shared-primitive families —
+[[#synthesis-families][Foraging-economics]] (A, F, I) and [[#synthesis-families][Dual-process
+processing modes]] (E, F, G). Membership in both is a
+substantive structural claim, not a naming convenience: the
+recognition-vs-recall asymmetry /is/ what makes both
+foraging and dual-process work mechanistically.
+
+Tulving & Thomson's 1973 encoding-specificity finding maps
+onto agent retrieval with mechanical precision. The 1973
+paper showed that recall accuracy depends on overlap
+between encoding-time context and retrieval-time cues — a
+finding so substrate-bound (discovered through human memory
+experiments) that one would expect it to break. It does
+not: in the agent setting, grep retrieval depends on overlap
+between the keyword the agent types and the actual tokens
+stored in the file. /Recognition/ is what happens when the
+cue is in the search-results page already (filename, snippet,
+heading); /recall/ is what happens when the agent must
+generate the keyword from a prior internal representation.
+Both populations succeed more often at the former.
+
+| Co-tier direction | Family | Where F sits |
+|-------------------+--------+--------------|
+| [[#dir-A][A. Information foraging]], [[#dir-I][I. Berry-picking]] | /Foraging-economics/ | F supplies the recognition-side asymmetry that makes scent-driven patch selection rational — cheap proximal cues = recognition cues |
+| [[#dir-E][E. Mental models + dual-process]], [[#dir-G][G. Progressive disclosure]] | /Dual-process processing modes/ | F's recognition surface is what System 1 reads; F's recall demand is what System 2 has to perform when recognition fails; G provides the staged-recognition scaffolding |
+
+The cross-family hub status explains /why/ the upper-left
+quadrant has three members rather than one. A (foraging),
+F (recognition), and I (berry-picking) are not three
+independent findings that coincidentally all transfer
+cleanly — they are three facets of the same underlying
+constraint structure. Pirolli-Card's "scent" is recognition-
+side information (the proximal cue); Bates' berry-picking
+is iterative recognition (each retrieved item updates which
+cues count as scent); Tulving's encoding-specificity is the
+precise mechanism explaining why scent works at all
+(retrieval succeeds when cue and stored representation
+overlap).
+
+The dual-audience LP design rule that derives from this
+hub is the cleanest in the catalogue: /externalise every
+cue that the reader would otherwise have to recall/. This
+serves the human reader (Nielsen heuristic #6, 1995/2020),
+the agent reader (grep success requires cue token to match
+stored token), and the System-2 form for both populations
+(deliberate retrieval costs both populations more than
+recognition, by orders of magnitude in token budget for
+agents and in fixation-time for humans). The host project's
+=naming-conventions.md= /Variable role-encoding/ rule
+("would a newcomer know what this holds from the name
+alone?") and =literate-programming-document-first.md/'s
+heading-as-concept rule are both ports of F's cue-
+externalisation move into LP practice.
+
+* G. Progressive disclosure and scaffolded UI
+:PROPERTIES:
+:CUSTOM_ID: dir-G
+:END:
+
+Direction G names the design pattern of /revealing
+information or options on demand rather than upfront/.
+Jakob Nielsen's NN/g article "Progressive Disclosure"
+([[https://www.nngroup.com/articles/progressive-disclosure/][nngroup.com/articles/progressive-disclosure]], 4 December
+2006) gives the operational definition: /"defer secondary
+options to a subsidiary screen, focusing users' attention
+on the primary options."/ Bruce Tognazzini's =Tog on
+Interface= (Addison-Wesley 1992) established the related
+/moment-of-need/ discipline — surface controls and
+information when the user is positioned to use them, not
+earlier or later. Steve Krug's =Don't Make Me Think= (2000)
+operationalised progressive disclosure as one of three
+usability laws for the web. Jeroen van Merriënboer's 4C/ID
+/whole-task variation/ adds a tutorial-design layer: vary
+the complexity of practice tasks in a graduated sequence so
+each new layer extends without overwhelming. G sits on the
+/partial-high right side/ of the figure: decision-time
+disclosure transfers to AI agents cleanly, skill-building
+disclosure breaks at the agent's stateless cold-start.
+
+** G.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-G-1
+:END:
+
+The core claim has four near-synonymous formulations.
+Nielsen 1995: /"Defer secondary options to a subsidiary
+screen. The initial view should focus on the primary
+options; secondary options should be available on request
+but should not be visible by default."/ Tognazzini's
+/moment-of-need/ framing in =Tog on Interface= (1992):
+controls and information should be surfaced when the user
+is positioned to use them, not earlier (clutters) or later
+(too late). Krug 2000: every screen should be
+self-explanatory /at its own level of detail/, so progressing
+deeper reveals more without requiring the user to remember
+context from upstream screens. Van Merriënboer's /whole-task
+variation/ in 4C/ID adds the learning-design layer: vary the
+complexity of practice tasks in a graduated sequence so each
+new layer extends without overwhelming.
+
+** G.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-G-2
+:END:
+
+The empirical foundation is mostly industrial-case-study
+rather than controlled-experiment. Nielsen's 1995
+formulation was followed by case studies in NN/g consulting
+reports through the late 1990s and early 2000s, repeatedly
+showing that interfaces with progressive disclosure reduced
+error rates and increased task completion among non-expert
+users. Apple's macOS and iOS device-onboarding flows are
+the canonical commercial implementation. TurboTax wizards
+illustrate the pattern in domain-complex software (tax
+returns); they replace a comprehensive form with a sequence
+of small disclosures triggered by prior answers, and have
+been credited with the product's market dominance.
+Van Merriënboer 1997 and 2017 contain the experimental
+foundation for /whole-task variation/ in instructional
+design — graduated-complexity practice tasks beat blocked
+practice on transfer tests in studies of complex skills
+acquisition (medical decision-making, troubleshooting,
+programming).
+
+** G.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-G-3
+:END:
+
+The transfer is asymmetric but real. Agents have far larger
+/context windows/ than humans have /working memory/, so the
+cost of "showing everything at once" is lower in absolute
+terms — but it is /not zero/. Token budget consumption,
+positional bias (Liu et al. 2024 "Lost in the Middle"), and
+attention dilution mean that progressive disclosure still
+helps agents: irrelevant content in the context window
+demonstrably degrades downstream output even when there is
+budget to hold it. The canonical agent-side example is the
+=.claude/skills/*= front-matter system: =when_to_use=,
+=paths=, and =disable-model-invocation= fields function as a
+disclosure gate. The skill body is surfaced into agent
+context only when the trigger conditions match. This is
+progressive disclosure /verbatim/ — Nielsen 1995 wording
+applies to skills front-matter unmodified. The Anthropic
+skill SDK was not derived from progressive-disclosure
+literature (or if it was, no public discussion mentions it),
+but the convergent design is striking.
+
+** G.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-G-4
+:END:
+
+The shared primitive: /attention is a scarce resource
+regardless of substrate, and irrelevant content competes
+for that resource even when there is room to hold it/.
+Whether the budget is biological working memory (4±1
+chunks) or transformer context window (~200K tokens),
+surfacing content that is not immediately load-bearing
+costs something — discrimination effort for the human,
+positional dilution for the agent. Progressive disclosure
+transfers because it respects this shared resource
+constraint: surface what serves the current decision, defer
+what serves a later one. The budget sizes differ by orders
+of magnitude but the structural intent — match disclosed
+content to the reader's current need — applies identically.
+This is one of the directions where the human/agent
+analogy holds even after we set aside the substrate detail.
+
+** G.5 Where transfer breaks
+:PROPERTIES:
+:CUSTOM_ID: dir-G-5
+:END:
+
+The break is in the /learning-over-time/ part. Van
+Merriënboer's 4C/ID whole-task variation relies on /durable
+skill acquisition across sessions/ — humans build expertise
+through repeated practice with varied surface forms,
+consolidating schemas that survive between sessions. Agents
+do not build durable skills inside a single inference;
+they either know-from-training (fine-tuning is out of band)
+or they retrieve, but they do not "practice" within a
+conversation. The /4C/ part of 4C/ID — Learning Tasks /
+Supportive Info / Procedural Info / Part-task Practice —
+maps onto LP doc structure only loosely. The
+/disclosure-of-current-information/ aspect transfers
+cleanly (G.4); the /sequencing-for-skill-building/ aspect
+does not. This is a clearer instance of the same break we
+saw in direction B (germane load) and direction E (durable
+mental models) — anything that depends on consolidation
+between sessions breaks at the agent boundary.
+
+** G.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-G-6
+:END:
+
+Three practices follow with strong dual-audience returns.
+First, /progressive disclosure operates at multiple scales/:
+the host project's =CLAUDE.md= → =.claude/skills/*= →
+skill-body cascade is a three-tier disclosure structure for
+agents; the README → ARCHITECTURE.org → module-detail
+cascade is the human analogue. The two cascades share
+intermediate layers when the LP author chooses
+section-as-concept headings. Second, /name the trigger
+explicitly/. SKILL.md =when_to_use= fields are
+progressive-disclosure triggers written in natural language;
+the human equivalent is the opening sentence of a section
+that names when this section is the relevant one. Third,
+/two disclosure purposes split/. /Decision-time disclosure/
+(surface what the reader needs right now) transfers
+cleanly; /skill-building disclosure/ (sequence content for
+learning) does not transfer to agents and remains a human-
+only optimisation when present.
+
+** G.7 Synthesis: G as second cross-family hub
+:PROPERTIES:
+:CUSTOM_ID: dir-G-7
+:END:
+
+Direction G sits on the /partial-high right side/ of
+[[#synthesis-figure][the figure]] as the catalogue's second cross-family hub
+after F. G is a member of two existing families and the
+canonical case-study for /convergent design without
+lineage/ ([[#synthesis-observations][synthesis-observations]] item 2):
+
+| Co-tier direction | Family | Where G sits |
+|-------------------+--------+--------------|
+| [[#dir-E][E. Mental models + dual-process]], [[#dir-F][F. Recognition vs recall]] | /Dual-process processing modes/ | G provides the deliberation-side scaffolding that lets System 2 activate; tutorials, examples, named-step lists, =when_to_use= cues all manage System 1 → System 2 hand-off |
+| [[#dir-B][B. Cognitive load theory]], [[#dir-E][E. Mental models]], [[#dir-I][I. Berry-picking]] | /Cross-session state persistence/ | G's expert-recognition payoff — Carroll 1990's /production paradox/ where experts skip tutorials they once needed — depends on across-session memory of "I learned this once"; agent has no such memory |
+
+The /Anthropic skill SDK/'s =when_to_use= field — a
+one-paragraph natural-language description prepended to
+every skill describing when the skill should be invoked —
+re-implements Carroll & Rosson 1987's "minimalist
+instruction" doctrine and Krug 2000's "Don't Make Me Think"
+first-screen heuristic /without/ any documented derivation
+from either source. The skill-SDK designers did not start
+from progressive-disclosure literature; they started from
+"agents waste budget reading irrelevant skills" and
+converged on the same shape. Similarly, the =allowed-tools:=
+front-matter field re-implements Tognazzini's
+progressive-disclosure scaffolding (limit available actions
+until the relevant step) without referencing the 1992
+=Tog on Interface= where Tognazzini named the doctrine.
+
+The structural explanation: both populations face the same
+interface constraint — bounded budget + heterogeneous
+candidate items + fast triage at entry — and any rational
+design under those constraints lands within a small region
+of design space. All three canonical authors (Tognazzini
+for HCI, Carroll for minimalist instruction, Krug for web
+design) explicitly named the same constraint and arrived at
+variations of the same answer; the Anthropic skill SDK
+arrived at it again from agent-side data. Four independent
+populations (HCI users / minimalist-instruction learners /
+web readers / AI agents) converged on the same design
+family because the interface constraint is universal even
+though the populations are unrelated.
+
+G's two-purpose disclosure split (G.6) — /decision-time/
+vs /skill-building/ — is a direct instance of the
+cross-session persistence break: the decision-time variant
+transfers cleanly to agents (=when_to_use= and tool-
+allowlists are its members); the skill-building variant
+does not because skill is durable cross-session state.
+Same direction, two components, two figure cells —
+component-level transfer assessment per
+[[#synthesis-observations][synthesis-observations]] item 6.
+
+* H. Gestalt principles
+:PROPERTIES:
+:CUSTOM_ID: dir-H
+:END:
+
+Direction H is the oldest direction in this document. Max
+Wertheimer founded Gestalt psychology with the 1912 phi-
+phenomenon paper and consolidated the perceptual-grouping
+principles in "Untersuchungen zur Lehre von der Gestalt II"
+(=Psychologische Forschung= 4, 1923, pp. 301–350), known in
+English as "Laws of Organization in Perceptual Form." The
+principles describe how the human visual system groups
+discrete stimuli into unified percepts: /proximity/ (nearby
+items group), /similarity/ (similar items group),
+/closure/ (incomplete figures perceived as complete),
+/continuation/ (collinear items perceived as continuous),
+/common fate/ (items moving together group), and
+/figure-ground/ (objects emerge against backgrounds). A
+century of vision-science research has validated and refined
+the principles (Palmer 1999 =Vision Science=; Wagemans et al.
+2012 century-review in =Psychological Bulletin=). Document layout — whitespace, indentation, typographic
+hierarchy, related-item grouping — exploits Gestalt
+principles continuously. H sits in the /lower-right
+human-only quadrant/ of the figure alongside [[#dir-D][D]]: the
+substrate gap to agent token streams is total, and H's
+findings load-bearing only for the human reader.
+
+** H.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-H-1
+:END:
+
+Six classical principles plus an organising super-principle.
+/Proximity/: items spatially close tend to be perceived as
+grouped. /Similarity/: items sharing visual properties
+(colour, shape, size) tend to be grouped. /Closure/:
+incomplete figures are perceived as complete (the partial
+circle "closes" perceptually). /Continuation/ (also "good
+continuation"): collinear or smoothly-curving items are
+perceived as continuous. /Common fate/: items moving in
+sync are perceived as a group. /Figure-ground/: the visual
+field decomposes into a foreground figure and a background.
+The umbrella principle is /Prägnanz/ — "good figure" — the
+claim that perception organises stimuli into the simplest,
+most stable, most regular available interpretation. The
+six principles are not independent axioms but specific
+manifestations of Prägnanz operating across different
+stimulus dimensions.
+
+** H.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-H-2
+:END:
+
+A century of vision-science work. Wertheimer 1923 is the
+foundation paper, derived from earlier work on apparent
+motion (the 1912 phi-phenomenon paper). Edgar Rubin's
+=Visuell wahrgenommene Figuren= (1915) introduced the
+figure-ground reversal demonstrations (the "Rubin vase"
+example). Wolfgang Köhler 1929 =Gestalt Psychology= and
+Kurt Koffka 1935 =Principles of Gestalt Psychology= gave
+the school its textbook form. Modern quantitative work
+includes Kubovy & van den Berg 2008 on proximity-grouping
+strength (=Psychological Review= 115(1), pp. 131–154,
+formal lattice-grouping model), Wagemans et al. 2012
+=Psychological Bulletin= 138(6) two-part century review
+covering perceptual grouping (Part I) and figure-ground
+(Part II). Neurological work has localised parts of the
+processing — V1 receives stimulus information, but figure-
+ground is computed in V2 and beyond (Lamme 1995
+=Journal of Neuroscience= 15(2), pp. 1605–1615).
+
+** H.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-H-3
+:END:
+
+The transfer is largely absent. Agents do not process 2D
+visual fields — they process token streams. /Proximity in
+2D space/ has no agent analogue; tokens have sequence
+position but no spatial proximity along orthogonal
+dimensions. /Closure/, /continuation/, and /common fate/
+all rely on visual-perception primitives the agent lacks
+entirely. Two principles have weak token-stream rhymes.
+/Similarity/: agents attend more to tokens with similar
+embedding-space representations within a context — the
+attention head's dot-product similarity is the structural
+analogue, with documented effects (induction heads,
+attention-based pattern matching). /Figure-ground/:
+salient tokens with high attention weight stand out against
+the background of low-weight tokens — analogous to how
+high-frequency or recently-activated content dominates
+generation. Neither rhyme is precise; they are
+mathematical analogies one level removed from the visual
+phenomena Wertheimer described.
+
+** H.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-H-4
+:END:
+
+A weak shared primitive at one level: /processing groups
+co-occurring items/. The human visual system groups by
+spatial proximity, similarity, and the other Gestalt
+factors. The transformer attention system groups by
+sequence proximity (recency, locality of attention windows)
+and embedding-space proximity (similar tokens cluster in
+attention). The mathematical primitive — clustering nearby
+items into joint processing — may be deeper than the visual
+manifestation, in which case the structural principle is
+substrate-agnostic. But this stretches the term "shared
+primitive" past its useful limit; calling token attention
+"Gestalt-like" is metaphorical, not isomorphic. H is the
+weakest-transfer direction in the document together with D.
+
+** H.5 Where transfer breaks
+:PROPERTIES:
+:CUSTOM_ID: dir-H-5
+:END:
+
+The break is in the /visual-specificity/ of the principles.
+Wertheimer's experiments used 2D visual stimuli — dot
+arrays, line segments, motion sequences, figure-ground
+ambiguity (Rubin vase). The six principles describe how
+human visual cortex resolves competing organisation
+hypotheses for visual input. Token-stream processing has no
+visual cortex, no 2D space, no acuity gradient, no motion.
+Closure (visual completion of incomplete figures) presupposes
+a perceptual machinery that fills gaps in a visual array;
+agents do not fill perceptual gaps because they have no
+perceptual array to fill. Continuation (good curve)
+presupposes the visual primitive of curvature. Common fate
+presupposes time-extended visual motion. Each of these has
+no token-stream analogue at all. The transfer break is
+total at the level of mechanism; only the umbrella claim
+(grouping by similarity reduces processing cost) survives,
+and even that survives only as metaphor.
+
+** H.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-H-6
+:END:
+
+The takeaway is similar to D's: /Gestalt principles mostly
+help the human reader/. Three observable layers separate.
+/Typographic infrastructure/ — whitespace, indentation,
+table layout, font weight — serves only the human reader;
+the agent's tokeniser parses these the same as any other
+character. /Structural infrastructure/ — =CUSTOM_ID=
+cross-references, heading hierarchy, named blocks — serves
+the agent reader and is also human-readable; this is the
+dual-audience layer. When the two infrastructures compete
+for the author's attention, structural-first investment
+serves both audiences; typographic polish then serves
+humans only. H and D together delimit the zone where
+designing for /both/ audiences with the /same/ artefact
+reaches its limit.
+
+** H.7 Synthesis: H in the transfer-gradient figure
+:PROPERTIES:
+:CUSTOM_ID: dir-H-7
+:END:
+
+Direction H sits in [[#synthesis-figure][the figure's]] /lower-right human-only
+quadrant/ alongside [[#dir-D][D. Eye-tracking + saccades]]. The
+narrative pair is sharp: D names the perceptual /mechanism/
+(saccade, fixation, parafoveal preview), H names the
+perceptual /organisation/ that the mechanism produces
+(proximity grouping, similarity grouping, figure-ground
+segregation, closure, common-fate motion). Both findings
+live entirely inside biological visual-perception apparatus
+and have no upper-quadrant projection.
+
+| Co-tier direction | Family | Where H sits |
+|-------------------+--------+--------------|
+| [[#dir-C][C. Working memory limits]], [[#dir-D][D. Eye-tracking + saccades]] | /Substrate-bound numerical constants/ | H contributes Wertheimer 1923 grouping radii and Kubovy & van den Berg 2008 lattice-grouping thresholds — measurable in millimetres of visual angle |
+| [[#dir-D][D. Eye-tracking + saccades]] | /Perceptual-substrate-only/ | H is D's organisational counterpart; both have no portable upper-quadrant projection at all; together they define the dead-zone of the figure |
+
+H exposes the cleanest /weak metaphor/ that recurs when
+researchers seek Gestalt analogues in transformer
+architectures. Attention heads (Elhage et al. 2021 "A
+Mathematical Framework for Transformer Circuits"; Olsson
+et al. 2022 "In-context Learning and Induction Heads")
+sometimes appear to perform token-level similarity grouping
+or proximity matching. The metaphor is structurally weak:
+attention heads find tokens whose embeddings are similar to
+the query token within a context window — a similarity
+operation, but not the perceptual grouping Wertheimer
+described. Wertheimer grouping is /unconscious, automatic,
+irreversible/; transformer attention is /conditional,
+layer-by-layer, modifiable by prompting/. The substrate
+mismatch is total; the surface analogy is marked weak in
+this catalogue ([[#synthesis-observations][synthesis-observations]] item 8).
+
+H also sharpens the D → J cross-projection from
+[[#dir-D-7][D.7]]. J's transfer break at typographic signifiers (font
+weight, italic emphasis, whitespace, colour-only emphasis)
+collapses for agents /because/ the H-grouping that humans
+perform on those signifiers does not happen in the agent
+substrate. A human reader picks up "this paragraph is one
+group" from H-proximity (whitespace between paragraphs),
+H-similarity (consistent typeface), and H-common-fate
+(consistent indentation level); an agent sees a flat token
+sequence. The triangle D → H → J names a single
+substrate-bound failure mode of typographic-only design,
+with three different canonical authors describing three
+different layers of it. The dual-audience LP design rule
+that follows ([[#dir-J-6][J.6 Operational takeaway]] item 2 — /load-
+bearing affordances must be structural, not typographic/)
+is the operational form of "do not rely on D + H grouping
+to communicate structure to the agent reader."
+
+The lower-right human-only quadrant is therefore not an
+empty zone in the figure — it is the /constraint zone/ that
+delimits where dual-audience design must move its
+load-bearing signifiers (out of the typographic layer and
+into the structural layer).
+
+* I. Information retrieval and berry-picking
+:PROPERTIES:
+:CUSTOM_ID: dir-I
+:END:
+
+Direction I overturns the dominant pre-1989 IR model. Marcia
+Bates published "The Design of Browsing and Berrypicking
+Techniques for the Online Search Interface" in =Online Review=
+13(5), 1989, pp. 407–424, proposing that real information
+seekers do not have a fixed query and pursue it to completion
+(the assumed model of Boolean retrieval systems). Instead they
+/pick berries/ — they accumulate fragments across multiple
+queries, the queries themselves shift as they read, and they
+stop when they have /enough/ rather than when they have found
+/all/. The model formalised what librarians had observed for
+decades: exploratory search is iterative, opportunistic, and
+satisficing. Bates's 2007 update "What is Browsing — Really?
+A Model Drawing from Behavioural Science Research" extended
+the model. Since 2000 the discipline has split into /exploratory
+search/ (White & Roth 2009 monograph) and /specified-query
+search/ tracks, with most everyday human search behaviour
+in the former. I sits in the /upper-left full-transfer
+quadrant/ of the figure: agents conducting multi-step
+research display the same four Bates patterns within a
+single session, and the only seam is the cross-session
+persistence boundary shared with B, E, and G.
+
+** I.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-I-1
+:END:
+
+Bates 1989 overturned four assumptions that the dominant
+Boolean-IR model had baked into its evaluation framework.
+First, /searchers do not start with a fixed query/ — they
+start with a vague information need and discover what to ask
+as they go. Second, /the query shifts during search/ —
+something read in result A leads to query B which leads to
+result C; the search path is /evolutionary/, not single-shot.
+Third, /relevance is accumulated across fragments/ — the
+useful output is a collection of "berries" picked from
+multiple sources, not one sorted relevance list. Fourth,
+/the stopping criterion is sufficiency, not optimality/ —
+the searcher quits when they have enough to act, not when
+they have exhausted the corpus. The "berry-picking"
+metaphor captures both the discreteness (each berry is a
+separate useful fragment) and the path-dependence (later
+berries are discovered through earlier ones).
+
+** I.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-I-2
+:END:
+
+Bates 1989 was grounded in two decades of librarianship
+observation and reference-interview studies — the methodology
+was qualitative rather than experimental, but the model
+predicted patterns that controlled studies subsequently
+confirmed. Broder 2002 in =ACM SIGIR Forum= 36(2)
+introduced a taxonomy of web searches (informational vs
+navigational vs transactional); informational queries —
+the largest category — showed the berry-picking pattern
+across millions of logged queries. Marchionini 2006 in
+=Communications of the ACM= 49(4) named the field
+/exploratory search/ and contrasted it with lookup
+(traditional Boolean retrieval, well-served by classical IR)
+versus learn and investigate (the berry-picking and beyond).
+White & Roth 2009 =Exploratory Search: Beyond the Query-
+Response Paradigm= consolidated the empirical and design
+literature. Recent work (Hearst 2009 =Search User
+Interfaces=; Olston & Chi 2003 on history-enriched
+interfaces) has extended Bates's framing into modern
+interface design.
+
+** I.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-I-3
+:END:
+
+The isomorphism is one of the strongest in the document.
+AI agents conducting research or debugging tasks display
+all four Bates patterns. /Vague initial need/: a debugging
+agent does not start with "look up symbol foo at line 42"
+but with "something about the order-processing flow is
+wrong, find it." /Query shift during search/: the agent
+reads file A, learns that the bug is actually in module B,
+issues a new grep with refined terms. /Accumulated relevance
+across fragments/: the agent's final answer integrates
+fragments from multiple files — function definition here,
+test case there, configuration constant in a third file.
+/Sufficient-not-optimal stopping/: the agent stops as soon
+as it can act, not when it has exhausted the codebase.
+The structural match is precise enough that Bates's 1989
+paper could be re-titled "Berry-picking by AI Agents" with
+almost no body changes; only the substrate (the agent's
+context window and tool-call interface) replaces the
+search-system UI Bates described.
+
+** I.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-I-4
+:END:
+
+The shared primitive: /information need is shaped by what
+has already been found, not just by what was originally
+sought/. Both populations face an information landscape
+that does not present itself as a sorted relevance list,
+both face the bandwidth constraint of being unable to read
+everything, and both have the option to revise their query
+as comprehension grows. The mathematical substrate differs
+— Bates wrote no formal model and agents follow an implicit
+policy learned from training — but the /behavioural shape/
+is strikingly similar: path-dependent, iteration-rich,
+satisficing rather than optimising. This is the third of
+three full-transfer findings in the document together with
+A foraging and F recognition-vs-recall; all three describe
+constraints on the search-and-comprehension process that
+hold regardless of cognitive substrate.
+
+** I.5 Where transfer breaks
+:PROPERTIES:
+:CUSTOM_ID: dir-I-5
+:END:
+
+The break is at the /persistence layer/. Bates's model
+implicitly assumes the searcher /remembers/ what they have
+learned across the duration of the search — yesterday's
+discovered berries are available today. For agents within a
+single inference, this is fine: the context window holds
+the working basket of berries. Across sessions, the agent
+remembers nothing without explicit retrieval. So
+berry-picking transfers cleanly /within a single session/
+and breaks /across sessions/ unless retrieval-augmented
+generation, persistent memory tools, or external note-taking
+infrastructure intervene. This is the cleanest case where
+the transfer holds completely at the behavioural level but
+fails completely at the persistence layer; the failure mode
+is well-understood and the standard fixes (RAG, vector
+stores, explicit memory notes) are widely deployed. This
+is the same break pattern as B/E/G — anything depending on
+cross-session consolidation breaks at the agent boundary —
+applied to working memory of search results rather than
+schemas or skills.
+
+** I.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-I-6
+:END:
+
+Three practices follow with strong dual-audience returns.
+First, /design for path-dependent reading, not linear
+reading/. LP docs optimised for the grep-arrived reader
+who follows references to several sections — rather than
+the start-to-finish reader — match how both populations
+actually consume the artefact. =CUSTOM_ID= cross-references,
+"see also" links, named blocks, and dense TOCs are the
+navigation infrastructure for berry-picking; the host
+project's =literate-programming-document-first.md= rule
+implicitly enforces it. Second, /support sufficient-not-
+optimal stopping/. Sections /self-contained enough/ that a
+reader who picked one as a berry can act on it without
+reading the surrounding sections — the section-as-concept
+rule restated for berry-picking. Third, /provide explicit
+persistence hooks for agent readers/. Where humans remember
+accumulated berries internally, agents rely on external
+infrastructure: clear file naming for re-identification,
+stable URLs or commit hashes for referencing, and explicit
+summaries that survive across sessions. The Sources section
+of this document exemplifies the form.
+
+** I.7 Synthesis: I in the transfer-gradient figure
+:PROPERTIES:
+:CUSTOM_ID: dir-I-7
+:END:
+
+Direction I sits in [[#synthesis-figure][the figure's]] /upper-left
+full-transfer quadrant/ as the third member of the
+[[#synthesis-families][Foraging-economics]] family (A, F, I) and as a member of the
+[[#synthesis-families][Cross-session state persistence]] family (B, E, G, I). I
+provides the catalogue's cleanest single-paragraph transfer
+claim.
+
+| Co-tier direction | Family | Where I sits |
+|-------------------+--------+--------------|
+| [[#dir-A][A. Information foraging]], [[#dir-F][F. Recognition vs recall]] | /Foraging-economics/ | I supplies the /iterative/ component — each retrieved item updates the information need; A supplies the per-patch optimisation; F supplies the recognition asymmetry that lets scent work |
+| [[#dir-B][B. Cognitive load theory]], [[#dir-E][E. Mental models]], [[#dir-G][G. Progressive disclosure]] | /Cross-session state persistence/ | I's saturated-sampling stopping rule depends on the reader remembering what has already been sampled; cross-session the agent cannot |
+
+Bates 1989's central observation in =Online Review= 13(5),
+pp. 407–424 — that the user's information need is /not
+fixed/ in advance of search but is /reshaped by what is
+found/ — maps onto the agent grep-Read-iterate cycle with
+mechanical precision. The agent issues a grep, examines
+results, picks a file to Read, the Read content alters
+what the agent considers relevant for the next grep, and
+the cycle continues until the answer is sufficient. Bates
+1989's six "tactics" (footnote chasing, citation searching,
+journal run, area scanning, subject searches, author
+searching) all have agent analogues in modern codebase
+navigation (grep with regex variants, =git log -S=, file
+walks, directory scans, signature searches, history
+commits by author). The behavioural isomorphism is so
+complete that Bates 1989 reads, line for line, as a
+description of agent codebase exploration four decades
+before LLMs.
+
+The transfer is full at the /within-session/ scale and
+breaks only at the /cross-session/ boundary that defines
+direction I's second family membership. Saturated-sampling
+in Bates' formulation means the reader stops searching when
+new items repeat old ones; this requires durable memory of
+what has been sampled. Agents have within-session memory
+(the conversation context) but no across-session memory by
+default. The host project's =CLAUDE.md= memory file and the
+=~/.claude/projects/.../memory/MEMORY.md= mechanism are
+architectural workarounds for exactly this gap — they
+explicitly externalise the "what has been sampled" state
+that humans hold implicitly.
+
+I's most distinctive trait among the upper-left triad is
+/the cleanness of the behaviour-layer transfer/. Bates
+1989's claim has no substrate vocabulary at all — no
+working-memory limit, no chunk size, no perceptual
+primitive, no neural correlate. The finding is /pure
+path-dependent reading behaviour/. I is the catalogue's
+single clearest demonstration of
+[[#synthesis-observations][synthesis-observations]] item 4 (/behaviour and decision-
+structure findings transfer cleanly/). A reader testing the
+behaviour-vs-substrate axis empirically can start with I —
+nothing remains to subtract from the finding before
+checking whether agents do the same thing, because Bates
+1989 has already done the subtraction.
+
+I also completes the upper-left triad's internal structure
+in a way that closes the [[#dir-F-7][F.7 cross-family hub]]
+argument: A is the /per-patch/ optimisation, I is the
+/across-patch/ iteration, F is the /substrate primitive/
+that makes both work. The three findings are not parallel
+candidates for "behaviour transfers" — they are three
+levels of one architecture (patch / iteration / primitive),
+each transferring cleanly because the architecture is
+substrate-independent.
+
+* J. Affordances and signifiers
+:PROPERTIES:
+:CUSTOM_ID: dir-J
+:END:
+
+Direction J names the relational-property concept that
+finished the cognitive-psychology canon and started the HCI
+one. James J. Gibson coined /affordances/ in =The Ecological
+Approach to Visual Perception= (Houghton Mifflin, 1979), with
+the canonical definition: /"The affordances of the
+environment are what it offers the animal, what it provides
+or furnishes, either for good or ill."/ Affordances are
+relational — neither a property of the object alone nor of
+the perceiver alone but of the pairing. Donald Norman
+imported the term to HCI in =The Psychology of Everyday
+Things= (Basic Books, 1988; reissued and retitled =The Design
+of Everyday Things= 1990, revised 2013) and famously narrowed
+it to /perceived affordances/ — what the user thinks they
+can do with the object. In 1999 Norman published a self-
+correction ("Affordance, Conventions, and Design,"
+=Interactions= 6(3), 1999, pp. 38–43) distinguishing /real/
+from /perceived/ affordances. In the 2013 revision he split the concept further:
+/affordance/ stays Gibsonian (what is possible) while
+/signifier/ names the cue that communicates the possibility.
+J sits on the /partial-high boundary just above the dead-
+zone/ of the figure: signifier transfer holds cleanly once
+cues move from typographic to structural, while the
+perceptual substrate that humans use to pick signifiers up
+stays human-only.
+
+** J.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-J-1
+:END:
+
+The claim evolves across four formulations. Gibson 1979:
+/"The affordances of the environment are what it offers the
+animal, what it provides or furnishes, either for good or
+ill."/ Affordances are /relational/ — neither a property of
+the object alone nor of the perceiver alone but of the
+pairing. A chair affords sitting for an adult human;
+the same chair affords nothing useful to a fly. Norman 1988
+narrowed the term in =The Psychology of Everyday Things=:
+"perceived and actual properties of the thing, primarily those
+fundamental properties that determine just how the thing
+could possibly be used." This narrowing emphasised perception
+— what the user /thinks/ they can do — and embedded the
+concept in HCI evaluation. Norman 1999 self-corrected in
+=Interactions= 6(3): distinguish /real/ affordances (the
+Gibsonian what-is-possible) from /perceived/ affordances
+(what the user believes is possible) — they often diverge.
+Norman 2013 added a third term: /signifier/ — the cue that
+communicates the affordance. The chair's seat-shape signifies
+its sitting-affordance to a human; without that signifier
+the affordance would not be discoverable.
+
+** J.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-J-2
+:END:
+
+The empirical chain runs along three sources, none of them a
+single decisive experiment — affordance research is more an
+accumulation of design audits than a Sweller-style randomised
+trial. /Gibson 1979/ consolidated two decades of ecological-
+psychology work, with the affordance chapter (ch. 8) building
+on perception studies by Gibson and collaborators (notably
+the "visual cliff" infant-perception studies, Gibson & Walk
+1960 =Scientific American= 202(4), pp. 64–71). /Norman 1988/
+provided the design-audit form: dozens of physical-artefact
+case studies (doors, taps, stove burners) where misaligned
+signifiers caused predictable misuse. /McGrenere & Ho 2000/
+("Affordances: Clarifying and Evolving a Concept,"
+=Graphics Interface 2000=, pp. 179–186) is the canonical
+review paper, distinguishing Gibsonian /capability/ from
+Normanian /perceived capability/ and proposing that HCI
+practice conflated them. Empirical follow-up is mostly
+usability-test case work — A/B comparisons of button shapes,
+icon designs, hyperlink underlining — none of which yields
+a Miller-7±2 style portable constant. The strength is
+qualitative consistency: when signifiers mismatch
+affordances, users predictably miss the action. That
+qualitative finding is what transfers, not a number.
+
+** J.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-J-3
+:END:
+
+Agents read /textual signifiers/ continuously. Six visible
+populations in this codebase:
+
+| Signifier kind | Example | Affordance communicated |
+|----------------+---------+------------------------|
+| File extension | =.org=, =.py= | "loadable as literate Elisp" / "Python module" |
+| Heading-as-concept | =* Public API= vs =* Functions= | "this section names a role, not a phase" |
+| Property drawer | =:CUSTOM_ID: dir-J-3= | "stable cross-file anchor lives here" |
+| YAML / TOML front-matter | =allowed-tools: [Read, Grep]= | "skill restricts which tools it may invoke" |
+| Named code block | =#+NAME: ansi-strip= | "this block is referenced elsewhere" |
+| Tag suffix | =:sdd:= on a heading | "this section is a story-driven-development node" |
+
+Each row is exactly a Norman-2013 signifier: a textual cue
+that communicates a capability. Three of these were designed
+explicitly with AI readers in mind (=:CUSTOM_ID:= for
+agent-grep stability, =allowed-tools:= for permission
+gating, =:sdd:= for workflow dispatch). The other three
+predate the AI-reader audience and were inherited from
+human-targeted typography but transferred without
+modification — agents happily consume them. The agent
+side of isomorphism is strong: the codebase's own skill
+authors increasingly /design for the AI reader as a first-
+class audience/, with humans as a secondary consumer.
+
+** J.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-J-4
+:END:
+
+The shared primitive is /relational fit between artefact and
+reader determines what the reader does next/, with /signifiers
+as the communication layer/ telling each reader which actions
+the artefact supports. Two universal features:
+
+1. The /need/ for explicit signifiers is audience-independent —
+   both populations fail predictably when affordances are
+   present but unsignified. The Norman 1988 case of "doors
+   that need a push sign because the handle suggests pull" is
+   the exact analogue of "an =.org= file that needs a comment
+   saying 'this is a config, not code' because the file
+   extension fails to communicate the role."
+2. /Structural/ signifiers (heading hierarchy, property
+   drawers, named blocks) transfer across audience because
+   the structure /is/ the signifier-bearing substrate and
+   both populations parse it the same way.
+
+The audience-specific layer is the /typographic/ signifier
+set — italics, parentheses, em-dashes, whitespace breaks —
+which agents downsample to flat tokens but humans read as
+strong cues. The dual-audience design move is to layer the
+two: keep typography for human aesthetics but make every
+load-bearing signifier /structural/ so the agent gets the
+same affordance map without depending on aesthetic
+perception.
+
+** J.5 Where transfer breaks
+:PROPERTIES:
+:CUSTOM_ID: dir-J-5
+:END:
+
+The break lives at Gibson's foundational claim of /direct
+perception/. Gibson 1979 argues affordances are picked up
+directly from the optic array — no inference, no symbolic
+intermediate. The whole ecological-psychology programme rests
+on this: perception is unmediated. Agents do not perceive
+in this sense at all; they tokenise byte streams. So:
+
+- /Real/ affordances in Norman's 1999 sense (what the
+  artefact actually permits — file is Read-able, function is
+  call-able, section is cross-referenceable) transfer
+  trivially because they are properties of the substrate,
+  not of perception.
+- /Perceived/ affordances depend on the perception apparatus,
+  and the apparatus differs fundamentally. A button's
+  three-dimensional bevel signals press-ability to a human
+  via direct visual pickup; the same bevel reaches an agent
+  only as ALT text, ARIA role, or a structural tag — never
+  as the bevel itself.
+- /Signifiers/ that depend on typographic perception
+  (whitespace, font weight, colour-only emphasis) collapse
+  into nothing for agents.
+
+The clean operational implication is the same as in D
+(eye-tracking): /any affordance whose signifier is
+typography-only is invisible to agents/. To make the
+affordance dual-audience, the signifier must be structural
+(a tag, a property, an explicit named anchor).
+
+** J.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-J-6
+:END:
+
+Four-rule design heuristic for an LP author whose document
+must work as a dual-audience artefact:
+
+1. /Be dense in structural signifiers/. Every section gets a
+   =:CUSTOM_ID:=; every cross-referenced block gets a =#+NAME:=;
+   every heading names a /concept/ (the role this section plays
+   in the system), not a phase (=Functions=, =Helpers=). This
+   is the heading-as-concept rule already in this repo's
+   =literate-programming-document-first.md=, restated as a
+   signifier-design principle.
+2. /Prefer structural signifiers over typographic ones for
+   load-bearing affordances/. Italics for emphasis is fine
+   for humans; if the agent /must/ know "this is the public
+   API," express that as a =:PROPERTIES:= drawer or a tag,
+   not as bold text.
+3. /Layer signifier-vocabularies/. Keep typography for human
+   aesthetics; layer structural cues underneath so the agent
+   gets the same affordance map. A heading written
+   "* Public API" in bold gives humans the typographic
+   signifier; the heading text itself plus a =:CUSTOM_ID:=
+   gives the agent the structural one. Both audiences win
+   from the same artefact.
+4. /Audit signifier-affordance alignment/. If a section
+   labels itself "internal helpers" but the agent's grep
+   shows the symbols are imported from three other modules,
+   the signifier lies about the affordance and someone will
+   misuse the code. The =naming-conventions.md= and =-=- vs =--=
+   public-vs-private convention in this repo is exactly this
+   audit pattern at the symbol level.
+
+This is the most directly /actionable/ direction of the
+ten — affordance theory's design-audit form fits naturally
+into LP author practice.
+
+** J.7 Synthesis: J as the third corner of the D-H-J triangle
+:PROPERTIES:
+:CUSTOM_ID: dir-J-7
+:END:
+
+Direction J sits on /the partial-high boundary just above
+the dead-zone/ in [[#synthesis-figure][the figure]]. J's transfer profile is
+the inverse of H's: H's perceptual organisation does not
+transfer at all, yet J's signifier concept (the cue that
+communicates an affordance) transfers cleanly once the cue
+moves from typographic to structural. J does not introduce
+a new shared-primitive family — its membership tally was
+finalised in [[#dir-J-3][J.3 Agent isomorphism]] — but it instantiates
+two existing patterns with unusual clarity.
+
+J is the /third corner of the D-H-J triangle/ named in
+[[#dir-H-7][H.7]]. Read from J's perspective: the human reader's
+affordance perception depends on D's saccade / fixation /
+parafoveal-preview mechanism to land the eye and on H's
+proximity / similarity / closure grouping to organise the
+percept. The signifier (J) is whatever cue the artefact
+provides that the D + H machinery can pick up. For agents,
+neither D nor H is operative, so the cue must be picked up
+by tokenisation instead. That is the substrate gap.
+J's contribution is to name /the LP design rule that
+collapses the gap/: any cue that must be picked up by /both/
+audiences must be picked up by structural means
+(=:CUSTOM_ID:=, =#+NAME:=, tags) rather than typographic
+means (font weight, italics, whitespace, colour). A reader
+who internalises J's four-rule heuristic ([[#dir-J-6][J.6]] items 1–4)
+has effectively absorbed the D-H-J triangle's design
+consequence without needing to read D or H at all.
+
+J is also the second-strongest case of /convergent design
+without lineage/ in the catalogue, after G. Norman 2013's
+/signifier/ concept was published in =The Design of Everyday
+Things=, revised edition. The Anthropic skill SDK's
+=allowed-tools:=, =description:=, and =when_to_use:= fields
+are all signifiers in Norman's sense — cues telling the
+agent reader what the skill can do, when it should run, and
+which tools it may invoke. The skill-SDK designers did not
+cite Norman 2013 (no documented derivation exists). Yet the
+designs are not merely similar — they map clause-for-clause
+onto Norman's typology: =description:= is a /real/
+affordance label, =allowed-tools:= is a /perceived/
+affordance constraint, =when_to_use:= is a /signifier/ for
+the affordance's invocation context. Three independent
+populations (everyday-object users circa 1988; web/HCI users
+circa 2013; AI agents circa 2024) converged on the same
+three-part typology because all three populations face the
+same interface constraint: /must decide what an artefact
+can do for me before investing budget in interaction/.
+
+J is the catalogue's neatest illustration of the principle
+that /transfer happens where it is forced by constraint
+universality, and breaks where it is forced by substrate
+specificity/. The signifier idea is constraint-universal;
+the perceptual substrate that picks signifiers up is
+substrate-specific. LP design that recognises the split
+inherits both halves cleanly.
+
+* Provenance
+:PROPERTIES:
+:CUSTOM_ID: provenance
+:END:
+
+This document was developed over 50 iterations along a
+five-round trajectory: /Skeleton/ (iters 1–10) staked the
+ten directions A–J with parallel six-question headers;
+/Deepen/ (11–20) filled the bodies with concrete canon
+citations and empirical findings; /Synthesise/ (21–30)
+placed each direction on the [[#synthesis-figure][transfer-gradient figure]],
+named six [[#synthesis-families][shared-primitive families]], and recorded eight
+[[#synthesis-observations][cross-cutting observations]]; /Cite + verify/ (31–40)
+upgraded every Sources entry to verified citations
+(DOI / URL / ISBN / page range / retrieval date 2026-05-19)
+via 40 WebSearch calls; /Polish + trim/ (41–50) applied a
+paragraph-level deletion test and removed working-log
+scaffolding.
+
+Four substantive body corrections surfaced during
+verification:
+
+| Direction | Correction |
+|-----------+------------|
+| A | ScentTrails attributed to Olston & Chi 2003 =ACM TOCHI= 10(3) (the early bootstrap had misattributed it to Card-Pirolli-Van Der Wege 2001) |
+| B | Germane-load three-way split traced to Sweller, van Merriënboer & Paas 1998 =Educational Psychology Review= 10(3) (not Sweller 1988, which carried only intrinsic + extraneous) |
+| E | System 1 / System 2 labels coined in Stanovich & West 2000 =Behavioral and Brain Sciences= 23(5); Kahneman 2011 popularised them but did not originate them |
+| G | The NN/g "Progressive Disclosure" article cited throughout was originally published 4 December 2006, not in a 1995 Alertbox as early drafts implied |
+
+The eight cross-cutting observations carried into [[#synthesis-observations][Synthesis]]
+were re-audited during verification against the two-part
+discipline established by observation #8 (a transfer claim
+requires either /closed-form mathematical core/ or
+/observed behavioural isomorphism/). All eight passed, with
+the Olsson et al. 2022 induction-heads paper from the H.7
+weak-metaphor discussion explicitly labelled as such in
+[[#sources-H][Sources H]].
+
+The iter-by-iter working log lives in
+=research/.progress.log= (gitignored, one line per iter).
+Trajectory totals: file grew from ~10 sections at iter#1
+to ~110 sections / 172 KB at iter#40, then contracted in
+Round 5 to roughly 110 sections / 167 KB by iter#50 as the
+working-log scaffolding (per-round status sections,
+intra-section self-narration, "Round N contribution"
+timestamps, prior-loop references) was deleted in favour
+of direct cross-references to [[#synthesis-figure][the figure]],
+[[#synthesis-families][shared-primitive families]], and [[#synthesis-observations][cross-cutting
+observations]].
+
+* Synthesis (running notes)
+:PROPERTIES:
+:CUSTOM_ID: synthesis
+:END:
+
+This section is being progressively populated by Round 3
+(iters 21–30). Each direction's iter contributes one row to
+the transfer-gradient figure and one short paragraph naming
+its shared-primitive family. By iter#30 the figure should
+cover all ten directions and the cross-cutting observations
+should be articulated against the /behaviour-vs-substrate/
+axis identified in [[#round-2-status][Round 2 status]] pattern #4.
+
+** Transfer-gradient figure (work in progress)
+:PROPERTIES:
+:CUSTOM_ID: synthesis-figure
+:END:
+
+The figure plots each direction on two axes:
+- /Vertical/: substrate distance — how far the finding sits
+  from biological perception apparatus. Top = pure behaviour
+  / decision structure; bottom = motor or perceptual
+  mechanism.
+- /Horizontal/: transfer completeness for AI-agent reader —
+  left = full transfer; right = transfer breaks at some
+  identified boundary.
+
+#+begin_example
+                    behaviour / decision structure (full transfer)
+                                    ▲
+                                    │
+                  A. info foraging  │  F. recognition/recall
+                  I. berry-picking  │  (cued-retrieval economics)
+                                    │
+                                    │
+   ←──────────────────────────────  ┼  ──────────────────────────────→
+   full transfer                    │                    transfer breaks
+                                    │
+                  E. mental models  │   G. progressive disclosure
+                  (partial-high)    │   (partial-high, persistence break)
+                                    │
+                  B. cognitive load │   J. affordances + signifiers
+                  (partial-mid;     │   (partial-high; perception
+                  schema break)     │    layer breaks; signifiers OK)
+                                    │
+                  C. working memory │   D. eye-tracking + saccades
+                  (partial-low;     │   (human-only; substrate-bound)
+                  numerical const   │
+                  do not transfer)  │   H. Gestalt principles
+                                    │   (human-only; perceptual substrate)
+                                    ▼
+                    substrate / perceptual mechanism (transfer breaks)
+#+end_example
+
+Three findings (A, F, I) cluster in the upper-left full-
+transfer quadrant. Two findings (D, H) cluster in the lower-
+right human-only quadrant. The remaining five spread along
+the partial-transfer diagonal, each breaking at a different
+mechanism layer.
+
+** Shared-primitive families (work in progress)
+:PROPERTIES:
+:CUSTOM_ID: synthesis-families
+:END:
+
+The directions that transfer (or partially transfer) share
+small families of primitives. Round 3 iters will populate
+this list as each direction reports in. Initial draft:
+
+| Family | Member directions | Primitive |
+|--------+-------------------+-----------|
+| Foraging economics | A, F, I | Bounded budget + unequal landscape + asymmetric proximal-distal cost |
+| Element-interactivity bound | B, C | Items × pairwise interactivity hits a finite store; structural form transfers, numerical constant does not |
+| Cross-session state persistence | B, E, G, I | Finding requires reader to carry state from one encounter to the next; break boundary at the agent's stateless cold-start |
+| Substrate-bound numerical constants | C, D, H | A specific number (Miller 7±2, Cowan 4±1, Rayner saccade lengths, Wertheimer grouping radii) is part of the canonical finding and derives from biological apparatus; the structural form survives but the number does not |
+| Perceptual-substrate-only | D, H | Entire finding lives in human visual-perception apparatus; stripping the perceptual mechanism leaves nothing portable; no upper-quadrant projection at all |
+| Dual-process processing modes | E, F, G | Readers shift between fast cue-driven and slow deliberate processing depending on stake; agent traces show structural-form analogue (grep-scan vs chain-of-thought); Kahneman 2011 names the frame, F supplies the recognition-side optimisation, G supplies the deliberation-side scaffolding |
+| /(further families populated by iter#26 onwards)/ | | |
+
+Members of the /Foraging-economics/ family share the closed-
+form result that rate-of-gain optimisation under a finite
+budget produces patch-selection and patch-leaving behaviour
+regardless of substrate. The shared-primitive name is
+deliberately ecological (Charnov 1976) rather than cognitive,
+which is why the same primitive holds for ant colonies, web
+readers, and AI agents alike.
+
+Members of the /Element-interactivity bound/ family share
+the structural form "interacting items in a budget-limited
+store cause graceful degradation under overload." Sweller's
+CLT and Miller/Cowan's working-memory limits are the same
+constraint stated with two different vocabularies and two
+different empirical traditions. The constraint transfers
+fully; the numerical value of the budget (Miller's 7±2,
+Cowan's 4±1, agent context windows in the 10⁵-10⁶ token
+range) is substrate-specific.
+
+Members of the /Cross-session state persistence/ family
+each break at the same agent-architecture boundary: the
+agent starts each conversation with no memory of prior
+encounters. B's schema construction, E's mental-model
+accretion, G's expert-recognition payoff, and I's saturated-
+sampling memory all require the reader to carry durable
+state forward. RAG / explicit memory / fine-tuning are
+architectural workarounds; none is "natural" agent
+behaviour the way inter-session consolidation is for
+humans. This family is the largest single source of
+identified transfer breaks in the Round-2 deepening.
+
+Members of the /Substrate-bound numerical constants/
+family each pin a finding to a specific number that derives
+from biological measurement: phonological-loop capacity for
+C, oculomotor and parafoveal geometry for D, retinal
+sampling rates for H. The family identifies a particular
+failure mode of naive HI-to-agent transfer: a designer who
+copies the canonical bound ("max 7 items per menu") onto an
+agent context window misreads the finding entirely. The
+correct port is the structural form (capacity is bounded,
+perception jumps in discrete units, proximity produces
+grouping) with a new number derived from agent
+measurements (context-window tokens, attention-head bias,
+embedding-space distance). The cleanest illustration is
+the agent context window: it /is/ bounded, but at 10⁵-10⁶
+tokens its qualitative implications for LP design are
+opposite to Miller's. The human reader is overwhelmed by
+30-item lists; the agent context window absorbs them
+trivially but loses fidelity over thousands of items by a
+different mechanism (positional bias, lost-in-the-middle).
+Same structural concern, different specific number, different
+mitigation.
+
+Members of the /Perceptual-substrate-only/ family are
+narrower than the substrate-bound-numerical-constants
+family. D and H share the property that /the finding has
+no portable upper-quadrant projection at all/ — stripping
+the perceptual mechanism leaves nothing for the LP author
+to carry across. D's eye-mind assumption (Just & Carpenter
+1980, =Psychological Review= 87(4)) collapses without an
+eye doing the minding; H's grouping principles collapse
+without a retina doing the grouping. Membership in this
+family is the operational definition of "human-only" in
+the figure: a direction belongs here when its takeaway for
+the LP author begins with "this finding is for human
+readers only" and ends with "ensure the human-only
+optimisation does not damage the structural infrastructure
+agents depend on." The D → J cross-projection (D names the
+perceptual gap; J names the LP design rule — load-bearing
+affordances must be structural signifiers, not typographic
+ones) shows that perceptual-substrate-only directions
+nevertheless /constrain/ the dual-audience design even
+though their findings do not transfer.
+
+Members of the /Dual-process processing modes/ family
+share the structural claim that /a reader runs in two
+operating modes — a fast cue-driven mode and a slow
+deliberate mode — selectable by stake/, where stake is
+roughly "cost of being wrong here." Kahneman 2011 names
+the human form (System 1 / System 2, with neuroanatomical
+correlates that are themselves human-only). F (recognition
+vs recall) and G (progressive disclosure) supply the
+design-side moves that match the two modes — recognition-
+based UI for System 1, scaffolded disclosure of complexity
+for System 2. The agent-side evidence is observational:
+agents reading-by-grep operate in a fast cue-driven mode
+that produces System-1-like errors (mismatched filenames,
+out-of-date snippets); agents producing chain-of-thought
+traces with explicit intermediate facts operate in a
+slow deliberate mode that produces System-2-like outputs.
+The host project's =CLAUDE.md= /Tool-Use Protocol/ rule
+("every claim backed by tool output") is a System-2
+scaffolding move written for agents. The shared primitive
+is /two modes selectable by stake/; the substrate
+implementation (dopaminergic versus prefrontal-cortex for
+humans, attention-pattern versus extended-thinking for
+agents) is substrate-specific and varies. This is the
+third member of the upper-left full-transfer zone after
+the /Foraging-economics/ triad (A, F, I) — F appears in
+both families because cued-retrieval economics /is/ the
+recognition-side optimisation that dual-process design
+exploits.
+
+** Cross-cutting observations (work in progress)
+:PROPERTIES:
+:CUSTOM_ID: synthesis-observations
+:END:
+
+Carried forward from [[#round-2-status][Round 2 status]] for Round 3 to
+sharpen:
+
+1. /Cross-session state persistence/ is a universal transfer-
+   break boundary (B, E, G, I).
+2. /Convergent design without lineage/ — Anthropic skill SDK
+   =when_to_use= ≈ Nielsen 1995 first-screen scannability;
+   =CUSTOM_ID= ≈ Norman 2013 signifier; =allowed-tools:= ≈
+   Tognazzini progressive-disclosure scaffolding.
+3. /Substrate-level numerical limits do not transfer/ —
+   Miller 7±2, Cowan 4±1, Rayner saccade lengths, Wertheimer
+   grouping radii are all substrate-bound constants. The
+   /structural form/ (limits exist) is universal; the
+   /numerical value/ is human-only.
+4. /Behaviour and decision-structure findings transfer
+   cleanly/ — A, F, I anchor the upper-left quadrant
+   precisely because they describe behaviour shape, not
+   substrate mechanism.
+
+The Round-3 contribution will be re-articulating these as
+the /two axes/ shown in the figure above — vertical
+behaviour/substrate, horizontal full-transfer/breaks — and
+showing that the four cross-cutting observations are
+projections of a single underlying claim: /transfer
+completeness is predicted by abstraction level above the
+substrate/.
+
+A fifth observation is emerging from Round 3 itself:
+/some directions are cross-family hubs/. F (recognition vs
+recall) and E (mental models + dual-process) each appear in
+two shared-primitive families. The pattern is not arbitrary —
+F's recognition asymmetry /is/ what makes foraging and
+dual-process design work mechanistically, and E's
+dual-process frame /is/ the theoretical container that names
+F and G's joint structural role. Cross-family hubs explain
+the inner clustering of the figure's quadrants: directions
+co-locate not by topical proximity but by shared underlying
+constraint structure. See [[#dir-F-7][F.7 Synthesis: F as cross-family
+hub]] for the worked example.
+
+A related observation is /component-level rather than
+direction-level transfer assessment/. B (CLT) and E (mental
+models + dual-process) each braid two findings with
+different transfer profiles into a single canonical
+direction. The figure plots each direction's centre of mass;
+individual findings within a direction may project onto
+different quadrants. Future taxonomic work should consider
+unbraiding multi-component directions explicitly — this is
+left to Round 5 polish.
+
+The seventh observation is /convergent design without
+lineage/, originally named in [[#round-2-status][Round 2 status]] as cross-
+cutting observation #2 and now anchored to G (iter#27) as
+primary case-study. When two reader populations face the
+same interface constraint, /independent design lineages/
+converge on members of the same design family even when
+neither lineage cites the other. The /Anthropic skill SDK/'s
+=when_to_use= field re-implements Carroll & Rosson 1987's
+minimalist-instruction doctrine and Krug 2000's first-screen
+heuristic without documented derivation; =allowed-tools:=
+re-implements Tognazzini 1992's progressive-disclosure
+scaffolding. Convergence has a mechanical explanation —
+under fixed interface constraints (bounded budget +
+heterogeneous candidates + fast triage required), rational
+design lands in a small region of design space. The
+research finding is that /the convergence happens cleanly
+across substrates/, which validates the figure's
+behaviour-vs-substrate axis at a meta-level: the convergent
+designs all live in the behaviour layer (recognition,
+disclosure, scaffolding) and not in the substrate (neural
+circuitry / transformer attention pattern).
+
+An eighth observation, contributed by iter#28 around
+direction H, is /weak metaphors invite overgeneralisation/.
+Surface analogies between substrate mechanisms (transformer
+attention heads producing token-similarity scores; Gestalt
+proximity grouping producing perceptual groups) can read as
+shared primitives but typically are not. The Round 3
+discipline for marking a finding as /transferring/ requires
+either: (a) a closed-form mathematical core that holds
+substrate-independently (the Foraging-economics standard,
+where R = G/T optimisation works for any rate-of-gain
+constraint structure), or (b) observed behavioural
+isomorphism backed by traces (the Dual-process standard,
+where agents demonstrably switch between grep-scan and
+extended-thinking modes). Surface analogies that lack both
+— Gestalt-grouping ≈ attention-head similarity, retrieval-
+practice ≈ chain-of-thought reinforcement, working-memory-
+chunking ≈ context-window compression — must be marked as
+weak metaphors. Future Round-4 verification work should
+audit each direction's shared-primitive claim against this
+two-part discipline.
+
+* Sources
+:PROPERTIES:
+:CUSTOM_ID: sources
+:END:
+
+/Round 4 (iters 31–40) populates this with proper
+bibliographic entries with URLs, DOIs, and page numbers./
+
+** A. Information foraging — verified (iter#31)
+:PROPERTIES:
+:CUSTOM_ID: sources-A
+:END:
+
+1. Pirolli, Peter, and Stuart K. Card. "Information Foraging
+   in Information Access Environments." In =Proc. CHI '95=
+   (ACM Press, 1995), pp. 51–58.
+   [[https://doi.org/10.1145/223904.223911][DOI 10.1145/223904.223911]].
+   First publication of the theory; introduces the
+   information-patch / information-scent vocabulary.
+   Verified iter#31 via ACM DL listing.
+
+2. Pirolli, Peter, and Stuart K. Card. "Information
+   Foraging." =Psychological Review= 106(4), 1999,
+   pp. 643–675. [[https://doi.org/10.1037/0033-295X.106.4.643][DOI 10.1037/0033-295X.106.4.643]].
+   Open-access technical-report version:
+   [[https://act-r.psy.cmu.edu/wordpress/wp-content/uploads/2012/12/280uir-1999-05-pirolli.pdf][PARC UIR-1999-05]] (retrieved 2026-05-19).
+   Canonical formal statement of R = G/T optimisation and
+   the scent-driven patch-selection model.
+
+3. Charnov, Eric L. "Optimal Foraging: The Marginal Value
+   Theorem." =Theoretical Population Biology= 9 (1976),
+   pp. 129–136. [[https://doi.org/10.1016/0040-5809(76)90040-X][DOI 10.1016/0040-5809(76)90040-X]].
+   Open-access archive copy:
+   [[https://digitalrepository.unm.edu/biol_fsp/9/][UNM Digital Repository]] (retrieved 2026-05-19).
+   The behavioural-ecology source paper that Pirolli & Card
+   borrowed the patch-leaving mathematics from. Pirolli's
+   /information patch/ inherits Charnov's optimal-residence-
+   time result verbatim — leave when in-patch rate drops to
+   habitat average rate.
+
+4. Pirolli, Peter. =Information Foraging Theory: Adaptive
+   Interaction with Information=. New York: Oxford
+   University Press, 2007. ISBN 978-0-19-517332-1.
+   Book-length consolidation; introduces ACT-IF cognitive-
+   architecture integration and the SNIF-ACT extension.
+
+5. Fu, Wai-Tat, and Peter Pirolli. "SNIF-ACT: A Cognitive
+   Model of User Navigation on the World Wide Web."
+   =Human–Computer Interaction= 22(4), 2007, pp. 355–412.
+   [[https://doi.org/10.1080/07370020701638806][DOI 10.1080/07370020701638806]].
+   The ACT-R-integrated cognitive model that operationalises
+   information-foraging predictions for web navigation.
+
+6. Olston, Chris, and Ed H. Chi. "ScentTrails: Integrating
+   Browsing and Searching on the Web." =ACM Transactions on
+   Computer-Human Interaction= 10(3), September 2003,
+   pp. 177–197. [[https://doi.org/10.1145/937549.937550][DOI 10.1145/937549.937550]].
+   Open-access archive copy:
+   [[http://infolab.stanford.edu/~olston/publications/scenttrails.pdf][infolab.stanford.edu/~olston/publications/scenttrails.pdf]]
+   (retrieved 2026-05-19).
+   Empirical implementation of scent-gradient visualisation;
+   replaces the previously-misattributed "Card, Pirolli,
+   Van Der Wege 2001" claim from rounds 1–3.
+
+7. /Information scent — canonical definition/. Quoted in
+   Pirolli & Card 1999 (entry 2 above) and consolidated in
+   Pirolli 2007 (entry 4): /"the (imperfect) perception of
+   the value, cost, or access path of information sources
+   obtained from proximal cues, such as bibliographic
+   citations, WWW links, or icons representing the
+   sources."/ Verbatim verification, iter#31.
+
+** B. Cognitive load theory — verified (iter#32)
+:PROPERTIES:
+:CUSTOM_ID: sources-B
+:END:
+
+1. Sweller, John. "Cognitive Load During Problem Solving:
+   Effects on Learning." =Cognitive Science= 12(2), 1988,
+   pp. 257–285. [[https://doi.org/10.1207/s15516709cog1202_4][DOI 10.1207/s15516709cog1202_4]].
+   Open-access copy:
+   [[https://mrbartonmaths.com/resourcesnew/8.%20Research/Explicit%20Instruction/Cognitive%20Load%20during%20problem%20solving.pdf][mrbartonmaths.com PDF]]
+   (retrieved 2026-05-19).
+   Founding paper of CLT; introduces /intrinsic/ +
+   /extraneous/ decomposition (germane load was added in
+   entry 4 below). Empirical core: algebra problem-solving
+   via means-end analysis produces worse transfer than
+   worked-example study because means-end exhausts working
+   memory on goal-tracking.
+
+2. Sweller, John, and Graham A. Cooper. "The Use of Worked
+   Examples as a Substitute for Problem Solving in Learning
+   Algebra." =Cognition and Instruction= 2(1), 1985,
+   pp. 59–89. [[https://doi.org/10.1207/s1532690xci0201_3][DOI 10.1207/s1532690xci0201_3]].
+   The empirical basis for the /worked-example effect/,
+   established four years before the 1988 CLT formalisation.
+
+3. Chandler, Paul, and John Sweller. "The Split-Attention
+   Effect as a Factor in the Design of Instruction."
+   =British Journal of Educational Psychology= 62(2), 1992,
+   pp. 233–246. [[https://doi.org/10.1111/j.2044-8279.1992.tb01017.x][DOI 10.1111/j.2044-8279.1992.tb01017.x]].
+   Open-access copy:
+   [[http://www.davidlewisphd.com/courses/EDD8121/readings/1992-ChandlerSweller-SplitAttention.pdf][davidlewisphd.com PDF]]
+   (retrieved 2026-05-19).
+   Empirical basis for the /split-attention effect/ — when
+   text and diagram must be integrated to make sense,
+   spatial separation imposes extraneous load. Foundational
+   CLT result on extraneous-load mechanisms.
+
+4. Sweller, John, Jeroen J. G. van Merriënboer, and Fred G.
+   W. C. Paas. "Cognitive Architecture and Instructional
+   Design." =Educational Psychology Review= 10(3), 1998,
+   pp. 251–296. The reformulation that /added the
+   germane-load construct/ to the intrinsic+extraneous
+   pair from Sweller 1988 — the canonical three-way split
+   the body B.1 cites traces to this paper, not to 1988.
+
+5. van Merriënboer, Jeroen J. G. =Training Complex Cognitive
+   Skills: A Four-Component Instructional Design Model for
+   Technical Training=. Englewood Cliffs, NJ: Educational
+   Technology Publications, 1997. ISBN 978-0-87778-298-8.
+   The 4C/ID consolidation; first book-length statement of
+   the four-component framework that organises learning
+   tasks, supportive information, procedural information,
+   and part-task practice around CLT-derived sequencing.
+
+** C. Working memory limits — verified (iter#33)
+:PROPERTIES:
+:CUSTOM_ID: sources-C
+:END:
+
+1. Miller, George A. "The Magical Number Seven, Plus or
+   Minus Two: Some Limits on Our Capacity for Processing
+   Information." =Psychological Review= 63(2), 1956,
+   pp. 81–97. [[https://doi.org/10.1037/h0043158][DOI 10.1037/h0043158]].
+   Open-access copy:
+   [[https://labs.la.utexas.edu/gilden/files/2016/04/MagicNumberSeven-Miller1956.pdf][UT Austin labs PDF]] (retrieved 2026-05-19).
+   /Historical note worth carrying forward/: Miller's paper
+   distinguishes /absolute judgement/ (categorising stimuli
+   along one dimension) from /immediate memory/ (recalling
+   digit / letter sequences). The 7±2 result was discovered
+   in absolute-judgement and observed to recur in
+   immediate-memory tasks. Miller himself described the
+   number as a "rhetorical device" in later interviews.
+
+2. Cowan, Nelson. "The Magical Number 4 in Short-Term
+   Memory: A Reconsideration of Mental Storage Capacity."
+   =Behavioral and Brain Sciences= 24(1), 2001, target
+   article pp. 87–114; with 25 invited commentaries and
+   author response to p. 185.
+   [[https://doi.org/10.1017/S0140525X01003922][DOI 10.1017/S0140525X01003922]].
+   Open-access copy:
+   [[https://www.cambridge.org/core/services/aop-cambridge-core/content/view/44023F1147D4A1D44BDC0AD226838496/S0140525X01003922a.pdf/the-magical-number-4-in-short-term-memory-a-reconsideration-of-mental-storage-capacity.pdf][Cambridge Core PDF]] (retrieved 2026-05-19).
+   The downward revision once chunking, rehearsal, and
+   long-term retrieval are controlled out; isolates the
+   /focus of attention/ at 4 ± 1 across verbal, non-verbal,
+   visual, auditory, single-task, dual-task, attended, and
+   unattended studies.
+
+3. Baddeley, Alan D., and Graham Hitch. "Working Memory."
+   In Gordon Bower (ed.), =The Psychology of Learning and
+   Motivation= vol. 8, Academic Press, 1974, pp. 47–89.
+   The original three-component proposal (phonological loop,
+   visuospatial sketchpad, central executive). Pre-DOI era;
+   widely cited via the chapter listing in standard
+   memory-textbook bibliographies.
+
+4. Baddeley, Alan D. "Working Memory." =Science= 255(5044),
+   January 1992, pp. 556–559. Compact peer-reviewed summary
+   of the three-component model for cross-disciplinary
+   audiences.
+
+5. Baddeley, Alan D. "The Episodic Buffer: A New Component
+   of Working Memory?" =Trends in Cognitive Sciences= 4(11),
+   November 2000, pp. 417–423.
+   [[https://doi.org/10.1016/S1364-6613(00)01538-2][DOI 10.1016/S1364-6613(00)01538-2]].
+   The four-component reformulation; adds the cross-modal
+   binding store that becomes the canonical model after 2000.
+
+6. Baddeley, Alan D. =Working Memory=. Oxford: Oxford
+   University Press, 1986. ISBN 978-0-19-852116-2. First
+   book-length consolidation of the multi-component model;
+   the 2007 revised edition retitled =Working Memory,
+   Thought, and Action= (Oxford UP, ISBN 978-0-19-852813-0)
+   incorporates the episodic buffer.
+
+12. Baddeley, Alan D. "Working Memory: Theories, Models, and
+    Controversies." =Annual Review of Psychology= 63, 2012,
+    pp. 1–29. Mature-form review.
+
+** D. Eye-tracking and saccade — verified (iter#34)
+:PROPERTIES:
+:CUSTOM_ID: sources-D
+:END:
+
+1. Rayner, Keith. "Eye Movements in Reading and Information
+   Processing: 20 Years of Research." =Psychological
+   Bulletin= 124(3), 1998, pp. 372–422.
+   [[https://doi.org/10.1037/0033-2909.124.3.372][DOI 10.1037/0033-2909.124.3.372]].
+   Open-access copy:
+   [[http://andrewd.ces.clemson.edu/courses/cpsc881/papers/reading/Ray98_readingSurvey.pdf][Clemson hosted PDF]] (retrieved 2026-05-19).
+   The canonical review of two decades of eye-tracking
+   research on reading, music reading, typing, visual
+   search, and scene perception. Source of the typical
+   parameter values cited in body D.2 — fixation duration
+   200–250 ms, saccade length 7–9 letter spaces, regression
+   rate ≈10–15% of saccades for skilled adult readers.
+
+2. Just, Marcel A., and Patricia A. Carpenter. "A Theory of
+   Reading: From Eye Fixations to Comprehension."
+   =Psychological Review= 87(4), 1980, pp. 329–354.
+   [[https://doi.org/10.1037/0033-295X.87.4.329][DOI 10.1037/0033-295X.87.4.329]].
+   The /eye-mind assumption/ — the eye stays on a word
+   until cognitive processing of that word completes —
+   is articulated here. The model accounts for 72% of the
+   variance in word gaze durations using psycholinguistic
+   variables (word frequency, sentence-end position,
+   integration load).
+
+3. Reichle, Erik D., Alexander Pollatsek, Donald L. Fisher,
+   and Keith Rayner. "Toward a Model of Eye Movement
+   Control in Reading." =Psychological Review= 105(1),
+   1998, pp. 125–157.
+   [[https://doi.org/10.1037/0033-295X.105.1.125][DOI 10.1037/0033-295X.105.1.125]].
+   The founding paper of the E-Z Reader model
+   (model name introduced inside the paper). Computational
+   model of eye-movement control that ties saccade-target
+   selection to lexical-access stage of the foveated word
+   plus parafoveal-preview of the next word.
+
+4. Engbert, Ralf, Antje Nuthmann, Eike M. Richter, and
+   Reinhold Kliegl. "SWIFT: A Dynamical Model of Saccade
+   Generation During Reading." =Psychological Review=
+   112(4), 2005, pp. 777–813.
+   [[https://doi.org/10.1037/0033-295X.112.4.777][DOI 10.1037/0033-295X.112.4.777]].
+   Competing parallel-processing alternative to E-Z
+   Reader's strictly-serial lexical-access account.
+   Cited here for completeness; the body D draws on E-Z
+   Reader rather than SWIFT.
+
+** E. Mental models and dual-process — verified (iter#35)
+:PROPERTIES:
+:CUSTOM_ID: sources-E
+:END:
+
+1. Johnson-Laird, Philip N. =Mental Models: Towards a
+   Cognitive Science of Language, Inference, and
+   Consciousness=. Cambridge MA: Harvard University Press,
+   1983. ISBN 978-0-674-56881-5. 528 pages.
+   The founding cognitive-science formulation of mental
+   models — internal /working representations/ that allow
+   the reasoner to simulate possible states of the world.
+
+2. Norman, Donald A. =The Psychology of Everyday Things=.
+   New York: Basic Books, 1988. ISBN 978-0-465-06709-1.
+   Original title. The book was retitled =The Design of
+   Everyday Things= for the 1990 paperback edition.
+
+3. Norman, Donald A. =The Design of Everyday Things=,
+   revised and expanded edition. New York: Basic Books,
+   2013. ISBN 978-0-465-05065-9.
+   The revised edition that adds the /signifier/ concept
+   alongside affordance — re-cited in [[#sources-J][Sources J]]. The
+   /designer's-model / system-image / user's-model/ triad
+   is articulated in both editions.
+
+4. Kahneman, Daniel. =Thinking, Fast and Slow=. New York:
+   Farrar, Straus and Giroux, 2011. ISBN 978-0-374-27563-1.
+   The popular synthesis of three decades of dual-process
+   research; System 1 (fast, automatic, frequent, emotional,
+   stereotypic, unconscious) versus System 2 (slow,
+   effortful, infrequent, logical, calculating, conscious).
+
+5. Stanovich, Keith E., and Richard F. West. "Individual
+   Differences in Reasoning: Implications for the
+   Rationality Debate?" =Behavioral and Brain Sciences=
+   23(5), October 2000, target article pp. 645–665, with
+   commentary and author response to p. 726.
+   [[https://doi.org/10.1017/S0140525X00003435][DOI 10.1017/S0140525X00003435]].
+   The peer-reviewed dual-process article that introduced
+   the /System 1 / System 2/ terminology that Kahneman 2011
+   later popularised. Origin point for the labels used
+   throughout dual-process literature.
+
+6. Tversky, Amos, and Daniel Kahneman. "Judgment Under
+   Uncertainty: Heuristics and Biases." =Science= 185(4157),
+   1974, pp. 1124–1131.
+   [[https://doi.org/10.1126/science.185.4157.1124][DOI 10.1126/science.185.4157.1124]].
+   The foundational heuristics-and-biases paper that
+   precedes the dual-process framework's formalisation;
+   establishes the empirical basis for System-1 reasoning
+   failures (representativeness, availability, anchoring).
+
+** F. Recognition vs recall — verified (iter#36)
+:PROPERTIES:
+:CUSTOM_ID: sources-F
+:END:
+
+1. Tulving, Endel, and Donald M. Thomson. "Encoding
+   Specificity and Retrieval Processes in Episodic Memory."
+   =Psychological Review= 80(5), September 1973,
+   pp. 352–373. [[https://doi.org/10.1037/h0020071][DOI 10.1037/h0020071]].
+   The /encoding-specificity principle/ — recall depends
+   on overlap between encoding-time context and retrieval-
+   time cues. The substrate-bound experimental finding
+   that none the less maps mechanically onto agent
+   grep-retrieval (cue token must match stored token).
+
+2. Tulving, Endel. =Elements of Episodic Memory=. Oxford:
+   Oxford University Press, 1983. ISBN 978-0-19-852125-4.
+   Book-length consolidation; distinguishes episodic from
+   semantic memory and formalises the encoding-retrieval
+   framework that =Tulving & Thomson 1973= sketched.
+
+3. Mandler, George. "Recognizing: The Judgment of Previous
+   Occurrence." =Psychological Review= 87(3), May 1980,
+   pp. 252–271. [[https://doi.org/10.1037/0033-295X.87.3.252][DOI 10.1037/0033-295X.87.3.252]].
+   The /dual-process model of recognition/ — recognition
+   = familiarity (fast, automatic) + recollection (slow,
+   deliberate). Provides the mechanism behind the cleaner
+   recognition-vs-recall asymmetry: recognition can succeed
+   on familiarity alone while recall must run a full
+   retrieval search.
+
+4. Nielsen, Jakob, and Rolf Molich. "Heuristic Evaluation
+   of User Interfaces." In =Proc. CHI '90= (ACM Press,
+   Seattle WA, 1–5 April 1990), pp. 249–256.
+   [[https://doi.org/10.1145/97243.97281][DOI 10.1145/97243.97281]].
+   The original nine-heuristic paper. Heuristic #6
+   /recognition rather than recall/ traces its operational
+   form to this paper; the canonical ten-heuristic list
+   that fixed the final wording was published in 1994.
+
+5. Nielsen, Jakob. =Usability Engineering=. San Diego:
+   Morgan Kaufmann (Academic Press), 1993. ISBN
+   978-0-12-518406-9. Reissued 1994 paperback by Morgan
+   Kaufmann ISBN 978-0-12-518406-9. The book-length
+   consolidation that includes the ten-heuristic list in
+   the form cited everywhere afterwards.
+
+6. Nielsen, Jakob. "10 Usability Heuristics for User
+   Interface Design." Nielsen Norman Group, originally
+   posted 24 April 1994, last updated 30 January 2024.
+   [[https://www.nngroup.com/articles/ten-usability-heuristics/][nngroup.com/articles/ten-usability-heuristics]]
+   (retrieved 2026-05-19). The maintained canonical list;
+   heuristic #6 wording: /"Minimize the user's memory load
+   by making objects, actions, and options visible. The
+   user should not have to remember information from one
+   part of the dialogue to another."/
+
+** G. Progressive disclosure and scaffolded UI — verified (iter#37)
+:PROPERTIES:
+:CUSTOM_ID: sources-G
+:END:
+
+1. Tognazzini, Bruce. =Tog on Interface=. Reading, MA:
+   Addison-Wesley Professional, 1992. ISBN
+   978-0-201-60842-7. Established progressive-disclosure as
+   an interaction-design discipline at Apple between 1978
+   and 1992; structured as developer-letter responses
+   originally published in =Apple Directions=.
+
+2. Carroll, John M., and Mary Beth Rosson. "Paradox of the
+   Active User." In John M. Carroll (ed.), =Interfacing
+   Thought: Cognitive Aspects of Human-Computer
+   Interaction=, Cambridge MA: MIT Press, 1987,
+   pp. 80–111. [[https://dl.acm.org/doi/10.5555/28446.28451][ACM DL listing 10.5555/28446.28451]].
+   The /production paradox/ and /assimilation paradox/
+   are named here — users persist in inefficient procedures
+   even when more efficient ones exist; experts skip
+   tutorials they once needed because they have already
+   built schemas. Foundational empirical observation
+   underpinning G's expert-recognition payoff.
+
+3. Carroll, John M. =The Nurnberg Funnel: Designing
+   Minimalist Instruction for Practical Computer Skill=.
+   Cambridge MA: MIT Press, 1990. ISBN 978-0-262-03163-9.
+   The /minimalist instruction/ doctrine — tutorial-style
+   documentation that respects the active user. Carroll's
+   "minimalism" is the prose-design twin of Tognazzini's
+   UI-progressive-disclosure: surface what is needed now,
+   not everything that might be needed.
+
+4. Krug, Steve. =Don't Make Me Think: A Common Sense
+   Approach to Web Usability=. Indianapolis: New Riders,
+   2000. ISBN 978-0-7897-2310-9.
+   First edition; 195 pp. Krug's first-screen scannability
+   heuristic is named here and is the web-design version of
+   Carroll's minimalist-instruction move.
+
+5. Krug, Steve. =Don't Make Me Think, Revisited: A Common
+   Sense Approach to Web Usability=. 3rd edition. Berkeley
+   CA: New Riders, 2014. ISBN 978-0-321-96551-6.
+   Revised edition adding mobile UX chapter; canonical
+   reference for "scannability" terminology used in
+   contemporary HCI training.
+
+6. Nielsen, Jakob. "Progressive Disclosure." Nielsen Norman
+   Group Article, originally posted 4 December 2006,
+   maintained. [[https://www.nngroup.com/articles/progressive-disclosure/][nngroup.com/articles/progressive-disclosure]]
+   (retrieved 2026-05-19). The NN/g canonical definition
+   that fixed contemporary usage of the term.
+
+7. van Merriënboer, Jeroen J. G., and Paul A. Kirschner.
+   =Ten Steps to Complex Learning: A Systematic Approach to
+   Four-Component Instructional Design=. New York:
+   Routledge, 3rd edition 2017. ISBN 978-1-138-94380-1.
+   First edition 2007. The mature formulation of 4C/ID
+   including /whole-task variation/ — the instructional-
+   design version of progressive disclosure that sequences
+   learning tasks by complexity rather than topic.
+
+** H. Gestalt principles — verified (iter#38)
+:PROPERTIES:
+:CUSTOM_ID: sources-H
+:END:
+
+1. Wertheimer, Max. "Untersuchungen zur Lehre von der
+   Gestalt II." =Psychologische Forschung= 4, 1923,
+   pp. 301–350. [[https://doi.org/10.1007/BF00410640][DOI 10.1007/BF00410640]].
+   Open-access scan:
+   [[https://www.gestalttheory.net/download/Wertheimer1923_Lehre_von_der_Gestalt.pdf][gestalttheory.net PDF]] (retrieved 2026-05-19).
+   English abridged translation as "Laws of Organization
+   in Perceptual Forms" in W. D. Ellis (ed.) =A Source Book
+   of Gestalt Psychology=, London: Routledge & Kegan Paul,
+   1938, pp. 71–88.
+   Open-access English translation: [[https://psychclassics.yorku.ca/Wertheimer/Forms/forms.htm][psychclassics.yorku.ca]]
+   (retrieved 2026-05-19). The canonical statement of the
+   six grouping principles (proximity, similarity, closure,
+   common fate, good continuation, Prägnanz).
+
+2. Köhler, Wolfgang. =Gestalt Psychology=. New York:
+   Liveright, 1929. The school's popularising textbook;
+   1947 revised edition retitled =Gestalt Psychology: An
+   Introduction to New Concepts in Modern Psychology=.
+
+3. Koffka, Kurt. =Principles of Gestalt Psychology=. New
+   York: Harcourt, Brace, 1935. The school's comprehensive
+   theoretical formalisation; foundational text alongside
+   Köhler 1929 for the second-generation Gestalt programme.
+
+4. Wagemans, Johan, James H. Elder, Michael Kubovy,
+   Stephen E. Palmer, Mary A. Peterson, Manish Singh, and
+   Rüdiger von der Heydt. "A Century of Gestalt Psychology
+   in Visual Perception: I. Perceptual Grouping and
+   Figure-Ground Organization." =Psychological Bulletin=
+   138(6), November 2012, pp. 1172–1217.
+   [[https://doi.org/10.1037/a0029333][DOI 10.1037/a0029333]].
+   First half of the centennial review; consolidates the
+   empirical record on grouping mechanisms.
+
+5. Wagemans, Johan, Jacob Feldman, Sergei Gepshtein, Ruth
+   Kimchi, James R. Pomerantz, Peter A. van der Helm, and
+   Cees van Leeuwen. "A Century of Gestalt Psychology in
+   Visual Perception: II. Conceptual and Theoretical
+   Foundations." =Psychological Bulletin= 138(6), November
+   2012, pp. 1218–1252. [[https://doi.org/10.1037/a0029334][DOI 10.1037/a0029334]].
+   Second half of the centennial review; theoretical
+   integration including the modern probabilistic
+   re-statement of grouping principles.
+
+6. Kubovy, Michael, and Martin van den Berg. "The Whole Is
+   Equal to the Sum of Its Parts: A Probabilistic Model of
+   Grouping by Proximity and Similarity in Regular
+   Patterns." =Psychological Review= 115(1), January 2008,
+   pp. 131–154. [[https://doi.org/10.1037/0033-295X.115.1.131][DOI 10.1037/0033-295X.115.1.131]].
+   Empirical and theoretical paper using dot-lattice
+   stimuli; canonical modern source for the grouping-radii
+   numerical constants cited in body H as substrate-bound.
+
+7. Olsson, Catherine, Nelson Elhage, Neel Nanda, Nicholas
+   Joseph, Nova DasSarma, Tom Henighan, et al. "In-context
+   Learning and Induction Heads." Anthropic preprint
+   (arXiv:2209.11895), 8 March 2022.
+   [[https://arxiv.org/abs/2209.11895][arxiv.org/abs/2209.11895]] (retrieved 2026-05-19).
+   Cited in body H.7 only as a /weak-metaphor/ comparand —
+   transformer attention heads perform token-similarity
+   operations whose surface resemblance to Wertheimer
+   grouping is structurally weak (Wertheimer grouping is
+   unconscious-automatic-irreversible; attention is
+   conditional-layer-by-layer-promptable).
+
+** I. Information retrieval and berry-picking — verified (iter#39)
+:PROPERTIES:
+:CUSTOM_ID: sources-I
+:END:
+
+1. Bates, Marcia J. "The Design of Browsing and Berrypicking
+   Techniques for the Online Search Interface." =Online
+   Review= 13(5), October 1989, pp. 407–424.
+   [[https://doi.org/10.1108/eb024320][DOI 10.1108/eb024320]].
+   Open-access author-hosted PDF:
+   [[https://pages.gseis.ucla.edu/faculty/bates/articles/berrypicking.pdf][pages.gseis.ucla.edu/faculty/bates/articles/berrypicking.pdf]]
+   (retrieved 2026-05-19). The founding paper of the
+   evolving-query / iterative-need model — query is not
+   fixed in advance but is reshaped by what is retrieved.
+
+2. Bates, Marcia J. "What is Browsing — Really? A Model
+   Drawing from Behavioural Science Research." =Information
+   Research= 12(4), paper 330, July 2007. Open-access
+   journal:
+   [[http://informationr.net/ir/12-4/paper330.html][informationr.net/ir/12-4/paper330.html]] (retrieved
+   2026-05-19). Bates's own model update; refines the
+   browsing-vs-directed-search distinction within the
+   berrypicking framework.
+
+3. Broder, Andrei. "A Taxonomy of Web Search." =ACM SIGIR
+   Forum= 36(2), September 2002, pp. 3–10.
+   [[https://doi.org/10.1145/792550.792552][DOI 10.1145/792550.792552]].
+   Open-access SIGIR-archive PDF:
+   [[https://sigir.org/files/forum/F2002/broder.pdf][sigir.org/files/forum/F2002/broder.pdf]] (retrieved
+   2026-05-19). The /navigational / informational /
+   transactional/ taxonomy that organises modern search-
+   intent literature; the agent-side analogue is
+   "find-the-file" / "understand-the-concept" / "modify-the-
+   state."
+
+4. Marchionini, Gary. "Exploratory Search: From Finding to
+   Understanding." =Communications of the ACM= 49(4),
+   April 2006, pp. 41–46.
+   [[https://doi.org/10.1145/1121949.1121979][DOI 10.1145/1121949.1121979]].
+   Distinguishes /lookup/ search (well-formed query, known
+   target) from /exploratory/ search (vague need, no
+   pre-existing target). Agent codebase exploration sits
+   squarely in the exploratory band.
+
+5. White, Ryen W., and Resa A. Roth. =Exploratory Search:
+   Beyond the Query-Response Paradigm=. San Rafael, CA:
+   Morgan & Claypool, 2009. =Synthesis Lectures on
+   Information Concepts, Retrieval, and Services= No. 3.
+   ISBN 978-1-59829-783-6. Book-length consolidation that
+   establishes exploratory-search as the design target for
+   modern search-UI research.
+
+6. Hearst, Marti A. =Search User Interfaces=. Cambridge:
+   Cambridge University Press, 2009. ISBN
+   978-0-521-11379-3. 404 pages. Free online edition:
+   [[https://searchuserinterfaces.com/][searchuserinterfaces.com]] (retrieved 2026-05-19).
+   The canonical textbook for search-interface design as
+   practised through the late 2000s; chapter on /faceted
+   navigation/ and /query reformulation/ informs the
+   berry-picking-as-iterative-refinement pattern.
+
+** J. Affordances and signifiers — verified (iter#40)
+:PROPERTIES:
+:CUSTOM_ID: sources-J
+:END:
+
+1. Gibson, James J. =The Ecological Approach to Visual
+   Perception=. Boston: Houghton Mifflin, 1979. ISBN
+   978-0-395-27049-3. 350 pages. Reprints: Hillsdale NJ:
+   Lawrence Erlbaum Associates, 1986, ISBN 978-0-89859-959-6;
+   Classic Edition with introductions by William M. Mace,
+   New York: Psychology Press / Routledge, 2014, ISBN
+   978-1-84872-578-2. The founding affordance text;
+   chapter 8 contains the canonical definition.
+
+2. Gibson, Eleanor J., and Richard D. Walk. "The 'Visual
+   Cliff'." =Scientific American= 202(4), April 1960,
+   pp. 64–71. The empirical-perception study that informed
+   the ecological-psychology programme Gibson 1979
+   consolidated. Demonstrates depth perception in pre-
+   crawling infants; one of psychology's most-cited
+   experimental designs.
+
+3. Norman, Donald A. =The Psychology of Everyday Things=.
+   New York: Basic Books, 1988. ISBN 978-0-465-06709-1.
+   First book-length import of the affordance concept into
+   HCI (chapter on /everyday objects/ and constraint).
+   /Note: also cited in [[#sources-E][Sources E]] as the canonical
+   mental-models source./
+
+4. Norman, Donald A. =The Design of Everyday Things=,
+   revised and expanded edition. New York: Basic Books,
+   2013. ISBN 978-0-465-05065-9. Adds the /signifier/
+   concept alongside affordance, splitting Norman 1988's
+   one-word usage into a two-word framework (affordance =
+   what is possible; signifier = the cue that communicates
+   the possibility).
+
+5. Norman, Donald A. "Affordance, Conventions, and Design."
+   =Interactions= 6(3), May 1999, pp. 38–43.
+   [[https://doi.org/10.1145/301153.301168][DOI 10.1145/301153.301168]].
+   Open-access archive copy:
+   [[https://cs.uwaterloo.ca/~jianzhao/cs449-649/files/affordance-norman99.pdf][cs.uwaterloo.ca PDF]] (retrieved 2026-05-19).
+   The self-correction distinguishing /real affordance/
+   (Gibsonian capability) from /perceived affordance/
+   (user's belief about capability) — bridges Norman 1988
+   to Norman 2013's signifier concept.
+
+6. McGrenere, Joanna, and Wayne Ho. "Affordances:
+   Clarifying and Evolving a Concept." In =Proc. Graphics
+   Interface 2000= (Canadian Information Processing
+   Society, Montreal QC, 15–17 May 2000), pp. 179–186.
+   Open-access conference PDF:
+   [[https://graphicsinterface.org/wp-content/uploads/gi2000-24.pdf][graphicsinterface.org/proceedings/gi2000-24]] (retrieved
+   2026-05-19). The standard review paper distinguishing
+   Gibsonian capability from Normanian perceived capability;
+   argues HCI practice has conflated them.
+

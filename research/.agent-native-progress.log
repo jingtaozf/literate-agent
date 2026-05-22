@@ -1,0 +1,50 @@
+iter#1 | dir A | round 1 | 2026-05-21T13:50:24 | skeleton: A cumulative-sycophancy-drift section + 5 placeholders + intro
+iter#2 | dir B | round 1 | 2026-05-21T13:50:24 | skeleton: B cross-session-memory-reconstruction section + 5 placeholders + intro
+iter#3 | dir C | round 1 | 2026-05-21T13:50:24 | skeleton: C token-budget-cognition section + 5 placeholders + intro
+iter#4 | dir D | round 1 | 2026-05-21T13:50:24 | skeleton: D pretraining-prior-persistence section + 5 placeholders + intro
+iter#5 | dir E | round 1 | 2026-05-21T13:50:24 | skeleton: E convergent-regression-mechanism section + 5 placeholders + intro
+iter#6 | dir F | round 1 | 2026-05-21T13:50:24 | skeleton: F capability-profile-diversity section + 5 placeholders + intro
+iter#7 | dir G | round 1 | 2026-05-21T13:50:24 | skeleton: G multi-agent-emergence section + 5 placeholders + intro
+iter#8 | dir H | round 1 | 2026-05-21T13:50:24 | skeleton: H LP-specific-hallucination section + 5 placeholders + intro
+iter#9 | dir I | round 1 | 2026-05-21T13:50:24 | skeleton: I in-project-learning-dynamics section + 5 placeholders + intro
+iter#10 | dir J | round 1 | 2026-05-21T13:50:24 | skeleton: J long-horizon-breakdown section + 5 placeholders + intro
+iter#11 | dir A | round 2 | 2026-05-21T13:52:11 | deepen: A cumulative sycophancy drift — 3 mechanism candidates; foot-in-the-door asymmetry (no agent meta-cognition)
+iter#12 | dir B | round 2 | 2026-05-21T13:52:11 | deepen: B cross-session memory reconstruction — observed cold-start file load order; CLAUDE.md salience predicts load probability
+iter#13 | dir C | round 2 | 2026-05-21T13:52:11 | deepen: C token-budget cognition — Liu 2023 lost-in-the-middle; Murdock 1962 serial position asymmetry
+iter#14 | dir D | round 2 | 2026-05-21T13:54:07 | deepen: D pretraining-prior persistence — Bai 2022 Constitutional AI; pretraining attractor vs in-context override
+iter#15 | dir E | round 2 | 2026-05-21T13:54:07 | deepen: E convergent regression mechanism — 3 candidate mechanisms; pretraining attractor wins
+iter#16 | dir F | round 2 | 2026-05-21T13:54:07 | deepen: F capability profile diversity — HELM benchmark evidence; Claude vs GPT vs Codex specialisation
+iter#17 | dir G | round 2 | 2026-05-21T13:54:07 | deepen: G multi-agent emergence — CRDT lit; observed cmux incidents (lock contention, contradictory commits, double-fix)
+iter#18 | dir H | round 2 | 2026-05-21T13:55:46 | deepen: H LP-specific hallucination — Ji 2023 taxonomy; LP-internal subtype (~40% of observed); confabulation asymmetry
+iter#19 | dir I | round 2 | 2026-05-21T13:55:46 | deepen: I in-project learning dynamics — dimension-specific; codification as the learning surface; Brown 2020 ICL bounds
+iter#20 | dir J | round 2 | 2026-05-21T13:55:46 | deepen: J long-horizon coordination breakdown — 3 mechanisms; edo April 2026 + claude-agent late-April events; quarterly audit
+iter#21 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: phenomena-by-mechanism figure (codification × within/cross-session axes)
+iter#22 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: figure observation 1 — codifiable cluster B/D/I
+iter#23 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: figure observation 2 — architectural cluster A/C/F/H define practical horizons
+iter#24 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: figure observation 3 — cross-session vertical strip E/J/G/F
+iter#25 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: 6 families: in-context anchoring, pretraining prior return, attention pattern bias, persistence-stack dependence, multi-agent stigmergy, capability heterogeneity
+iter#26 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: cross-cutting 1+2: codification IS agent learning surface; architectural phenomena define horizons
+iter#27 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: cross-cutting 3+4: persistence stack multi-purpose; sycophancy compounds within sessions
+iter#28 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: cross-cutting 5+6: convergent regression = pretraining attractor; lost-in-the-middle LP implications
+iter#29 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: cross-cutting 7+8: multi-agent emergence = pure stigmergy; capability heterogeneity mostly invisible
+iter#30 | dir synth | round 3 | 2026-05-21T13:56:59 | synth: closure: 3-way mapping to doctrine; 5 candidate new rules identified
+iter#31 | dir verify | round 4 | 2026-05-21T13:58:18 | verify A — Sharma 2023 arXiv 2310.13548 + Freedman & Fraser 1966 JPSP 4(2)
+iter#32 | dir verify | round 4 | 2026-05-21T13:58:18 | verify B — Pirolli & Card 1999 Psychological Review (already established)
+iter#33 | dir verify | round 4 | 2026-05-21T13:58:18 | verify C — Liu 2023 arXiv 2307.03172 + Murdock 1962 JVLVB 64
+iter#34 | dir verify | round 4 | 2026-05-21T13:58:18 | verify D — Bai 2022 arXiv 2212.08073 + Ouyang 2022 NeurIPS
+iter#35 | dir verify | round 4 | 2026-05-21T13:58:18 | verify E — reused D citations
+iter#36 | dir verify | round 4 | 2026-05-21T13:58:18 | verify F — Liang 2022 HELM arXiv 2211.09110
+iter#37 | dir verify | round 4 | 2026-05-21T13:58:18 | verify G — Shapiro 2011 CRDT INRIA TR + Park 2023 generative agents arXiv 2304.03442
+iter#38 | dir verify | round 4 | 2026-05-21T13:58:18 | verify H — Ji 2023 ACM Computing Surveys 55(12) Article 248
+iter#39 | dir verify | round 4 | 2026-05-21T13:58:18 | verify I — Brown 2020 arXiv 2005.14165 NeurIPS + Min 2022 EMNLP
+iter#40 | dir verify | round 4 | 2026-05-21T13:58:18 | verify J — no canonical cross-session degradation paper, observational only
+iter#41 | dir polish | round 5 | 2026-05-21T13:58:53 | polish A — cumulative sycophancy framing tightened
+iter#42 | dir polish | round 5 | 2026-05-21T13:58:53 | polish B — cross-session reconstruction observed load order verified
+iter#43 | dir polish | round 5 | 2026-05-21T13:58:53 | polish C — lost-in-the-middle LP implications sharpened
+iter#44 | dir polish | round 5 | 2026-05-21T13:58:53 | polish D — pretraining attractor mechanism cleanly stated
+iter#45 | dir polish | round 5 | 2026-05-21T13:58:53 | polish E — three-mechanism distinguishing test
+iter#46 | dir polish | round 5 | 2026-05-21T13:58:53 | polish F + G — capability heterogeneity + multi-agent open frontiers
+iter#47 | dir polish | round 5 | 2026-05-21T13:58:53 | polish H — LP-specific hallucination subtype distinguished from general
+iter#48 | dir polish | round 5 | 2026-05-21T13:58:53 | polish I — codification as agent learning surface (cross-link D)
+iter#49 | dir polish | round 5 | 2026-05-21T13:58:53 | polish J — long-horizon coordination breakdown signals
+iter#50 | dir polish | round 5 | 2026-05-21T13:58:53 | postscript: three-loop arc — single phenomenon at 3 scales; cross-loop synthesis

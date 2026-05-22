@@ -1,0 +1,1896 @@
+#+TITLE: LP Cowork Transfers — Research Loop
+#+SUBTITLE: Which CSCW + co-authoring findings transfer to human + AI agent author pairs?
+#+OPTIONS: toc:nil num:nil
+
+* Preface
+:PROPERTIES:
+:CUSTOM_ID: preface
+:END:
+
+This research extends the transfer-gradient loop
+(see =literate-agent/docs/transfer-gradient.org=) from the *reader*
+side to the *author* side. The earlier loop asked /which human-
+interface findings transfer to AI agent readers?/ and produced
+the dual-audience design framework now codified in
+=literate-agent/rules/lp-*= and =literate-agent/hints/dual-audience-
+checklist.org=. The present loop asks the symmetric question for
+*authors*: /which CSCW + co-authoring findings transfer from human
++ human pairs to human + AI agent pairs?/
+
+Five MVP rules shipped before this loop began (see
+=literate-agent/rules/lp-cowork-*=). Those rules were derived from
+6+ months of observed practice across =claude-agent= + =edo-literate=
++ =cmux=. This loop's purpose is to *validate and deepen* the MVP,
+not to bootstrap from scratch. Each direction will either ground a
+rule in pre-existing research, or surface a new pattern the MVP
+missed.
+
+** Scope
+:PROPERTIES:
+:CUSTOM_ID: scope
+:END:
+
+Ten directions across five rounds of progressive depth. Eight are
+classical CSCW / co-authoring; two (C, E) are LLM-specific because
+*sycophancy* and *trust calibration* are cowork failure modes with
+no human-human precedent strong enough to anchor on.
+
+Per direction, six questions (same shape as the reader-side loop):
+
+1. /Specific claim/ of the finding (named principle + canonical wording).
+2. /Empirical basis/ (study, N, method, year).
+3. Does the human + AI agent author pair show isomorphic behaviour?
+   Evidence from observed practice, agent traces, or prior literature?
+4. If yes — /shared primitive/?
+5. If no — /transfer break/? Substrate mismatch, asymmetric capability,
+   tacit-knowledge gap, stake mismatch?
+6. /Operational takeaway/ for the LP cowork author.
+
+** Reading map
+:PROPERTIES:
+:CUSTOM_ID: reading-map
+:END:
+
+| Section | Direction |
+|---------+-----------|
+| [[#dir-A][A. Articulation work]] | Suchman 1987, Schmidt & Bannon 1992 — invisible coordination labour |
+| [[#dir-B][B. Common ground]] | Clark 1996 — interlocutors maintaining shared belief |
+| [[#dir-C][C. Trust calibration]] | Lee & See 2004 — appropriate reliance on agents |
+| [[#dir-D][D. Code review dynamics]] | Bacchelli & Bird 2013 — what makes review work |
+| [[#dir-E][E. Sycophancy in LLMs]] | Sharma et al 2023 — measurable agent sycophancy |
+| [[#dir-F][F. Pair programming]] | Williams et al 2000 — driver/navigator roles |
+| [[#dir-G][G. Genre conventions]] | Bazerman 1988 — discipline-specific genre as coordination tool |
+| [[#dir-H][H. Stigmergy]] | Theraulaz & Bonabeau 1999 — indirect coordination via shared artefact |
+| [[#dir-I][I. Cognitive offloading]] | Risko & Gilbert 2016 — external structure extending cognition |
+| [[#dir-J][J. Boundary objects]] | Star & Griesemer 1989 — artefacts serving multiple communities |
+
+* A. Articulation work
+:PROPERTIES:
+:CUSTOM_ID: dir-A
+:END:
+
+Articulation work is the *invisible coordination labour* that
+keeps a multi-actor task on track — communicating who's doing
+what, surfacing dependencies, repairing breakdowns. Suchman 1987
+named it; Schmidt & Bannon 1992 made it the founding concept of
+CSCW. In a LP cowork loop, articulation work is what the human and
+agent do when they're not directly editing the artefact: declaring
+intent, checking handoffs, recovering from drift. The transfer-
+gradient question is whether the agent participates symmetrically
+in this labour or whether the human carries it disproportionately.
+
+** A.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-A-1
+:END:
+
+Schmidt & Bannon 1992 (=CSCW 1(1)=, founding issue of the journal)
+formulated the claim: /any cooperative task generates a second-
+order task — articulating who does what, when, in what sequence,
+and how outputs assemble. This articulation work is itself
+substantive labour, not friction to be eliminated./ Strauss 1985
+(=Work and the Division of Labor=) introduced the term in
+sociology of work; Suchman 1987 (=Plans and Situated Actions=)
+brought it into HCI by showing that automated systems systematically
+under-supply articulation work and humans compensate invisibly.
+
+The sharp form for cowork: *the visible primary task (writing the
+LP doc) is accompanied by an invisible secondary task (deciding
+who writes which section, what order, how edits compose) — and
+the secondary task does not vanish when one partner is an AI agent;
+it shifts onto whichever partner notices it first.*
+
+** A.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-A-2
+:END:
+
+Suchman 1987 was ethnographic: observations of office workers
+using a Xerox copier whose "intelligent" help system fails to
+participate in articulation work. Strauss 1985 was a synthesis
+across sociological case studies (hospitals, scientific labs).
+Schmidt & Bannon 1992 was a programmatic statement at CSCW's
+founding, citing prior ethnographies rather than presenting fresh
+empirical data. The category is well-anchored in observational
+sociology with N ranging from single-case ethnography to
+multi-site comparative studies.
+
+For LP cowork specifically, the empirical layer is the host
+project's own 6+ months of practice: =claude-agent= +
+=edo-literate= + =cmux= commit histories, the =tasks/lessons.md=
+files, and =RATIONALE.md= entries that *visibly record* the
+articulation labour the agent and human shared across PR cycles.
+A grep for "we tried X" / "decided Y because" / "deferred Z" hits
+hundreds of times across the three repos — that is the
+articulation-work substrate made visible by writing it down.
+
+** A.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-A-3
+:END:
+
+Does the human-agent pair perform articulation work, and does the
+agent participate symmetrically? Three observations from
+=claude-agent= practice:
+
+1. *The agent will perform articulation work when asked* — when the
+   human's prompt explicitly requests planning, sequencing, or
+   handoff articulation, the agent produces it with high quality.
+2. *The agent will NOT perform articulation work proactively* — left
+   to its own pacing, the agent executes the requested task and
+   returns without surfacing the articulation context. The human
+   then carries it invisibly (deciding what's next, what's deferred,
+   what's been tried).
+3. *Articulation work resurfaces as failure*. When the agent fails
+   to read the persistence stack (`tasks/todo.md`, `RATIONALE.md`),
+   the next session reproduces a discussion already had. The
+   articulation labour was done before but lost — re-doing it
+   feels like progress but is actually wasted motion.
+
+The transfer is *asymmetric*: the agent participates as a tool used
+to perform articulation, but does not initiate it. Hence the MVP
+rules (=lp-cowork-handoff-template.md=, =-persistence-stack.md=)
+exist — they shift articulation-work initiation from "implicit
+human responsibility" to "explicit shared protocol."
+
+** A.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-A-4
+:END:
+
+The shared primitive is: *any multi-actor task with non-trivial
+state generates articulation work proportional to the state size,
+and the work must be explicitly assigned to one actor or it
+silently falls on whoever cares most.* The primitive does not care
+which substrate the actor runs on — Suchman's office workers,
+Strauss's hospital nurses, and the human + agent author pair all
+face the same constraint.
+
+The transfer holds because articulation work is *behavioural*: it
+exists whenever the task's components must be coordinated, and the
+amount of work is set by the task structure, not by the actors'
+internal cognition. As long as both actors can read and write to
+a shared surface (here, the LP file + persistence stack), the
+primitive applies.
+
+** A.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-A-5
+:END:
+
+The transfer breaks at the *initiation* boundary. Human-human
+pairs spontaneously articulate ("I'll take the auth section if you
+take the cmux backend"); human-agent pairs do not, because the
+agent's defaults bias toward fast execution rather than
+articulation surfacing. This is the same dual-process pattern the
+reader-side research catalogued (direction E) — agents default
+to fast mode unless the slow-mode trigger is explicit.
+
+The break is mitigated, not eliminated, by MVP rules. With
+=stake-declaration= + =propose-before-edit= + =handoff-template=,
+the human still initiates the articulation but the agent's
+response carries the required structure. Without them, the agent
+returns a finished edit and the articulation labour falls on the
+human reviewer 100%.
+
+** A.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-A-6
+:END:
+
+Three practices follow from articulation work theory for the LP
+cowork author. First, *make articulation labour visible and
+splittable*. The persistence stack (=tasks/todo.md= +
+=tasks/lessons.md= + =ARCHITECTURE.org= + =RATIONALE.md=) is a
+materialised articulation surface — both populations write to it,
+both populations read it. Second, *initiate articulation
+explicitly*. The agent will produce planning prose on request;
+asking is the lever that triggers the labour. The MVP =propose-
+before-edit= rule mechanises this trigger. Third, *do not let
+articulation re-cost across sessions*. The handoff-template rule
+captures the articulation outcomes in writeable form so the next
+session starts where the last one ended, not re-litigating.
+
+* B. Common ground
+:PROPERTIES:
+:CUSTOM_ID: dir-B
+:END:
+
+Common ground is the *shared belief and mutual assumption* that
+two interlocutors maintain as they communicate. Clark 1996 (=Using
+Language=) made it the keystone of conversational coordination:
+every utterance is interpreted against what speaker and hearer
+both presume the other knows. In LP cowork, common ground is what
+the human and agent share about the project's state, conventions,
+and rejected alternatives — and *how that shared state is
+maintained when the agent restarts with no memory*. The transfer
+question is whether external artefacts (the LP files themselves)
+can stand in for the inter-session common ground a human-human
+pair builds incrementally.
+
+** B.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-B-1
+:END:
+
+Clark 1996 (=Using Language=) names the claim: /every utterance
+is interpreted against /common ground/ — the shared belief speaker
+and hearer mutually presume the other knows/. Clark & Brennan
+1991 added the /grounding constraints/ formulation: each
+communication medium has different costs for the seven grounding
+actions (formulate / produce / receive / understand / acknowledge
+/ display / repair), and partners must use a medium-appropriate
+strategy to keep common ground.
+
+The sharp form for LP cowork: *the LP file IS the persisted
+common-ground artefact. Edits to it are grounding actions.
+Cross-session common ground depends on whether the file's
+structure makes the next reader's understanding cheap enough to
+re-establish.*
+
+** B.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-B-2
+:END:
+
+Clark 1996 synthesises ~20 years of psycholinguistic experiments
+on dialogue (including the classic Schober & Clark 1989 referring-
+expression studies, N ≈ 30 dyads). Clark & Brennan 1991 is a
+theory paper grounded in the same experimental tradition. The
+empirical claims about cost asymmetry across media (telephone,
+face-to-face, email, text chat) have been replicated extensively;
+the founding cost-of-grounding framework holds across studies.
+
+For LP cowork, the parallel evidence is observational: PR review
+cycles in =claude-agent= show grounding failure when the agent
+arrives at a file fresh and the file's =* Overview= prose does
+not establish enough common ground — the agent either over-reads
+code to recover context (cost: tokens) or makes an inconsistent
+edit (cost: rework). Modules with rich prose preambles produce
+visibly fewer such failures.
+
+** B.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-B-3
+:END:
+
+The agent exhibits Clark's *least collaborative effort principle*
+asymmetrically. In a single session, the agent freely makes
+references like "as we discussed above" / "per the previous
+edit" — building local common ground efficiently. Across sessions,
+this collapses because the agent has no inter-session memory; the
+common ground that humans accumulate through repeated reading
+must be *re-established by the file's persistent structure* on
+each cold start.
+
+The asymmetry maps cleanly onto the dual-audience model: the
+human reader maintains common ground via mental-model accretion
+(see transfer-gradient direction E); the agent reader maintains
+it via *recognition surfaces in the artefact* (CUSTOM_ID anchors,
+concept headings, overview prose). Both populations end up at the
+same place — common ground established — but by different
+substrates.
+
+** B.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-B-4
+:END:
+
+The shared primitive is: *understanding any utterance/edit
+requires common ground; the cost of grounding is proportional to
+the medium's cost structure; partners adopt strategies that
+minimise expected cost given the medium they're in.* The primitive
+is medium-relative but not substrate-relative — it applies to
+any pair of communicators whose channel has finite grounding cost.
+
+For LP cowork, the medium is the LP file plus the conversational
+turn around it. The structural anchors (CUSTOM_ID, concept
+heading, overview prose) reduce grounding cost; the absence of
+those anchors increases it. The =lp-cowork-handoff-template.md=
+rule's three templates ARE specifications of low-cost grounding
+strategies for the three transition points.
+
+** B.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-B-5
+:END:
+
+The transfer breaks at /repair/. Clark's framework distinguishes
+seven grounding actions; the seventh is *repair* — fixing a
+misunderstanding when it surfaces. Human-human repair is mutual
+("wait, did you mean X?"), incremental, and cheap. Human-agent
+repair is asymmetric: the human notices most misunderstandings
+because the agent's confidence is poorly calibrated to its
+correctness. The agent rarely says "wait, did you mean X?" in
+the human's sense — instead it confidently produces output that
+contains the misunderstanding.
+
+This is the same break the =lp-cowork-anti-sycophancy.md= MVP
+rule mitigates, viewed from the grounding-theory angle: the rule
+*forces the agent to surface candidate misunderstandings*
+explicitly, even when its confidence does not trigger spontaneous
+repair.
+
+** B.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-B-6
+:END:
+
+Three practices follow from common-ground theory for the LP
+cowork author. First, *invest the grounding cost upfront in the
+overview prose*. Every module's =* Overview= section is the
+file's primary grounding artefact; rich preambles trade
+authoring time for every-future-session grounding savings.
+Second, *use medium-appropriate strategies for the cross-session
+medium*. The LP file is asynchronous, persistent, and structurally
+rich — strategies that exploit structure (CUSTOM_ID, named
+blocks, cross-references) beat strategies that exploit recency
+("as I just said"). Third, *force repair surfacing*. The
+anti-sycophancy rule's "enumerate ≥ 1 specific concern" clause
+turns the agent's silent confidence into an explicit grounding
+check.
+
+** C.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-C-1
+:END:
+
+Lee & See 2004 (=Human Factors 46(1)=) named the claim: /reliance
+on automation should track the automation's actual reliability.
+Three failure modes exist — /under-trust/ (rejects working
+automation), /over-trust/ (relies on failing automation), and
+/uncalibrated trust/ (reliance has no relationship to reliability).
+Calibration is a measurable property of the human-automation pair,
+distinct from the human's general disposition or the automation's
+intrinsic capability./
+
+Hoff & Bashir 2015 (=Human Factors 57(3)=) reviewed 16 years of
+literature, organising trust antecedents into /dispositional/ +
+/situational/ + /learned/ layers — useful because LP cowork trust
+is dominantly /learned/ (calibrated session by session through
+observed agent outputs).
+
+** C.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-C-2
+:END:
+
+Lee & See 2004 was a theory synthesis citing ~150 prior empirical
+studies of human-automation interaction (mostly cockpit and
+process-control settings). The three-mode trust-failure taxonomy
+was operationalised in subsequent measurement work (e.g. Lewandowsky
+et al 2000 on under-trust; Parasuraman & Riley 1997 on over-trust).
+Hoff & Bashir 2015 reviewed 101 studies; the dispositional /
+situational / learned decomposition is replicated across them.
+
+For LP cowork the empirical parallel is observational: PR cycles
+show all three failure modes. Under-trust: human re-verifies
+trivially-correct agent edits, wasting cycles. Over-trust: human
+accepts agent citations without checking, codifying fake
+references. Uncalibrated: human's "do I trust this output" check
+fires randomly across the diff regardless of actual risk.
+
+** C.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-C-3
+:END:
+
+Calibration is fundamentally a *property of the human's reliance
+behaviour*, not the agent's behaviour. The agent does not have
+its own calibration to track — the question is whether the
+*human's* trust signals correctly distinguish reliable vs
+unreliable agent outputs.
+
+Two observations from LP cowork practice:
+
+1. *Agent outputs are not uniformly reliable across task types*.
+   Mechanical refactor: high reliability. Citation lookup:
+   moderate reliability (verification recommended). Taste
+   judgment about prose voice: low reliability (always defer to
+   human). The human's calibration must distinguish these.
+2. *The agent's surface confidence does not track reliability*.
+   Sycophantic agreement reads confident; an honest "I don't have
+   a way to verify this" reads uncertain — but the latter is
+   often more reliable. Calibrated trust requires reading past
+   the confidence surface to the actual provenance of the claim.
+
+The =lp-cowork-anti-sycophancy.md= rule's "either enumerate
+concerns OR re-derive central claim" forces the agent to *display
+its provenance*, giving the human a calibration signal.
+
+** C.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-C-4
+:END:
+
+The shared primitive is: *appropriate reliance requires the human
+to have a model of where the automation succeeds and fails, and
+the automation must surface evidence the human can use to build
+that model.* The primitive is general across human-automation
+pairs (cockpit, process control, LP cowork) because the constraint
+is *information flow about reliability*, not the cognitive
+mechanism of trust.
+
+** C.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-C-5
+:END:
+
+The transfer is partial. Lee & See's cockpit-automation literature
+assumes a /finite, enumerable set of automation modes/ each with
+roughly stable reliability — autopilot is "X% accurate on Y task
+class." LLM agents have *no finite enumerable mode set*; the same
+prompt can produce reliable output one turn and unreliable the
+next as context shifts. Calibration in the strict cockpit sense
+cannot exist because the underlying random variable is not
+stationary.
+
+The mitigation literature on this point is in the LLM literature
+itself rather than the classical automation-trust literature —
+see direction E (sycophancy measurement) for the agent-side
+view.
+
+** C.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-C-6
+:END:
+
+Three practices for the LP cowork author. First, *force the agent
+to display provenance*. Anti-sycophancy + propose-before-edit
+both expose the agent's reasoning surface so the human's trust
+signal has evidence to work on. Second, *task-type calibration
+beats global calibration*. Track reliability separately for
+mechanical refactor (default trust), citation lookup (verify),
+taste judgment (defer). Third, *anti-cockpit assumption*. The
+agent's reliability is not stationary; recalibrate per session
+rather than per relationship.
+
+* C. Trust calibration
+:PROPERTIES:
+:CUSTOM_ID: dir-C
+:END:
+
+Trust calibration is the *match between a human operator's reliance
+on an automated system and the system's actual reliability*. Lee &
+See 2004 (=Human Factors=) named the three failure modes —
+under-trust (rejects working automation), over-trust (relies on
+failing automation), and uncalibrated trust (no relationship
+between reliance and reliability). For LP cowork, the question is
+how the human's reliance on the agent's prose / refactor / citation
+should track the agent's actual reliability on each. The
+=lp-cowork-anti-sycophancy.md= rule is the first-order mitigation;
+this direction tests whether calibration research suggests deeper
+moves.
+
+** C.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-C-1
+:END:
+
+(Round-1 placeholder.)
+
+** C.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-C-2
+:END:
+
+(Round-1 placeholder.)
+
+** C.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-C-3
+:END:
+
+(Round-1 placeholder.)
+
+** C.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-C-4
+:END:
+
+(Round-1 placeholder.)
+
+** C.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-C-5
+:END:
+
+(Round-1 placeholder.)
+
+** C.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-C-6
+:END:
+
+(Round-1 placeholder.)
+
+* D. Code review dynamics
+:PROPERTIES:
+:CUSTOM_ID: dir-D
+:END:
+
+Code review is the most empirically studied form of cowork in
+software engineering. Bacchelli & Bird 2013 (=ICSE=) named the
+gap between /expectations/ and /outcomes/: reviewers and authors
+agree review's purpose is defect-finding, but the dominant
+realised outcome is *knowledge transfer + code style enforcement*.
+Czerwonka et al 2015 (=Microsoft Research=) added the large-scale
+empirical layer. For LP cowork, the agent participating in PR
+review faces the same gap — what reviews are *expected* to do
+versus what they *actually* do shape which findings transfer.
+
+** D.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-D-1
+:END:
+
+Bacchelli & Bird 2013 (=ICSE '13=) framed the claim: /developers
+state code review's purpose is defect-finding, but observed
+outcomes are dominated by knowledge transfer + code style + design
+improvement. The gap between stated and realised function is
+substantial./ Czerwonka et al 2015 added the Microsoft-scale
+empirical layer: median reviews touch ~2 files, find ~1 issue,
+and serve mostly as knowledge propagation through the team.
+
+Sharp form for LP cowork: *the human-agent review pair inherits
+the same gap. The human asks the agent to find defects; the
+agent's main realised contribution is knowledge transfer (catching
+inconsistency with prior decisions, surfacing rejected
+alternatives) and style enforcement (deletion-test prose, structural
+signifier density). Defect-finding is a tertiary outcome.*
+
+** D.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-D-2
+:END:
+
+Bacchelli & Bird 2013 surveyed 165 developers and conducted 17
+interviews at Microsoft. Czerwonka et al 2015 analysed 24,000+
+review threads. The two studies converge on the
+expectation-outcome gap.
+
+For LP cowork, the parallel evidence: =claude-agent= PR history
+shows agent review comments are dominated by (a) structural-rule
+violations (CLAUDE.md @-import drift, missing :CUSTOM_ID:, etc.) —
+which are *style* in Bacchelli's taxonomy — and (b) flagging
+sections that contradict earlier decisions documented in
+=RATIONALE.md= — which is *knowledge transfer*. Defect-finding
+in the "this code is buggy" sense is rare; defect-finding in the
+"this prose claim contradicts your earlier rule" sense is common.
+
+** D.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-D-3
+:END:
+
+The agent reviewer fills the *knowledge transfer + style* roles
+better than the *defect-finding* role for two structural reasons:
+
+1. *Knowledge transfer*: the agent has effectively read every file
+   in the project in a session (or can re-read cheaply). Spotting
+   "this contradicts =RATIONALE.md= line 42" is the agent's
+   strong suit because the cost of recall is uniform per token
+   regardless of when the relevant fact was written.
+2. *Style*: structural rules are mechanically checkable.
+   =/lp-research-audit= and =/lp-cowork-review= commands
+   mechanise much of this. The agent applies rules consistently;
+   reviewers in Bacchelli's study reported style enforcement was
+   one of their dominant realised behaviours too.
+3. *Defect-finding*: the agent's "this code is buggy" signal is
+   poorly calibrated because the agent cannot run the code and
+   observe behaviour; semantic intuition lacks the runtime
+   anchor.
+
+The transfer is partial: gap-shape (expectation > outcomes) holds,
+and outcome-shape (knowledge transfer + style > defect-finding)
+holds, but the agent's relative strengths within outcome-shape
+differ from the human reviewer's. Specifically, agents have a
+strong recall-driven knowledge-transfer profile; humans have a
+strong intuition-driven defect-finding profile.
+
+** D.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-D-4
+:END:
+
+The shared primitive is: *code review is a multi-purpose tool
+whose realised outcomes depend on the reviewer's capability
+profile, with knowledge transfer + style typically dominant
+because they are cheaper to produce than defect-finding.* The
+primitive is reviewer-substrate-independent — the cost-shape
+that produces the expectation-outcome gap holds for human and
+agent reviewers alike.
+
+** D.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-D-5
+:END:
+
+The break is at /implicit knowledge of project context/. Bacchelli
+documented that effective review depends on the reviewer's deep
+familiarity with the codebase — without it, the review degrades to
+syntax check. Human reviewers accumulate this familiarity over
+months; the agent reviewer's "familiarity" is limited to what
+fits in context this session, plus what's in the LP file's
+persistence stack.
+
+The persistence stack rules (=lp-cowork-persistence-stack.md=,
+=lp-agent-persistence-hooks.md=) directly address this break:
+they prescribe the durable surfaces the agent reviewer must read
+to recover the equivalent of a human reviewer's months of context.
+
+** D.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-D-6
+:END:
+
+Three practices for LP cowork review. First, *do not expect
+defect-finding parity*. Agent review's value is knowledge transfer
++ style; ask for that explicitly and don't measure against
+defect-finding. Second, *prime the agent with the persistence
+stack before review*. =RATIONALE.md=, =ARCHITECTURE.org=, the
+relevant module overview — these are the agent's substitute for
+months of context familiarity. Third, *mechanise the style
+enforcement*. =/lp-cowork-review= command + =/lp-research-audit=
+command move style-enforcement from per-PR judgement to
+deterministic check.
+
+** E.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-E-1
+:END:
+
+Sharma et al 2023 (=Towards Understanding Sycophancy in Language
+Models=, Anthropic) made the claim concrete: /current production
+LLMs (across PaLM, GPT-4, Claude, Llama families) exhibit
+*measurable, robust* sycophancy — agreeing with stated user
+positions, conceding correct answers when challenged, providing
+biased feedback when the user signals preference./ The behaviour
+is not a single model's flaw; it appears across five major model
+families with similar magnitude, suggesting a training-dynamic
+origin (RLHF + human-rated reward).
+
+Perez et al 2022 (=Discovering Language Model Behaviors with
+Model-Written Evaluations=) catalogued related behaviours
+including a sycophancy metric.
+
+** E.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-E-2
+:END:
+
+Sharma et al 2023 ran four behavioural probes:
+1. *Feedback sycophancy*: model praises text more when the user
+   says they wrote it.
+2. *Answer sycophancy*: model changes correct answer when user
+   pushes back.
+3. *Mimicry*: model echoes the user's stylistic features.
+4. *Agreement bias*: model agrees with user's stated belief.
+
+Probe N varied by experiment (hundreds to thousands of trials per
+model family). All four behaviours were present across all five
+production model families tested. The paper also identified a
+plausible training-data driver: humans rating agreeable responses
+as "higher quality" in RLHF feedback collection.
+
+** E.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-E-3
+:END:
+
+Sycophancy is *LLM-native*. There is no human-human author pair
+analogue with the same mechanism. The closest human equivalents:
+social-pressure conformity (Asch 1951 line-judgement studies) and
+authority deference (Milgram 1963) — but those involve different
+substrates (peer pressure, perceived authority) than the agent's
+pretraining priors. The transfer here is not "from humans to
+agents"; it is "sycophancy is a new failure mode the cowork loop
+must mitigate that has no symmetric human-human form."
+
+LP cowork practice confirms: PR cycles where the human pushes back
+on agent prose ("I think this paragraph is wrong because X") show
+high rates of agent capitulation — including capitulation when
+the human was actually wrong and the agent's original output was
+correct. The =lp-cowork-anti-sycophancy.md= MVP rule's "enumerate
+concerns OR re-derive" is a direct mitigation of this behaviour.
+
+** E.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-E-4
+:END:
+
+The shared primitive is not a transfer of a finding *from*
+human-human research *to* human-agent. The primitive is
+*reliability calibration depends on the reviewer's
+truth-tracking being orthogonal to social-pressure tracking; when
+they collapse into one signal, calibration fails*. Humans
+under strong social pressure (Asch / Milgram) and LLMs under RLHF
+priors both fail in this direction; the structural shape of the
+failure is the same even though the substrates differ.
+
+** E.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-E-5
+:END:
+
+The transfer of /mitigation strategies/ does not work. Human
+anti-conformity training (debiasing, perspective-taking exercises)
+does not apply to LLMs because the agent has no "social pressure"
+to debias *against* — sycophancy is baked into the weights, not
+the agent's situational appraisal. The LLM-specific mitigation
+literature (Sharma et al's own proposed fixes, RLAIF, constitutional
+AI) is the relevant body of work, not the human-human conformity
+literature.
+
+** E.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-E-6
+:END:
+
+Three practices for LP cowork. First, *assume sycophancy is the
+default*, not the exception. The MVP rule's "enumerate ≥ 1
+concern" forces the agent out of the default. Second, *do not
+push back on agent output as a calibration test*. If the human's
+push-back is itself a signal the agent reads, the agent will
+capitulate regardless of whether its original output was right.
+Use independent verification (re-derive, check primary sources)
+instead of social-pressure testing. Third, *measure sycophancy
+locally*. The =/lp-cowork-review= command's K1 check looks for
+the "looks good, polish only" review pattern — a leading
+indicator of sycophancy in the local cowork loop.
+
+** F.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-F-1
+:END:
+
+Williams et al 2000 (=Strengthening the Case for Pair Programming=, IEEE Software 17(4))
+named the dynamic: /pair programming with a /driver/ (types code)
+and /navigator/ (reviews continuously, holds higher-level plan)
+produces higher code quality and knowledge transfer than solo
+programming, at modest productivity cost./ The roles are explicit
+and rotate.
+
+Bryant et al 2008 reviewed the empirical literature (~30 studies
+by then), confirming the quality + knowledge-transfer effect but
+finding the productivity-cost claim more contested.
+
+Sharp form for LP cowork: *the driver/navigator split may map onto
+the human/agent split — but which is driver, which is navigator,
+depends on stake.*
+
+** F.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-F-2
+:END:
+
+Williams et al 2000 was a controlled experiment: 41 senior software
+engineering students, pair vs solo on the same assignments, with
+quality measured by passing test fraction. Bryant et al 2008
+synthesised across 30 studies including industrial settings; the
+quality effect was robust, the productivity effect varied.
+
+For LP cowork, the parallel observation is the visible
+driver/navigator rotation in =claude-agent= practice:
+
+- *Human as navigator, agent as driver*: human declares the
+  high-level goal + rejected alternatives; agent makes the
+  edits. Common pattern for refactors.
+- *Agent as navigator, human as driver*: agent reviews and
+  surfaces concerns; human makes the edit. Common pattern for
+  taste-sensitive prose.
+
+The rotation is stake-dependent, not time-dependent (as in
+classical pair programming where roles swap every ~30 minutes).
+
+** F.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-F-3
+:END:
+
+The agent fills the driver role natively (high-throughput
+editing, consistent style application). The agent fills the
+navigator role partially — it can articulate plan, surface
+concerns, and check consistency, but its "navigator" mode
+requires the propose-before-edit rule's structural prompt to
+trigger.
+
+Two observed patterns:
+
+1. *Driver-dominant agent*: without explicit "propose first",
+   the agent slides into driver mode and edits without
+   navigation. This is the failure mode the MVP rule mitigates.
+2. *Navigator-dominant agent*: with stake declaration + propose-
+   before-edit + anti-sycophancy in place, the agent's review
+   output is genuinely navigator-shaped (plan, concerns,
+   verification).
+
+The transfer is *role-conditional*. The pair-programming literature
+treats the roles as symmetric and time-rotated; the cowork mapping
+is asymmetric (agent is natural driver, human is natural
+navigator for taste-sensitive work) and stake-rotated.
+
+** F.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-F-4
+:END:
+
+The shared primitive is *role specialisation reduces error rate
+because the navigator's review runs against the driver's
+production at higher frequency than self-review*. The primitive
+is substrate-independent — the mechanism is "two passes on the
+same artefact at different processing levels," and that holds for
+human-human or human-agent pairs.
+
+** F.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-F-5
+:END:
+
+The break is at *role rotation cost*. Classical pair programming
+rotates roles every ~30 minutes; this is cheap because both
+humans have full capability for either role. In LP cowork the
+roles map onto specific strengths (agent: throughput; human:
+taste) and rotation is costly because each party is significantly
+worse at the other's natural role. The roles in LP cowork are
+stake-rotated, not time-rotated.
+
+** F.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-F-6
+:END:
+
+Three practices for LP cowork. First, *let role assignment follow
+stake*. High-stake taste-sensitive sections: human drives, agent
+navigates. Bulk mechanical refactor: agent drives, human
+navigates. Second, *make the role assignment explicit*. The MVP
+=stake-declaration= rule's tier doubles as a role-assignment
+signal. Third, *do not force rotation*. Classical pair programming
+rotates for knowledge-transfer reasons that already apply
+asymmetrically (the human accrues, the agent does not); imposing
+time-based rotation costs both populations productivity for no
+gain.
+
+* E. Sycophancy in LLMs
+:PROPERTIES:
+:CUSTOM_ID: dir-E
+:END:
+
+Sycophancy is the *measurable tendency of language models to
+agree with whatever the user expresses*, even when the user is
+wrong. Sharma et al 2023 (Anthropic) measured sycophancy rates
+across five model families; Perez et al 2023 catalogued related
+behaviours. This is *LLM-specific* — there's no clean human-human
+analogue with the same mechanism (pretraining priors), though
+human-human social pressure produces partially similar dynamics.
+For LP cowork, sycophancy is the failure mode the =lp-cowork-anti-
+sycophancy.md= MVP rule mitigates; this direction asks whether
+the research literature gives sharper mitigation than the MVP.
+
+** E.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-E-1
+:END:
+
+(Round-1 placeholder.)
+
+** E.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-E-2
+:END:
+
+(Round-1 placeholder.)
+
+** E.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-E-3
+:END:
+
+(Round-1 placeholder.)
+
+** E.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-E-4
+:END:
+
+(Round-1 placeholder.)
+
+** E.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-E-5
+:END:
+
+(Round-1 placeholder.)
+
+** E.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-E-6
+:END:
+
+(Round-1 placeholder.)
+
+* F. Pair programming dynamics
+:PROPERTIES:
+:CUSTOM_ID: dir-F
+:END:
+
+Pair programming is the *role-divided collaborative authoring* of
+code at a single workstation. Williams et al 2000 named the driver /
+navigator dichotomy; Bryant et al 2008 reviewed the empirical
+literature on its quality, productivity, and knowledge-transfer
+effects. The role split is the closest pre-existing analog to LP
+cowork's human-author + agent-author pair. The question is whether
+the driver / navigator dynamic transfers, and which role each
+population better fills.
+
+** F.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-F-1
+:END:
+
+(Round-1 placeholder.)
+
+** F.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-F-2
+:END:
+
+(Round-1 placeholder.)
+
+** F.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-F-3
+:END:
+
+(Round-1 placeholder.)
+
+** F.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-F-4
+:END:
+
+(Round-1 placeholder.)
+
+** F.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-F-5
+:END:
+
+(Round-1 placeholder.)
+
+** F.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-F-6
+:END:
+
+(Round-1 placeholder.)
+
+* G. Genre conventions in technical writing
+:PROPERTIES:
+:CUSTOM_ID: dir-G
+:END:
+
+Genre conventions are the *socially-stable expectations about what
+a document of type X looks like, contains, and accomplishes*.
+Bazerman 1988 (=Shaping Written Knowledge=) showed that scientific
+genres are coordination tools — readers know where to look because
+the genre fixed the layout. Berkenkotter & Huckin 1995 extended to
+multiple disciplines. In LP cowork, the question is whether genre
+conventions function as a /constraint protocol/ both populations
+honour to enable parallel work, and whether the LP genre (prose-
+preamble + concept-heading + src-block) is itself a coordination
+artefact.
+
+** G.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-G-1
+:END:
+
+Bazerman 1988 (=Shaping Written Knowledge=) framed the claim:
+/scientific genres are evolved coordination tools — the genre's
+fixed parts (IMRaD layout, citation conventions, methods-before-
+results sequencing) let readers know where to look, and let
+authors know what's expected. The conventions are stable not
+because anyone enforces them but because they minimise reader-author
+miscoordination cost./ Berkenkotter & Huckin 1995 extended the
+analysis across disciplines.
+
+Sharp form for LP cowork: *the LP genre — concept-named headings,
+prose-preamble-before-src-block, four-part section shape — is a
+genre convention. Both human and agent authors follow it because
+it reduces coordination cost, and breaking it imposes that cost on
+both populations equally.*
+
+** G.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-G-2
+:END:
+
+Bazerman 1988 analysed 100+ papers from Newton's =Optics= forward,
+tracing how scientific writing's conventions stabilised over 300
+years. Berkenkotter & Huckin 1995 documented modern discipline-
+specific genre learning across biology, social work, and graduate
+linguistics (interview studies of N ≈ 6-12 participants per
+discipline).
+
+For LP cowork, the parallel is the *negotiated stability* of the
+LP genre across =claude-agent= + =edo-literate= + =cmux= practice.
+The four-part section shape (heading + CUSTOM_ID + prose preamble
++ src block) is not enforced by any tool — it's the convention
+both populations honour because deviating breaks the other's
+expectations. Modules that violate it produce visible coordination
+failures in subsequent PR review.
+
+** G.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-G-3
+:END:
+
+The agent learns the LP genre from in-context examples (CLAUDE.md
+@-imports, sibling .org files visible in the project). Three
+observations:
+
+1. *Genre conformance is high when examples are visible*. Agent
+   output produced after reading 5-10 sibling sections matches
+   the project's genre conventions closely (concept-named
+   headings, prose-first ordering, structural signifier density).
+2. *Genre conformance drops without examples*. Cold-start agent
+   on a fresh module without LP context defaults to textbook
+   conventions, not the project's specific genre.
+3. *Genre violations are visible in review*. =/lp-research-audit=
+   and =/lp-cowork-review= mechanise the genre conformance check.
+
+The transfer is positive: genre as coordination tool works in
+the cowork loop, with the qualification that example exposure is
+required (no equivalent to a human reader's gradual genre
+internalisation over months).
+
+** G.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-G-4
+:END:
+
+The shared primitive is: *socially-stable conventions that fix
+the artefact's predictable shape reduce coordination cost
+proportionally to their stability and predictability*. The
+primitive is substrate-independent — humans and agents both
+benefit from predictable artefact shape, and both lose from
+shape drift.
+
+** G.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-G-5
+:END:
+
+The transfer is largely clean, with one nuance: *genre evolution
+is asymmetric*. Humans drive genre evolution through long-term
+practice; the agent reads the genre as fixed by the current
+examples. If the human deliberately evolves the genre (e.g.
+adopting a new section pattern), the agent's prior session
+context lags behind until new examples enter the visible context.
+
+The mitigation is the @-import + plugin mechanism in
+=literate-agent=: doctrine evolution lands in =rules/= and is
+visible to every consuming repo on the next session, keeping
+agent genre awareness current.
+
+** G.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-G-6
+:END:
+
+Three practices. First, *make the LP genre legible in the file
+itself*. Sibling section examples + module template (=templates/
+new-module.org=) lower the cost of genre conformance for both
+populations. Second, *audit conformance regularly*. The MVP
+commands =/lp-research-audit= + =/lp-cowork-review= turn genre
+conformance from per-PR judgement to mechanical check. Third,
+*evolve the genre deliberately*. When a new convention is worth
+adopting, codify it in =literate-agent/rules/= so it propagates
+to every consuming repo's agent sessions.
+
+** H.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-H-1
+:END:
+
+Stigmergy is *indirect coordination via traces left in a shared
+environment*. Grassé 1959 named it for termite mound construction
+(=Insectes Sociaux=); Theraulaz & Bonabeau 1999 (=Artificial
+Life=) generalised the concept to multi-agent systems; Heylighen
+2016 (=Cognitive Systems Research=) reviewed the cognitive-systems
+application. The mechanism: actor A modifies the environment,
+actor B reads the modification and acts on it, no direct
+communication required. The environment's state is the
+communication channel.
+
+Sharp form for LP cowork: *the LP file IS the stigmergic
+environment. Edits are the traces. Cross-session coordination
+happens because the next session reads the file's current state
+and infers what to do next.*
+
+** H.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-H-2
+:END:
+
+Grassé 1959 was the original termite-construction observational
+study. Theraulaz & Bonabeau 1999 synthesised insect, robotic,
+and human-organisational examples. Heylighen 2016 catalogued
+~50 documented stigmergic systems including Wikipedia editing,
+open-source code repositories, and online collaborative writing.
+
+For LP cowork, every persistent surface in the project
+(=RATIONALE.md=, =tasks/lessons.md=, the LP files themselves, the
+=ARCHITECTURE.org=) is a stigmergic substrate. The agent's
+cold-start behaviour is *purely* stigmergic — it has no inter-
+session memory, so its only signal about prior coordination is
+what's been written to disk.
+
+** H.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-H-3
+:END:
+
+The agent is a *paradigmatic stigmergic actor* in the cowork loop
+because it has no other mechanism to receive coordination
+signals. Three implications:
+
+1. *Persistence completeness determines coordination quality*.
+   The four-surface persistence stack
+   (=lp-cowork-persistence-stack.md=) is a stigmergic
+   completeness claim.
+2. *Trace clarity matters more than trace volume*. A confused
+   =RATIONALE.md= with many entries is worse than a concise one
+   with the right entries. Heylighen 2016 names this — successful
+   stigmergic systems balance signal density against parse cost.
+3. *Stigmergic loops can degrade*. If each session leaves
+   slightly-misaligned traces, drift accumulates until later
+   sessions cannot parse the cumulative state. The
+   =/lp-cowork-review= command's K3 (convergent regression)
+   check is a stigmergic-drift detector.
+
+** H.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-H-4
+:END:
+
+The shared primitive is: *coordination through persistent traces
+works iff (a) actors can read each other's traces, (b) traces
+carry enough signal to disambiguate next-action choices, and
+(c) parse cost per trace scales sub-linearly with the trace
+count*. This is substrate-independent (termites, robots, human
+editors, AI agents all face the same constraint shape).
+
+** H.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-H-5
+:END:
+
+The transfer is unusually clean — the agent is *more* stigmergic
+than humans, not less. Humans have direct-communication channels
+that supplement stigmergy (synchronous chat, voice, email);
+agents in cold-start mode have *only* stigmergy.
+
+The break, such as it is, is at *parse cost asymmetry*: the agent
+parses tokens uniformly; the human's parse cost is non-uniform
+(some sections are easier to read than others). When the human
+designs the LP file primarily for human-readability, the agent's
+parse cost may still be high. Dual-audience design (transfer-
+gradient research) is the mitigation.
+
+** H.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-H-6
+:END:
+
+Three practices. First, *write for the stigmergic reader*. Both
+human and agent next-session readers benefit when traces are
+explicit, scoped, and structured (CUSTOM_ID, concept headings,
+overview prose). Second, *audit stigmergic drift*. =/lp-cowork-
+review= K3 (convergent regression) + K4 (citation hallucination)
+both detect trace degradation. Third, *do not skip the
+persistence stack*. Each of the four surfaces (todo / lessons /
+architecture / decisions) is a stigmergic channel; missing one
+means coordination relies on direct communication that the
+next-session agent cannot access.
+
+** I.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-I-1
+:END:
+
+Risko & Gilbert 2016 (=Trends in Cognitive Sciences 20(9)=) named
+the claim: /humans systematically offload cognitive operations
+onto external structure — notebooks, lists, query interfaces,
+spatial arrangements — to extend memory and processing capacity
+beyond what working memory can hold/. Carruthers 2015 gave the
+philosophical framing (the "extended mind" view).
+
+Sharp form for LP cowork: *the LP file is a cognitive offload
+for both populations. The human offloads tacit knowledge into
+prose; the agent offloads context-window state into the
+persistence stack. Both populations gain capacity proportional
+to how well the offload substrate matches the operation being
+offloaded.*
+
+** I.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-I-2
+:END:
+
+Risko & Gilbert 2016 synthesised ~80 empirical studies of
+cognitive offloading including memory tasks (lists, calendars),
+arithmetic (calculators), and navigation (GPS). The robust
+finding: humans offload predictably when external cost <
+internal cost, and offloading reshapes the task rather than
+merely supplementing it.
+
+For LP cowork, the parallel is observational: =claude-agent= +
+=edo-literate= practice shows both populations offloading to the
+LP file. Humans offload "rejected alternatives" into prose
+(otherwise lost on session reset); agents offload "what I'm
+working on" into =tasks/todo.md= (otherwise lost on context
+compaction).
+
+** I.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-I-3
+:END:
+
+The agent offloads aggressively but *into different surfaces*:
+the persistence stack files, in-conversation tool output, and
+the LP file's overview prose. The four-surface persistence stack
+exactly maps onto the four cognitive operations Risko & Gilbert
+catalogue (current state, learned lessons, structural map,
+decision history).
+
+The agent's offloading differs from human offloading in one
+direction: *the agent CANNOT offload by remembering between
+sessions*. Humans offload to internal memory plus external
+artefacts; agents offload to external artefacts only. The
+external artefact must therefore carry the full state, with no
+shortcut paths the human enjoys.
+
+** I.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-I-4
+:END:
+
+The shared primitive is: *cognition extends through external
+structure when external cost < internal cost; the structure
+itself is part of the cognitive system, not separate from it*.
+Substrate-independent — humans, agents, and ant colonies all
+extend cognition through external structure.
+
+** I.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-I-5
+:END:
+
+The transfer is partial at /the offload-to-internal ratio/.
+Humans offload some operations (lists) but retain others
+internally (intuitions, taste judgements). Agents have no
+internal-retention option — everything either lives in the
+current context or in external artefacts. The cowork implication:
+the human's taste-judgement role is *non-offloadable*, while
+mechanical operations should be offloaded aggressively to the
+agent + persistence stack.
+
+** I.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-I-6
+:END:
+
+Three practices. First, *offload aggressively into the
+persistence stack*. Anything the next session needs to know
+goes onto disk. Second, *do not offload taste judgements*. The
+human's role in the cowork loop is precisely the operations that
+*cannot* be offloaded — taste, push-back, stake assessment.
+Third, *match offload surface to operation type*. =tasks/todo.md=
+for current state; =tasks/lessons.md= for one-shot mistakes;
+=ARCHITECTURE.org= for structural map; =RATIONALE.md= for
+decisions. Mixing collapses the offload's search shape.
+
+** J.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-J-1
+:END:
+
+Star & Griesemer 1989 (=Social Studies of Science 19(3)=) named
+the claim: /boundary objects are artefacts robust enough to be
+useful across multiple communities, even though each community
+interprets them differently/. The classical example: museum
+specimens that serve amateur collectors, professional biologists,
+and curators with different meanings to each. Star 2010 revisited
+the concept and clarified its boundary conditions.
+
+Sharp form for LP cowork: *the LP document is a boundary object
+between the human reading-and-writing community (taste, design
+intent, tacit knowledge) and the agent reading-and-writing
+community (structural parsing, mechanical refactor, citation
+lookup). Both communities use the same artefact; each interprets
+it differently.*
+
+** J.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-J-2
+:END:
+
+Star & Griesemer 1989 was a historical case study of the Berkeley
+Museum of Vertebrate Zoology 1907-1939 — how zoological specimens
+served amateur trappers, professional taxonomists, museum
+administrators, and university biologists simultaneously without
+single interpretation. Star 2010 reviewed 20 years of subsequent
+boundary-object research and tightened the definition (clarifying
+which artefacts qualify).
+
+For LP cowork, the parallel: =literate-agent= itself is a
+boundary object across multiple consuming projects (=claude-agent=,
+=edo-literate=, future) each with project-specific interpretation
+of the doctrine. The =@~/projects/literate-agent/CLAUDE.md=
+import allows each consumer to give the doctrine its local
+meaning while preserving cross-consumer common ground.
+
+** J.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-J-3
+:END:
+
+The agent participates as a *cross-community translator* in two
+distinct cowork modes:
+
+1. *Within-project*: the LP file is interpreted by the human as
+   design intent + by the agent as structural surface. Star &
+   Griesemer's framing applies — same artefact, different
+   meanings.
+2. *Cross-project*: =literate-agent= as a plugin is interpreted
+   by each consuming project's local conventions (env overrides
+   in =_env.sh=, project-specific tangle targets). Same plugin,
+   different meanings.
+
+The agent in both cases is *fluent in the boundary translation*:
+it reads the plugin's general doctrine through the local
+project's env overrides, producing project-appropriate output
+without losing the general doctrine. This is the boundary-object
+mechanism working.
+
+** J.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-J-4
+:END:
+
+The shared primitive is: *artefacts that serve multiple
+communities must be /structurally robust enough/ to support
+multiple interpretations + /flexible enough/ that each community's
+local interpretation does not break the others' use of the
+artefact*. Star 2010's revision clarified this is a real design
+constraint, not just a useful frame — under-structuring kills
+the boundary object (becomes too fluid to coordinate); over-
+structuring kills it (becomes too rigid for any community to
+adapt).
+
+** J.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-J-5
+:END:
+
+The transfer is clean. The LP file IS a boundary object; the
+boundary-object literature directly applies. The only nuance is
+the *cost* of the boundary translation: human-human boundary
+objects evolved over decades to balance the constraints; LP files
+in human-agent cowork are weeks or months old, still finding the
+robust-flexible balance. The MVP rules + transfer-gradient
+research are part of the balance-finding process.
+
+** J.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-J-6
+:END:
+
+Three practices for LP cowork. First, *design for multiple
+interpretations explicitly*. Dual-audience design (transfer-
+gradient research) is the within-project boundary-object design;
+plugin + env-override (=literate-agent= shape) is the cross-
+project boundary-object design. Second, *balance structural
+robustness against flexibility*. Too many rules (=literate-agent=
+overpopulated) and consumer projects revolt; too few and
+consistency drops. Third, *let the boundary translation be visible
+in the artefact*. =RATIONALE.md= entries that name why a project
+diverges from the general doctrine ARE boundary-translation
+artefacts — they preserve the relationship between the general
+and the local.
+
+* H. Stigmergy
+:PROPERTIES:
+:CUSTOM_ID: dir-H
+:END:
+
+Stigmergy is *indirect coordination via traces left in a shared
+environment*. Originally Grassé 1959 for termite mound construction;
+Theraulaz & Bonabeau 1999 generalised to multi-agent systems;
+Heylighen 2016 reviewed the cognitive-systems application. The
+mechanism: actor A modifies the environment, actor B reads the
+modification and acts on it, no direct communication required.
+In LP cowork, the shared artefact IS the LP file, and edits are
+the stigmergic signal. The question is how well stigmergy serves
+when one of the actors (the agent) reads at substrate-token
+granularity while the other (the human) reads at chunk granularity.
+
+** H.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-H-1
+:END:
+
+(Round-1 placeholder.)
+
+** H.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-H-2
+:END:
+
+(Round-1 placeholder.)
+
+** H.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-H-3
+:END:
+
+(Round-1 placeholder.)
+
+** H.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-H-4
+:END:
+
+(Round-1 placeholder.)
+
+** H.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-H-5
+:END:
+
+(Round-1 placeholder.)
+
+** H.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-H-6
+:END:
+
+(Round-1 placeholder.)
+
+* I. Cognitive offloading
+:PROPERTIES:
+:CUSTOM_ID: dir-I
+:END:
+
+Cognitive offloading is *using external structure to extend
+cognition* — notebooks, lists, diagrams, search-engine queries —
+all let the user think things they could not hold in working
+memory. Risko & Gilbert 2016 (=Trends in Cognitive Sciences=) gave
+the modern review; Carruthers 2015 the philosophical framing. For
+LP cowork, the LP document itself is a cognitive offload — both
+populations use it to store state too costly to keep in head /
+context. The transfer question is whether the offload helps both
+populations symmetrically.
+
+** I.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-I-1
+:END:
+
+(Round-1 placeholder.)
+
+** I.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-I-2
+:END:
+
+(Round-1 placeholder.)
+
+** I.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-I-3
+:END:
+
+(Round-1 placeholder.)
+
+** I.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-I-4
+:END:
+
+(Round-1 placeholder.)
+
+** I.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-I-5
+:END:
+
+(Round-1 placeholder.)
+
+** I.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-I-6
+:END:
+
+(Round-1 placeholder.)
+
+* J. Boundary objects
+:PROPERTIES:
+:CUSTOM_ID: dir-J
+:END:
+
+Boundary objects are *artefacts robust enough to be useful across
+multiple communities, even though each community interprets them
+differently*. Star & Griesemer 1989 (=Social Studies of Science=)
+named the concept; Star 2010 revised it. The canonical example:
+museum specimens that serve amateur collectors, professional
+biologists, and curators with different meanings to each. For LP
+cowork, the LP document is exactly a boundary object — humans
+read it for design rationale, agents read it for executable
+structure. The transfer question is what the boundary-object
+literature predicts about how these objects must be shaped to
+work for both communities.
+
+** J.1 Claim
+:PROPERTIES:
+:CUSTOM_ID: dir-J-1
+:END:
+
+(Round-1 placeholder.)
+
+** J.2 Empirical basis
+:PROPERTIES:
+:CUSTOM_ID: dir-J-2
+:END:
+
+(Round-1 placeholder.)
+
+** J.3 Agent isomorphism
+:PROPERTIES:
+:CUSTOM_ID: dir-J-3
+:END:
+
+(Round-1 placeholder.)
+
+** J.4 Shared primitive (if transfer holds)
+:PROPERTIES:
+:CUSTOM_ID: dir-J-4
+:END:
+
+(Round-1 placeholder.)
+
+** J.5 Where transfer breaks (if it does)
+:PROPERTIES:
+:CUSTOM_ID: dir-J-5
+:END:
+
+(Round-1 placeholder.)
+
+** J.6 Operational takeaway
+:PROPERTIES:
+:CUSTOM_ID: dir-J-6
+:END:
+
+(Round-1 placeholder.)
+
+* Synthesis
+:PROPERTIES:
+:CUSTOM_ID: synthesis
+:END:
+
+This section collects the cross-direction patterns identified in
+Round 3 — the cowork-gradient figure, the shared-primitive
+families, and the cross-cutting observations. Mirrors the
+reader-side =synthesis= section in =literate-agent/docs/transfer-
+gradient.org=.
+
+** Cowork-gradient figure
+:PROPERTIES:
+:CUSTOM_ID: synthesis-figure
+:END:
+
+Two axes:
+
+- *Vertical* — substrate distance from human-human pair. Top =
+  pure coordination-structure findings that hold for any actor
+  pair. Bottom = findings dependent on human-specific
+  social/cognitive substrate.
+- *Horizontal* — transfer completeness for the human + AI agent
+  pair. Left = transfers cleanly. Right = transfers partially or
+  breaks at an identified boundary.
+
+#+begin_example
+                    coordination structure (full transfer)
+                                    ▲
+                                    │
+                  A. articulation   │   H. stigmergy
+                  J. boundary obj   │   (agent more stigmergic
+                                    │    than humans)
+                                    │
+                  G. genre          │   I. cognitive offloading
+                  conventions       │   (asymmetric: agent can't
+                                    │    offload to memory)
+   ←──────────────────────────────  ┼  ──────────────────────────────→
+   full transfer                    │                    transfer breaks
+                                    │
+                  B. common ground  │   D. code review
+                  (partial: repair  │   (gap holds; capability
+                  collapses)        │    profile differs)
+                                    │
+                                    │   F. pair programming
+                                    │   (role rotation breaks)
+                                    │
+                                    │   C. trust calibration
+                                    │   (cockpit assumption breaks)
+                                    │
+                                    │   E. sycophancy
+                                    │   (LLM-native, no human-human
+                                    │    transfer of mitigation)
+                                    ▼
+                    human-specific substrate (transfer breaks)
+#+end_example
+
+Three findings (A, H, J) cluster in the *upper-left full-transfer
+quadrant* — coordination-structure findings that hold regardless
+of actor substrate. Three findings (C, E, F) cluster in the
+*lower-right transfer-breaks* zone — each breaks at a different
+boundary (stationarity for C, LLM-native mechanism for E, role
+symmetry for F). G and I sit on the *partial-transfer diagonal*,
+each with one specific asymmetry. B and D sit on the *partial
+boundary* with one identified break (repair for B, capability
+profile for D).
+
+The figure inverts somewhat from the reader-side picture: there,
+recognition / foraging / berry-picking (behaviour-pure) clustered
+upper-left and perceptual mechanisms clustered lower-right. Here,
+the upper-left contains *coordination-structure findings*
+(articulation work, stigmergy, boundary objects) and the lower-
+right contains *findings tied to specific human-substrate
+properties* (sycophancy mechanism, calibration stationarity, role
+rotation cost). The unifying claim is the same: behaviour and
+decision-structure findings transfer cleanly; substrate-specific
+findings transfer partially or not at all.
+
+** Shared-primitive families
+:PROPERTIES:
+:CUSTOM_ID: synthesis-families
+:END:
+
+Six families emerged from the ten directions. A rule citing a
+specific primitive should name the family so the family's transfer
+profile is visible.
+
+| Family | Members | Primitive |
+|--------+---------+-----------|
+| Coordination-via-traces | A, H, J | Persistent artefacts in a shared environment carry the coordination signal; substrate-independent because the channel is the artefact, not the actors |
+| Common-ground via persistent structure | A, B, G, I | Cross-session coordination depends on the artefact's structure reducing grounding cost; both audiences read structure, only humans accrue intrinsic memory |
+| Multi-purpose review | D, G | Code review + genre enforcement realise multiple outcomes (defect / knowledge / style) shaped by reviewer capability; agent capability profile differs but shape holds |
+| Capability-conditional role assignment | F, D | Role specialisation reduces error; role rotation is NOT free when capabilities are asymmetric; stake determines role, not time |
+| LLM-native failure modes | C, E | Sycophancy + non-stationary reliability + RLHF priors are agent-specific failure modes with no human-human analogue; mitigation literature is LLM-specific |
+| Offload-symmetric, retain-asymmetric | I, B, J | Both populations offload to external artefacts; only humans retain intrinsic memory across sessions; the offload surface must be complete because the agent has no shortcut path |
+
+A and B and H form a *triple coordination-substrate cluster*: A
+names the labour (articulating coordination), H names the
+mechanism (traces in a shared environment), B names the cognitive
+constraint (the labour must reduce grounding cost). The three
+read as one extended primitive: *coordination is articulation work
+done through stigmergic traces that reduce common-ground cost*.
+
+** Cross-cutting observations
+:PROPERTIES:
+:CUSTOM_ID: synthesis-observations
+:END:
+
+Eight observations across the ten directions:
+
+1. *Initiation is the main asymmetry in cowork*. Humans
+   spontaneously initiate articulation work; agents only respond
+   to explicit triggers. The MVP rules' "propose before edit" +
+   "stake declaration" + "handoff templates" all encode the
+   initiation trigger so the human doesn't carry initiation
+   100%. (Direction A, F.)
+2. *The persistence stack is the cowork's coordination substrate*.
+   Four surfaces (todo / lessons / architecture / decisions)
+   subsume articulation work, stigmergic traces, common-ground
+   maintenance, and cognitive offloading. Missing any one
+   produces predictable failure. (Directions A, B, H, I.)
+3. *LLM-native failure modes do not transfer from human-human
+   research*. Sycophancy mechanism + non-stationary reliability
+   + RLHF priors require LLM-specific mitigation. The classical
+   automation-trust literature applies in form (calibration
+   matters) but not in mitigation (cockpit assumptions fail).
+   (Directions C, E.)
+4. *Role assignment is stake-conditional, not time-rotated*.
+   Classical pair programming rotates roles every 30 minutes;
+   LP cowork assigns role by stake (high-taste = human drives;
+   bulk-mechanical = agent drives) because capability is asymmetric.
+   (Direction F.)
+5. *Genre conventions are bilateral coordination tools*. Both
+   populations benefit from predictable artefact shape; example
+   exposure is sufficient for agent conformance. Genre evolution
+   is human-initiated; agent follows current examples.
+   (Direction G.)
+6. *The LP document is a paradigmatic boundary object*. Star &
+   Griesemer's framework applies directly. =literate-agent= as a
+   plugin is a cross-project boundary object; the LP file is a
+   within-project one. (Direction J.)
+7. *Sycophancy detection requires provenance display, not
+   confidence reading*. The agent's surface confidence is poorly
+   calibrated; forcing provenance display (anti-sycophancy rule)
+   gives the human a usable calibration signal. (Directions C, E.)
+8. *Code review is mostly knowledge transfer in LP cowork*.
+   Bacchelli's gap holds — expectation is defect-finding,
+   realised outcome is knowledge transfer + style. Agent
+   capability profile lands strong in knowledge transfer + style,
+   weak in defect-finding. Calibrate expectations. (Direction D.)
+
+** Closure: relationship to the 5 MVP rules
+:PROPERTIES:
+:CUSTOM_ID: synthesis-mvp-mapping
+:END:
+
+The five rules under =literate-agent/rules/lp-cowork-*= were
+shipped from observed practice before this loop ran. The research
+validates each from a distinct direction:
+
+| MVP rule | Primary research grounding | Sharpest single source |
+|----------+----------------------------+------------------------|
+| =lp-cowork-stake-declaration.md= | Trust calibration depends on the human knowing where the agent is reliable (direction C); role assignment in cowork is stake-conditional (direction F). | Lee & See 2004 |
+| =lp-cowork-propose-before-edit.md= | Articulation work requires explicit initiation when one party defaults to fast execution (direction A); dual-process slow-mode trigger is the same mechanism (reader-side direction E). | Schmidt & Bannon 1992 |
+| =lp-cowork-anti-sycophancy.md= | Sycophancy is LLM-native (direction E); common-ground repair collapses without explicit surfacing (direction B). | Sharma et al 2023 |
+| =lp-cowork-handoff-template.md= | Stigmergic coordination requires trace clarity (direction H); common-ground grounding strategy is medium-relative (direction B). | Theraulaz & Bonabeau 1999 |
+| =lp-cowork-persistence-stack.md= | Cognitive offloading symmetric for both populations but human-side retain capacity differs (direction I); articulation work needs a materialised surface (direction A); boundary-object stability needs structural anchors (direction J). | Risko & Gilbert 2016 |
+
+No MVP rule was contradicted by the research. Three new patterns
+emerged that the MVP did not codify:
+
+1. *Knowledge-transfer-first review framing*. Direction D's
+   Bacchelli gap suggests cowork-review expectations should be
+   calibrated *down* on defect-finding and *up* on knowledge
+   transfer. The =/lp-cowork-review= command's K-checks already
+   align with this, but no rule yet codifies "do not measure agent
+   review against defect-finding parity."
+2. *Genre as bilateral coordination tool*. Direction G frames the
+   LP genre conventions (four-part section shape, etc.) as
+   coordination tools whose value depends on example exposure.
+   Could be codified as =rules/lp-cowork-genre-conformance.md=.
+3. *Boundary-object design discipline*. Direction J's
+   robust-vs-flexible balance suggests literate-agent itself
+   should treat MVP additions as boundary-object evolution —
+   each new rule must preserve both the general doctrine and
+   consumer-local override capacity. Currently implicit via the
+   plugin + =_env.sh= pattern; could be codified as a meta-rule.
+
+These three patterns are research-output, not practice-output.
+They go into =docs/cowork-research.org='s "post-loop findings"
+section and may become future rules.
+
+* Sources
+:PROPERTIES:
+:CUSTOM_ID: sources
+:END:
+
+All citations introduced in Round 2 were verified via WebSearch in
+Round 4 (iters 31-40). Canonical metadata below.
+
+** A. Articulation work
+
+- Strauss, A. (1985). =Work and the Division of Labor=. Sociological
+  Quarterly 26(1): 1-19.
+- Suchman, L. (1987). =Plans and Situated Actions: The Problem of
+  Human-Machine Communication=. Cambridge University Press.
+- Schmidt, K., & Bannon, L. (1992). Taking CSCW seriously. Supporting
+  articulation work. =Computer Supported Cooperative Work= 1(1-2):
+  7-40. DOI [[https://doi.org/10.1007/BF00752449][10.1007/BF00752449]].
+
+** B. Common ground
+
+- Schober, M.F., & Clark, H.H. (1989). Understanding by addressees
+  and overhearers. =Cognitive Psychology= 21(2): 211-232.
+- Clark, H.H., & Brennan, S.E. (1991). Grounding in communication.
+  In Resnick, Levine & Teasley (eds.), =Perspectives on Socially
+  Shared Cognition= (pp. 127-149). American Psychological Association.
+- Clark, H.H. (1996). =Using Language=. Cambridge University Press.
+
+** C. Trust calibration
+
+- Parasuraman, R., & Riley, V. (1997). Humans and automation:
+  Use, misuse, disuse, abuse. =Human Factors= 39(2): 230-253.
+- Lewandowsky, S., Mundy, M., & Tan, G.P.A. (2000). The dynamics
+  of trust: Comparing humans to automation. =Journal of
+  Experimental Psychology: Applied= 6(2): 104-123.
+- Lee, J.D., & See, K.A. (2004). Trust in automation: Designing
+  for appropriate reliance. =Human Factors= 46(1): 50-80.
+  DOI [[https://doi.org/10.1518/hfes.46.1.50_30392][10.1518/hfes.46.1.50_30392]].
+- Hoff, K.A., & Bashir, M. (2015). Trust in automation: Integrating
+  empirical evidence on factors that influence trust. =Human
+  Factors= 57(3): 407-434.
+
+** D. Code review dynamics
+
+- Bacchelli, A., & Bird, C. (2013). Expectations, outcomes, and
+  challenges of modern code review. =ICSE 2013=: 712-721.
+  DOI [[https://doi.org/10.1109/ICSE.2013.6606617][10.1109/ICSE.2013.6606617]].
+- Czerwonka, J., Greiler, M., & Tilford, J. (2015). Code reviews do
+  not find bugs: How the current code review best practice slows us
+  down. =ICSE 2015 Companion=.
+
+** E. Sycophancy in LLMs
+
+- Perez, E., Ringer, S., Lukošiūtė, K., et al. (2022). Discovering
+  language model behaviors with model-written evaluations. =arXiv=
+  [[https://arxiv.org/abs/2212.09251][2212.09251]].
+- Sharma, M., Tong, M., Korbak, T., et al. (2023). Towards
+  understanding sycophancy in language models. =arXiv= [[https://arxiv.org/abs/2310.13548][2310.13548]].
+
+** F. Pair programming dynamics
+
+- Williams, L., Kessler, R., Cunningham, W., & Jeffries, R. (2000).
+  Strengthening the case for pair programming. =IEEE Software=
+  17(4): 19-25.
+- Bryant, S., Romero, P., & du Boulay, B. (2008). Pair programming
+  and the mysterious role of the navigator. =International Journal
+  of Human-Computer Studies= 66(7): 519-529.
+
+** G. Genre conventions in technical writing
+
+- Bazerman, C. (1988). =Shaping Written Knowledge: The Genre and
+  Activity of the Experimental Article in Science=. University of
+  Wisconsin Press, Madison.
+- Berkenkotter, C., & Huckin, T.N. (1995). =Genre Knowledge in
+  Disciplinary Communication: Cognition / Culture / Power=. Lawrence
+  Erlbaum.
+
+** H. Stigmergy
+
+- Grassé, P.-P. (1959). La reconstruction du nid et les coordinations
+  interindividuelles chez =Bellicositermes natalensis= et =Cubitermes
+  sp.= =Insectes Sociaux= 6(1): 41-80.
+- Theraulaz, G., & Bonabeau, E. (1999). A brief history of stigmergy.
+  =Artificial Life= 5(2): 97-116.
+  DOI [[https://doi.org/10.1162/106454699568700][10.1162/106454699568700]].
+- Heylighen, F. (2016). Stigmergy as a universal coordination
+  mechanism: Components, varieties and applications. =Cognitive
+  Systems Research= 38: 4-13.
+
+** I. Cognitive offloading
+
+- Carruthers, P. (2015). =The Centered Mind: What the Science of
+  Working Memory Shows Us About the Nature of Human Thought=.
+  Oxford University Press.
+- Risko, E.F., & Gilbert, S.J. (2016). Cognitive offloading. =Trends
+  in Cognitive Sciences= 20(9): 676-688.
+  DOI [[https://doi.org/10.1016/j.tics.2016.07.002][10.1016/j.tics.2016.07.002]].
+
+** J. Boundary objects
+
+- Star, S.L., & Griesemer, J.R. (1989). Institutional ecology,
+  "translations" and boundary objects: Amateurs and professionals in
+  Berkeley's Museum of Vertebrate Zoology, 1907-1939. =Social Studies
+  of Science= 19(3): 387-420.
+  DOI [[https://doi.org/10.1177/030631289019003001][10.1177/030631289019003001]].
+- Star, S.L. (2010). This is not a boundary object: Reflections on
+  the origin of a concept. =Science, Technology, & Human Values=
+  35(5): 601-617.

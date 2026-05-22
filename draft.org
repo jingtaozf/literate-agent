@@ -1,0 +1,338 @@
+#+TITLE: literate-agent draft proposals
+#+SUBTITLE: Proposal queue — design under discussion, not yet codified into rules
+#+OPTIONS: toc:nil num:nil
+
+This file is the *proposal queue* for literate-agent — design under
+discussion that has not yet promoted into a rule or a doc.
+Per `rules/design-stays-in-org.md` (edo-literate variant), every
+proposal opens as a top-level section here, gets refined through
+conversation, and on accept either:
+
+- promotes to a `rules/<slug>.md` (if it codifies behaviour), OR
+- promotes to a `docs/<slug>.org` (if it's a reference doc), OR
+- gets a closure-of-rejection entry naming the alternative chosen.
+
+Each accepted proposal can then be removed from `draft.org` after
+the corresponding rule/doc lands.
+
+* 2026-05-22 — lp-resync source-drift roundtrip (v3 proposal)
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip
+:END:
+
+** Risk
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip-risk
+:END:
+
+high (architectural design touching =literate-org=, =literate-agent=
+scripts/rules, and the existing edo =/lp-resync= skill).
+
+** Problem
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip-problem
+:END:
+
+Team members maintain source code (=.py= / =.ts= / =.rs=). They
+do not edit LP =.org= files. The LP layer drifts away from source
+silently. Current =/lp-resync= Phase C handles "larger content
+change" by STOPping and asking the user to choose between:
+
+a) hand-merge into the .org's prose + src block,
+b) re-bootstrap that section via =literate-org-import= — which
+   *destroys existing prose* (the central pain),
+c) skip.
+
+We need a fourth option: *automatic body-replace inside existing
+src blocks*, *preserving prose*, *no source-side markers*, *git-
+SHA-anchored identity*, *noweb-aware*.
+
+** Constraints accumulated through discussion
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip-constraints
+:END:
+
+1. *No source-side markers* (=:comments link= rejected) — team that
+   doesn't use LP shouldn't see LP pollution in =.py= files.
+2. *Git SHA in .org* is the canonical identity provider — diff
+   against stored SHA shows what changed.
+3. *Tree-sitter on src block content* is the block-to-source
+   identity bridge — robust to heading-text drift, refactor
+   rename, reorder.
+4. *Noweb-restructure* (.org split / merge with no tangle output
+   change) must keep metadata consistent without requiring source
+   sync.
+5. *Metadata-driven* — schema codified in a rule, audited by a
+   script, maintained by sync engine + human (who knows what).
+
+** Design — SHA-anchored, tree-sitter-bridged, metadata-driven
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip-design
+:END:
+
+Three layers of stability:
+
+| Layer | Mechanism | What it identifies |
+|-------+-----------+--------------------|
+| File | =#+PROPERTY: LITERATE_ORG_SOURCE_SHA <hash>= | what source version this .org is in sync with |
+| Block | tree-sitter parse of src block content | which source entity does this block own |
+| Metadata | =:LITERATE_ORG_BLOCK_KIND:= + =:LITERATE_ORG_CONTAINS_DEFS:= + =:LITERATE_ORG_NOWEB_PARENT:= | structural relationships (atomic / skeleton / noweb-leaf) |
+
+3-pass algorithm:
+
+- Pass A *modify*: source body changed, block exists → replace
+  block body in-place (or its noweb-leaf child if skeleton). Prose
+  untouched.
+- Pass B *add*: source has new def, no block → insert new heading
+  + src block at sensible parent section, tagged
+  =:LITERATE_ORG_GENERATED: pass-b-add:=.
+- Pass C *delete*: .org has block, source no longer has def → add
+  =:STALE: <date>:= property; never auto-delete; human reviews.
+
+Verify: tangle round-trip → diff source → byte-equivalent. If
+not, algorithm bug — STOP.
+
+** Edge cases (15 catalogued)
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip-edge-cases
+:END:
+
+| # | Case | v3 handling |
+|---+------+-------------|
+| 1 | Pure modify (function body change) | Pass A, trivial |
+| 2 | Noweb-split parent + children | Pass A finds owning child via CONTAINS_DEFS |
+| 3 | Source rename Foo→Bar | Pass C STALE + Pass B ADD → human reviews |
+| 4 | Source moves between files | STALE in old + ADD in new → human reviews |
+| 5 | Noweb restructure (no source diff) | Sync no-op; audit verifies metadata; refresh tool updates CONTAINS_DEFS |
+| 6 | Excluded defs (opt-out) | =LITERATE_ORG_EXCLUDED_DEFS= file-level skip list |
+| 7 | Pinned blocks (authoritative) | =:LITERATE_ORG_PIN: yes:= per-block skip |
+| 8 | Whitespace-only changes | Tree-sitter normalises → no false positives |
+| 9 | Decorator changes | Decorated_definition diff → Pass A |
+| 10 | Nested defs | Top-level only (tree-sitter depth filter) |
+| 11 | FQN ambiguity (same name in different classes) | Class.method FQN |
+| 12 | Cross-language (=.py= + =.pyi=) | Per-language extractor; file extension routes |
+| 13 | Bootstrap legacy .org | =lp_sync_bootstrap.py= stamps initial metadata |
+| 14 | Stale grammar (tree-sitter version updates) | =LITERATE_ORG_LANG_VERSION= flags mismatch |
+| 15 | Cross-org-file refactor detection | Out of scope — STOP + human reviews |
+
+** Required changes
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip-changes
+:END:
+
+*=literate-org-import= side:*
+
+1. Add file-level =LITERATE_ORG_SOURCE_SHA= + =SHA_DATE= + =LANG_VERSION= defaults.
+2. Add block-level =BLOCK_KIND= default (=atomic= at import).
+3. Per-language extractor =literate-org-extract-block-defs= returning ={name (FQN), body-hash, line-range}=.
+4. =literate-org-sync-incremental= entry point (dispatches to =lp_sync_engine.py=).
+5. =literate-org-refresh-metadata= for noweb-restructure case.
+
+*=literate-agent= side:*
+
+1. Skill: move =/lp-resync= from edo-literate to =literate-agent/skills/= + generalise paths.
+2. Rules: new =rules/lp-resync-metadata.md= + =rules/lp-resync-noweb-discipline.md=.
+3. Scripts: =lp_sync_engine.py= (3-pass), =audit_lp_sync_metadata.py=, =lp_metadata_refresh.py=, =lp_sync_bootstrap.py=.
+
+** Staged shipping
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip-stages
+:END:
+
+| Stage | Deliverable | Cost |
+|-------+-------------+------|
+| S1 | Skill relocation + 2 schema rules (=metadata=, =noweb-discipline=) | 3h |
+| S2 | =literate-org-import= changes 1+2 + =lp_sync_bootstrap.py= | 2h |
+| S3 | Per-language def extractor (Python first) with noweb-aware FQN | 4h |
+| S4 | =audit_lp_sync_metadata.py= + =lp_metadata_refresh.py= | 3h |
+| S5 | =lp_sync_engine.py= 3-pass | 6h |
+| S6 | /lp-resync wire-up + end-to-end test on real edo merge | 3h |
+| S7 | TS + Rust extractors + polish | 3h |
+
+Total ~24h. *S1+S2+S4 (~8h)* ships metadata foundation + skill
+relocation + audit (no engine yet). *S1-S6 (~21h)* ships full
+Python MVP.
+
+** Status
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-lp-resync-roundtrip-status
+:END:
+
+- 2026-05-22 — proposal v3 drafted (this file).
+- *Awaiting decision*: ship S1+S2+S4 (foundation) vs S1-S6 (MVP) vs
+  design-only (keep proposal frozen, no implementation yet).
+- *Awaiting decision*: literate-org migration into literate-agent
+  (see separate proposal section below).
+
+* 2026-05-22 — literate-org → literate-agent migration question
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-literate-org-migration
+:END:
+
+** Question
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-literate-org-migration-question
+:END:
+
+Should =literate-org= (the Python LP runtime + Elisp import tool)
+be migrated into =literate-agent= as one repo, preserving git
+history? Trade-off analysis follows in the migration-analysis
+section. This proposal section is a placeholder for the decision
+once made.
+
+** Trade-off analysis
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-literate-org-migration-analysis
+:END:
+
+*** What =literate-org= is today
+
+- Python package shipping a runtime that loads modules from `.org` files.
+- Published on PyPI (=pip install literate_python=).
+- Elisp side ships the =literate-org-import= function — the tool LP
+  authors use to convert source → org sections.
+- Has its own =CLAUDE.md=, =ARCHITECTURE.org=, ~50 rules, hooks.
+- Git history is dense (the PR #51 + tag/release lineage are visible
+  in =git log=).
+
+*** What =literate-agent= is today
+
+- Shared LP doctrine plugin loaded via Claude Code =--plugin-dir=.
+- 33 rules + 4 hints + 6 scripts + 4 hooks + 5 skills + 4 commands.
+- No Python runtime, no PyPI presence.
+- Consumed by =claude-agent= + =edo-literate= + future projects.
+- Recent git history (10 commits this session) is the cowork +
+  agent-native research output.
+
+*** Three options
+
+| Option | Description | Effort | Consequence |
+|--------+-------------+--------+--------------|
+| *A. Full merge* | =git subtree add= literate-org into literate-agent/literate-org/, preserve history; deprecate the separate literate-org repo | 2h | Single repo;clean co-development;BUT pip consumers must point at new location;release versioning conflates two concerns |
+| *B. Keep separate, embed via subtree* | =git subtree add --prefix=reference/literate-org= literate-org into literate-agent; pull updates periodically | 1h | literate-agent gains a co-located reference + history;literate-org remains the PyPI source-of-truth; no consumer disruption |
+| *C. Keep separate, no embedding* | Status quo;cross-repo PRs for changes that span both | 0h | Continued cross-repo dance for proposals like S1-S6 above |
+
+*** My honest assessment
+
+The user's framing assumes "two repos is overhead" — partially true but
+under-counts the costs of merge.
+
+*Costs of full merge (option A)*:
+
+1. *PyPI release coupling*: literate-org currently versions
+   independently (=pip install literate_python==X.Y.Z=). Merging
+   into literate-agent forces literate-agent to either also publish
+   to PyPI (with =setup.py= bloat) or to accept that literate-org
+   releases become subdir releases (=git tag literate-org/vX.Y.Z=,
+   awkward).
+2. *Repo size doubles*: literate-org has tangled .py files, tests,
+   poetry lock, etc. literate-agent today is doctrine-only and
+   small. Merge means every consumer of literate-agent now clones
+   the Python runtime even if they don't use it.
+3. *Boundary-object dilution*: =rules/lp-cowork-boundary-object-evolution.md=
+   says literate-agent serves multiple consumers each with local
+   override. Merging the Python runtime in makes the "consumer
+   subset" larger and harder to scope (do all consumers want the
+   Python runtime? edo doesn't directly — it's used via tangle
+   from the LP layer, but the runtime is one dependency among
+   many).
+
+*Benefits of full merge*:
+
+1. Single PR for changes spanning both (real — would help S5/S6
+   above where engine + rules + skill all change).
+2. History co-located for cross-cutting archaeology.
+3. No "is this rule + script + tool change synchronised across
+   repos" coordination tax.
+
+*Subtree-embed (option B) gets most of the benefit at low cost*:
+
+1. literate-agent gains =reference/literate-org/= subdirectory
+   with full history (=git subtree add= preserves SHAs as a merge
+   commit).
+2. Co-development PRs can touch =reference/literate-org/= and the
+   surrounding =rules/= + =scripts/= + =skills/= in one commit.
+3. literate-org stays the PyPI source of truth.
+4. Periodic =git subtree pull --prefix=reference/literate-org= keeps
+   the embedded copy in sync with upstream.
+5. If we later decide to fully merge, we already have history;
+   if we decide to fully separate, we just =git rm -rf= the subdir.
+
+This is the same shape as =claude-agent/reference/cmux= and
+=claude-agent/reference/claude-agent-sdk-python= — both are upstream
+projects embedded for local reference + co-development without
+losing their separate identity.
+
+*** Recommendation
+
+*Option B — subtree-embed literate-org into literate-agent under
+=reference/literate-org/=*, *with periodic pull discipline*.
+
+Rationale:
+
+- Preserves history (user's stated requirement)
+- Enables co-development (the S5/S6 work and beyond)
+- Does NOT couple PyPI release cycle to literate-agent rule changes
+- Is *reversible* — full merge later via removing the prefix is easy;
+  full separation later via =git rm -rf reference/literate-org= is easy
+- Matches the existing =reference/= pattern in consuming projects
+
+If after 3-6 months of co-development the embedded subdir feels
+strictly redundant (no one ever pulls upstream, no one ever
+contributes back upstream), then promote to *option A — full merge*
+and deprecate the separate repo. The decision can be made *with
+data* rather than now.
+
+*** Migration steps (if option B accepted)
+
+#+begin_src bash
+cd ~/projects/literate-agent
+git remote add literate-org https://github.com/jingtaozf/literate-org.git
+git fetch literate-org main
+git subtree add --prefix=reference/literate-org \
+    literate-org main --squash=false   # preserve full history
+
+# verify
+git log --oneline -- reference/literate-org/ | head -5
+ls reference/literate-org/
+#+end_src
+
+*=--squash=false=* is critical — that's what preserves the per-commit
+history. With =--squash=true=, all of literate-org's history collapses
+into one merge commit (only the snapshot is preserved, not the SHA
+trail).
+
+After this, pulls work via:
+
+#+begin_src bash
+git subtree pull --prefix=reference/literate-org \
+    literate-org main
+#+end_src
+
+And pushes back to literate-org (if you make local changes you want
+upstream):
+
+#+begin_src bash
+git subtree push --prefix=reference/literate-org \
+    literate-org main
+#+end_src
+
+*** Decision points
+
+| Option | Pros | Cons |
+|--------+------+------|
+| A — Full merge, deprecate literate-org repo | One source of truth | PyPI versioning coupling; consumer disruption |
+| B — Subtree-embed under =reference/literate-org/= | Most benefits without coupling; reversible | One extra =git subtree pull= step periodically |
+| C — Status quo, cross-repo PRs | Zero migration effort | Continued cross-repo coordination tax |
+
+*Recommendation*: *B* — most leverage, least risk, future-extensible.
+
+** Status
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-22-literate-org-migration-status
+:END:
+
+- 2026-05-22 — analysis written (this section).
+- *Awaiting decision*: A / B / C.
+- If B accepted, migration script lives in
+  =scripts/embed-literate-org.sh= (to be written).
