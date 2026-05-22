@@ -100,6 +100,16 @@ observations.
 
 @~/projects/literate-agent/rules/lp-agent-long-horizon-audit-cadence.md
 
+## LP source-drift roundtrip (v4 — proposal stage)
+
+These two rules codify the metadata contract for the source-drift
+roundtrip workflow consumed by `skills/lp-resync/`. See
+`draft.org § 2026-05-22-lp-resync-roundtrip` for the design doc.
+
+@~/projects/literate-agent/rules/lp-resync-metadata.md
+
+@~/projects/literate-agent/rules/lp-resync-noweb-discipline.md
+
 ## Design-record discipline
 
 @~/projects/literate-agent/rules/design-stays-in-org.md
