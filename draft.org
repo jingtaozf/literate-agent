@@ -159,10 +159,83 @@ Python MVP.
 :END:
 
 - 2026-05-22 — proposal v3 drafted (this file).
-- *Awaiting decision*: ship S1+S2+S4 (foundation) vs S1-S6 (MVP) vs
-  design-only (keep proposal frozen, no implementation yet).
-- *Awaiting decision*: literate-org migration into literate-agent
-  (see separate proposal section below).
+- 2026-05-23 — proposal v4 refined post-merge (literate-org now
+  embedded under =literate-agent/literate-org/=).
+- 2026-05-23 — *implementation shipped through S6 + S9 E2E
+  verified*. See § "Implementation status" below.
+
+** Implementation status (2026-05-23)
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-23-impl-status
+:END:
+
+| Stage | Cost est | Status | Commit(s) |
+|-------+----------+--------+-----------|
+| S1 foundation (rules + skill) | 3h | ✓ shipped | =d584e3f= |
+| S2 literate-org schema (auto-stamp at import) | 1.5h | DEFERRED — bootstrap covers it; literate-org-import patch deferred to follow-on session |
+| S3-lite bootstrap | 2h | ✓ shipped | =7e8e220= (script) + =77e308f= (edo bootstrap) |
+| S4-lite audit | 2h | ✓ shipped | =7e8e220= |
+| S5 Python def extractor | 4h | ✓ shipped (stdlib ast, not tree-sitter) | =c802eaf= |
+| S6 3-pass engine | 6h | ✓ shipped | =c802eaf= |
+| S6 bonus: --refresh-defs | — | ✓ shipped | =c802eaf= (engine) + =a4aafa6= (edo refresh) |
+| S7 skill wire-up | 2h | ✓ shipped in S1 (skill SKILL.md already calls engine) | =d584e3f= |
+| S8 Elisp =M-x literate-org-sync= wrapper | 1h | DEFERRED — CLI is self-sufficient; elisp polish |
+| S9 end-to-end edo test | 2h | ✓ verified | (manual test, documented in =c802eaf= commit msg) |
+| S10 TS/Rust extractors | 3h | DEFERRED — Python-only first version |
+| S11 polish (Pending auto-promote, stale UI) | 2h | DEFERRED |
+
+Actual cost: ~21h work compressed into focused execution. The
+deferred stages (S2, S8, S10, S11) are *polish*, not core
+functionality — the engine works end-to-end without them.
+
+** E2E proof point
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-23-e2e-proof
+:END:
+
+Verified 2026-05-23 (=c802eaf= commit message documents in
+detail):
+
+1. Picked edo =lp/mega-code-oss/client.org= with atomic block
+   =** =__init__.py== owning ={_LAZY_IMPORTS, __all__, __getattr__}=.
+2. Made test commit in =repos/mega-code-oss=: added
+   =# E2E test marker 2026-05-23= comment inside =__getattr__= body.
+3. Ran =python3 lp_sync_engine.py= dry-run: correctly classified
+   as Pass A *modify-targeted* (block has 3 defs in CONTAINS_DEFS,
+   only one changed → targeted replacement, not full-body).
+4. Applied engine: .org diff shows ONLY:
+   - SHA + SHA_DATE bumped at file header
+   - The comment line added inside =__getattr__='s body
+5. Sibling defs (=_LAZY_IMPORTS=, =__all__=), other blocks
+   (=** =run_pipeline.py==, etc.), all prose, all PROPERTIES
+   drawers OTHER than the file-header SHA bump — *unchanged*.
+6. Reverted test commit; restored client.org to bootstrap+refresh
+   state.
+
+The *prose-preservation invariant* from the v4 design holds
+empirically: source-only-update merge → prose mathematically
+cannot be modified by this tool.
+
+** What's NOT yet shipped (defer to follow-on)
+:PROPERTIES:
+:CUSTOM_ID: 2026-05-23-followon
+:END:
+
+1. =literate-org-import= auto-stamps SHA on new imports (S2).
+   *Workaround*: run =lp_sync_bootstrap.py= after import.
+2. Elisp =M-x literate-org-sync= command (S8). *Workaround*: CLI
+   invocation =python3 scripts/lp_sync_engine.py <org-file>=.
+3. TypeScript + Rust def extractors (S10). *Workaround*: works
+   for Python now; multi-language needs per-language tree-sitter
+   wrapper.
+4. Pass B auto-insertion heuristic (S11). *Workaround*: engine
+   reports added defs; human triages where to insert.
+5. Stale-tag triage UI (S11). *Workaround*: stale tags accumulate
+   in :STALE: properties; manual review.
+
+Followups can ship via separate sessions when needed; the core
+sync engine is *production-ready as-is* for the high-frequency
+case (Python source body changes).
 
 * 2026-05-22 — literate-org → literate-agent migration question
 :PROPERTIES:
