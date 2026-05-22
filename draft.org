@@ -209,7 +209,7 @@ once made.
 | Option | Description | Effort | Consequence |
 |--------+-------------+--------+--------------|
 | *A. Full merge* | =git subtree add= literate-org into literate-agent/literate-org/, preserve history; deprecate the separate literate-org repo | 2h | Single repo;clean co-development;BUT pip consumers must point at new location;release versioning conflates two concerns |
-| *B. Keep separate, embed via subtree* | =git subtree add --prefix=reference/literate-org= literate-org into literate-agent; pull updates periodically | 1h | literate-agent gains a co-located reference + history;literate-org remains the PyPI source-of-truth; no consumer disruption |
+| *B. Keep separate, embed via subtree* | =git subtree add --prefix=literate-org= literate-org into literate-agent; pull updates periodically | 1h | literate-agent gains a co-located reference + history;literate-org remains the PyPI source-of-truth; no consumer disruption |
 | *C. Keep separate, no embedding* | Status quo;cross-repo PRs for changes that span both | 0h | Continued cross-repo dance for proposals like S1-S6 above |
 
 *** My honest assessment
@@ -247,13 +247,13 @@ under-counts the costs of merge.
 
 *Subtree-embed (option B) gets most of the benefit at low cost*:
 
-1. literate-agent gains =reference/literate-org/= subdirectory
+1. literate-agent gains =literate-org/= subdirectory
    with full history (=git subtree add= preserves SHAs as a merge
    commit).
-2. Co-development PRs can touch =reference/literate-org/= and the
+2. Co-development PRs can touch =literate-org/= and the
    surrounding =rules/= + =scripts/= + =skills/= in one commit.
 3. literate-org stays the PyPI source of truth.
-4. Periodic =git subtree pull --prefix=reference/literate-org= keeps
+4. Periodic =git subtree pull --prefix=literate-org= keeps
    the embedded copy in sync with upstream.
 5. If we later decide to fully merge, we already have history;
    if we decide to fully separate, we just =git rm -rf= the subdir.
@@ -266,7 +266,7 @@ losing their separate identity.
 *** Recommendation
 
 *Option B — subtree-embed literate-org into literate-agent under
-=reference/literate-org/=*, *with periodic pull discipline*.
+=literate-org/=*, *with periodic pull discipline*.
 
 Rationale:
 
@@ -274,7 +274,7 @@ Rationale:
 - Enables co-development (the S5/S6 work and beyond)
 - Does NOT couple PyPI release cycle to literate-agent rule changes
 - Is *reversible* — full merge later via removing the prefix is easy;
-  full separation later via =git rm -rf reference/literate-org= is easy
+  full separation later via =git rm -rf literate-org= is easy
 - Matches the existing =reference/= pattern in consuming projects
 
 If after 3-6 months of co-development the embedded subdir feels
@@ -289,12 +289,12 @@ data* rather than now.
 cd ~/projects/literate-agent
 git remote add literate-org https://github.com/jingtaozf/literate-org.git
 git fetch literate-org main
-git subtree add --prefix=reference/literate-org \
+git subtree add --prefix=literate-org \
     literate-org main --squash=false   # preserve full history
 
 # verify
-git log --oneline -- reference/literate-org/ | head -5
-ls reference/literate-org/
+git log --oneline -- literate-org/ | head -5
+ls literate-org/
 #+end_src
 
 *=--squash=false=* is critical — that's what preserves the per-commit
@@ -305,7 +305,7 @@ trail).
 After this, pulls work via:
 
 #+begin_src bash
-git subtree pull --prefix=reference/literate-org \
+git subtree pull --prefix=literate-org \
     literate-org main
 #+end_src
 
@@ -313,7 +313,7 @@ And pushes back to literate-org (if you make local changes you want
 upstream):
 
 #+begin_src bash
-git subtree push --prefix=reference/literate-org \
+git subtree push --prefix=literate-org \
     literate-org main
 #+end_src
 
@@ -322,7 +322,7 @@ git subtree push --prefix=reference/literate-org \
 | Option | Pros | Cons |
 |--------+------+------|
 | A — Full merge, deprecate literate-org repo | One source of truth | PyPI versioning coupling; consumer disruption |
-| B — Subtree-embed under =reference/literate-org/= | Most benefits without coupling; reversible | One extra =git subtree pull= step periodically |
+| B — Subtree-embed under =literate-org/= | Most benefits without coupling; reversible | One extra =git subtree pull= step periodically |
 | C — Status quo, cross-repo PRs | Zero migration effort | Continued cross-repo coordination tax |
 
 *Recommendation*: *B* — most leverage, least risk, future-extensible.
