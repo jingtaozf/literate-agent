@@ -77,6 +77,32 @@ or `/lp-cowork-review` command in a future iteration.
 | Human pins a block (authoritative LP version diverges intentionally from source) | human adds `:LITERATE_ORG_PIN: yes:`; sync engine skips this block on next /lp-resync |
 | Tree-sitter grammar version bumps (binary changed) | sync engine notices `TREESIT_GRAMMAR_HASH` mismatch and re-validates all `:CONTAINS_DEFS:` against new grammar parse |
 
+## S3-lite limitation: NOWEB_PARENT not auto-inferred
+
+The shipping S3-lite bootstrap (`scripts/lp_sync_bootstrap.py`)
+detects `:LITERATE_ORG_BLOCK_KIND:` for all `:tangle`-bearing
+blocks, including noweb-leaf blocks (identified by `:noweb-ref` in
+header-args). It does NOT yet set `:LITERATE_ORG_NOWEB_PARENT:`
+because parent-inference requires building an index of skeleton
+blocks (`<<chunk-name>>` placeholders) and matching against
+leaves' `:noweb-ref` names — a richer org-block parse that lands
+in S5 / S6.
+
+Expected post-S3-lite audit state: I3b violations (noweb-leaf
+without parent) appear once for each noweb-leaf block. These are
+*acceptable bootstrap residue* — they get resolved by:
+
+- Human: hand-set `:LITERATE_ORG_NOWEB_PARENT: <skeleton-anchor>:`
+  on each leaf (manual triage when there are < ~20 cases).
+- Automated: future `scripts/lp_metadata_refresh.py` (S4+) reads
+  skeleton blocks' `<<chunk-name>>` placeholders, matches leaves'
+  `:noweb-ref` names, infers parent automatically.
+
+The audit script reports I3b as `error` severity, but the
+expected adoption path is to *accept* this state post-bootstrap and
+resolve incrementally — either via human triage or via the future
+refresh script. Do not treat I3b alone as "bootstrap failed."
+
 ## Bootstrap for legacy .org files
 
 `.org` files predating this schema have no SHA, no BLOCK_KIND, no
