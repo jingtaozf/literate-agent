@@ -1,0 +1,116 @@
+# -*- Mode: POLY-ORG ; indent-tabs-mode: nil; -*- ---
+#+TITLE: literate-org — Python modules from org files
+#+OPTIONS: tex:verbatim toc:nil \n:nil @:t ::t |:t ^:nil -:t f:t *:t <:t
+#+STARTUP: noindent
+#+STARTUP: inlineimages
+#+PROPERTY: literate-lang python
+#+PROPERTY: literate-load yes
+#+PROPERTY: literate-insert-header no
+#+PROPERTY: header-args :results silent :session
+#+PROPERTY: LITERATE_PYTHON_EXPORT_DIRECTORY: ./literate_python
+
+* What this is
+
+A Python runtime that lets you write code in =literate-org.org= and
+=import= it as if it were a normal Python package — both via on-the-fly
+loading from the org file *and* via tangled =literate_python/*.py= for
+consumers that don't read org. An optional Flask server (=make server=)
+exposes live exec + cross-module hot reload for Emacs and other
+editor-side clients.
+
+The project also ships its own LP discipline:
+- =.claude/rules/*.md= rules for AI agents working in this repo
+- =.claude/hooks/= PreToolUse + PostToolUse hooks for auto-tangle
+  and protection of generated artefacts
+- =scripts/check_org_structure.py= / =check_nl_outline.py= as fitness
+  functions for the literate document
+- Six pre-commit gates: black, flake8, check-structure,
+  check-nl-outline, check-dead-code, gitleaks
+
+* Where to start
+
+| File                               | Read first when…                                    |
+|------------------------------------|-----------------------------------------------------|
+| =AGENTS.md= (= =CLAUDE.md=)         | You are an AI agent or editor-tool integration       |
+| =ARCHITECTURE.org=                 | You want invariants, trust boundaries, "looks refactorable but isn't" |
+| =literate-org.org=                 | You want to read the source — Python and Emacs Lisp |
+| =INDEX.org=                        | You want a module-name → tangle-path map            |
+| =.claude/rules/literate-org-document-first.md= | You want the LP discipline this repo enforces |
+| =.claude/rules/autonomy-levels.md= | You want the risk-tier table per file path         |
+
+* Quick start
+
+Install:
+#+BEGIN_SRC bash
+poetry install
+#+END_SRC
+
+Run the literate-server:
+#+BEGIN_SRC bash
+make server   # Flask on $LITERATE_PYTHON_HOST:$LITERATE_PYTHON_PORT (default 127.0.0.1:7330)
+#+END_SRC
+
+Tangle the org file (auto-run by the PostToolUse hook on any =.org= edit;
+this is the manual fallback):
+#+BEGIN_SRC bash
+make tangle FILE=literate-org.org
+#+END_SRC
+
+Run lints / tests:
+#+BEGIN_SRC bash
+make check-structure   # depth ≤ 5, no grab-bag, prose-first
+make check-nl-outline  # ≥40-line functions need # # outline comments
+make check-dead-code   # vulture
+make secret-scan       # gitleaks across all files
+make lint              # black + flake8
+poetry run pytest literate_python/tests/
+#+END_SRC
+
+* Minimum example
+
+The project itself is the worked example — =literate-org.org= contains
+the full module set as 62 code blocks across ~3300 lines of prose.
+Module sections are identified by a =:LITERATE_ORG_MODULE:= property
+and tangle to =./literate_python/<module-path>.py=. From Python:
+
+#+BEGIN_SRC python
+from literate_python import server  # ← imported via the standard
+                                    #   sys.meta_path mechanism;
+                                    #   resolution goes through
+                                    #   LiterateImporter.
+#+END_SRC
+
+Once a module is registered (via =register_literate_modules()= or by
+loading =literate-org.org= directly with =literate-elisp-load=), it is
+indistinguishable from a hand-written package to the rest of Python.
+
+* Status
+
+The maintainer (Jingtao) uses this every day. The runtime is stable;
+the LP discipline is calibrated for solo / small-LP scale per
+the AI-codebase-mastery research summarised in
+=/tmp/literate-org-uplift-proposal.org=.
+
+Next milestones (≥ trigger conditions, not on the immediate roadmap):
+- Multi-contributor → tighten autonomy levels, add Generated-by trailer.
+- Codebase > 5 KLOC → add =sauremilk/drift= or =fallow= for cross-file
+  pattern check.
+- External contribution surface → add indirect-prompt-injection drill.
+
+See =tasks/lessons.md= for the deferred-decision log.
+
+* Relation to neighbouring tools
+
+| Tool         | Approach                                  | Difference from this repo                                    |
+|--------------|-------------------------------------------|--------------------------------------------------------------|
+| =literate-elisp= | Elisp loaded directly from =.org=         | We use literate-elisp for the Emacs side; Python tangles separately |
+| =nbdev=         | Jupyter notebook → Python + docs          | nbdev is notebook-first; we are org-first and use literate-elisp/python |
+| =Quarto=        | Multi-language doc → multiple targets     | Quarto is doc-first publishing; we are runtime-first        |
+| =marimo=        | Reactive notebook in pure Python files    | marimo is editor-side reactive; we are import-side          |
+| =tlehman/litprog-skill= | =.lit.md= source + reverse-sync hook | We chose forward auto-tangle + PreToolUse blocker; same goal, opposite direction |
+
+* References
+
+- [[https://peps.python.org/pep-0302/][PEP 302 — New Import Hooks]]
+- [[https://github.com/jingtaozf/literate-elisp][literate-elisp]] (the Elisp counterpart)
+- [[https://arxiv.org/abs/2408.04820][Natural Language Outlines for Code (FSE 2025)]] — the basis for the NL-outline lint

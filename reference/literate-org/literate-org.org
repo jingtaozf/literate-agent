@@ -1,0 +1,3686 @@
+# -*- Mode: POLY-ORG ; common-lisp-style: elisp; indent-tabs-mode: nil; literate-org-py-formatter: ruff;  -*- ---
+#+Title: Literate Programming  in Org files.
+#+OPTIONS: tex:verbatim toc:nil \n:nil @:t ::t |:t ^:nil -:t f:t *:t <:t
+#+STARTUP: noindent
+#+STARTUP: inlineimages
+#+PROPERTY: literate-lang python
+#+PROPERTY: literate-load yes
+#+PROPERTY: literate-insert-header no
+#+PROPERTY: header-args :results silent :session :tangle no
+#+PROPERTY: LITERATE_ORG_EXPORT_DIRECTORY: ./literate_python
+* Table of Contents                                            :noexport:TOC:
+- [[#introduction][Introduction]]
+- [[#a-minor-mode-for-literate-org][A minor mode for literate org]]
+  - [[#keymap][keymap]]
+  - [[#definition][definition]]
+  - [[#enable-literate-org-mode-in-org-file][enable literate org mode in org file]]
+  - [[#format-org-code-block-when-save][format org code block when save]]
+  - [[#format-all-org-code-blocks-in-current-buffer][format all org code blocks in current buffer]]
+  - [[#tangle-current-file-when-save][tangle current file when save]]
+  - [[#xref-backend][xref backend]]
+    - [[#visit-a-point-in-the-tangled-file-of-a-code-block][visit a point in the tangled file of a code block]]
+    - [[#visit-a-point-in-a-code-block-in-the-tangled-file][visit a point in a code block in the tangled file]]
+    - [[#show-xrefs-in-org-file-if-possible][show xrefs in org file if possible]]
+    - [[#find-definitions][find definitions]]
+    - [[#describe-thing-at-point][describe thing at point]]
+- [[#python-library-for-a-literate-server][Python library for a literate server]]
+  - [[#idea][Idea]]
+  - [[#prototype][Prototype]]
+  - [[#module-layout-in-an-org-file][Module Layout in an Org file]]
+  - [[#implementation-in-python-side][Implementation in python side]]
+    - [[#__init__][__init__]]
+    - [[#__main__][__main__]]
+    - [[#literate-module-loader][literate module loader]]
+    - [[#build-hierarchical-code-structure][build hierarchical code structure]]
+    - [[#module-reloader][module reloader]]
+    - [[#web-server][web server]]
+  - [[#tests][Tests]]
+    - [[#test-update-locals-in-marimo-notebook-automatically][test update locals in marimo notebook automatically]]
+    - [[#test-hot-reload-functionality][test hot reload functionality]]
+- [[#emacs-library-for-python-literate-server][Emacs library for python literate server]]
+  - [[#import-required-elisp-libraries][Import required elisp libraries]]
+  - [[#utilities][Utilities]]
+    - [[#connect-to-a-literate-server][connect to a literate server]]
+    - [[#send-request-to-remote-literate-server][send request to remote literate server]]
+  - [[#source-code-execution][Source Code Execution]]
+    - [[#customized-variables-for-server-host-and-port][customized variables for server host and port]]
+    - [[#execute-source-codes-in-specified-module-for-org-babel-python-evaluate][execute source codes in specified module for org-babel-python-evaluate]]
+    - [[#execute-source-code-in-remote-server][execute source code in remote server]]
+    - [[#execute-source-code-in-current-code-block][execute source code in current code block]]
+    - [[#get-top-level-python-code][get top level python code]]
+    - [[#get-the-module-name-for-a-file-name][get the module name for a file name]]
+    - [[#load-python-code-to-current-module][load python code to current module]]
+    - [[#execute-python-code-in-python-file][execute python code in python file]]
+    - [[#a-cache-db][a cache db]]
+- [[#python-inspector-for-emacs][Python inspector for Emacs]]
+    - [[#import-required-packages][Import required packages]]
+    - [[#utility-functions][Utility functions]]
+    - [[#dispatches-the-appropriate-inspection-according-to-obj-type][Dispatches the appropriate inspection according to obj type]]
+- [[#llm-with-code-blocks][LLM with code blocks]]
+  - [[#the-provider][the provider]]
+  - [[#embed][embed]]
+    - [[#embedding][embedding]]
+    - [[#normalize][normalize]]
+  -  [[#semantic-clustering][semantic clustering]]
+  - [[#toc][TOC]]
+- [[#sync-between-org-files-and-source-files][Sync between org files and source files]]
+  - [[#introduction-1][Introduction]]
+  - [[#import][Import]]
+    - [[#how][How]]
+    - [[#implementation][Implementation]]
+  - [[#export][Export]]
+- [[#run-python-code-in-specified-module][Run python code in specified module]]
+  - [[#setup-current-module-in-python-repl][setup current module in python REPL]]
+    - [[#a-special-variable-for-current-module-name-in-python-repl][a special variable for current module name in python REPL]]
+    - [[#display-namespace-in-the-mode-line-in-buffer-for-python-repl][display namespace in the mode line in buffer for python REPL]]
+    - [[#a-comint-input-sender-to-exec-code-in-a-namespace][a comint input sender to exec code in a namespace.]]
+  - [[#setup-python-shell-eval-setup-code][setup python shell eval setup code]]
+- [[#utilities-1][Utilities]]
+  - [[#clear-subtree][clear subtree]]
+  - [[#reload-file-or-modules][reload file or modules]]
+  - [[#tangle-current-section][tangle current section]]
+  - [[#import-from-jupyter-notebook][import from jupyter notebook]]
+    - [[#convert-markdown-to-org-syntax][convert markdown to org syntax]]
+    - [[#parse-a-notebook-file][parse a notebook file]]
+- [[#tips][Tips]]
+  - [[#how-to-start-django-server-in-repl][how to start django server in REPL]]
+- [[#todo01][TODO]]
+- [[#references][References]]
+
+* Introduction
+I have used an org file to write my document and code for a long time, in various languages.
+
+It is very convenient to write code in an org file.
+For example, instead of managing multiple files in nested directories,
+I can write code in an org file with a clear structure in a more lightweight way.
+Also, it can contain both documentation and code in one file for all my projects.
+
+Now I want to use org file to write Python code,
+and I want to import Python modules from an org file for my projects.
+
+So comes this library to help me import Python modules from org files in Emacs.
+* A minor mode for literate org
+:PROPERTIES:
+:literate-lang: elisp
+:header-args: :results silent :session :tangle no
+:END:
+** keymap
+#+BEGIN_SRC elisp
+(defvar literate-org-mode-map (make-sparse-keymap)
+  "Keymap for `literate-org-mode`.")
+#+END_SRC
+
+** definition
+#+BEGIN_SRC elisp
+(define-minor-mode literate-org-mode
+    "Mode for org buffers with code blocks."
+  :lighter nil
+  (cond
+    (literate-org-mode
+     (when (aand (buffer-file-name (current-buffer))
+                 (equal "org" (f-ext it)))
+       (when (buffer-base-buffer)
+         (with-current-buffer (buffer-base-buffer)
+           ;; The command `save-buffer` utilizes the base buffer for an indirect buffer.
+           (add-hook 'before-save-hook 'literate-org-format-code-block -50 t)
+           (add-hook 'after-save-hook 'literate-org-tangle-buffer -50 t)
+           ;; (add-hook 'xref-backend-functions #'literate-org-xref-backend -50 t)
+           ))))
+    (t
+     (when (equal "org" (f-ext (buffer-file-name (current-buffer))))
+       (when (buffer-base-buffer)
+         (with-current-buffer (buffer-base-buffer)
+           (remove-hook 'before-save-hook 'literate-org-format-code-block t)
+           (remove-hook 'after-save-hook 'literate-org-tangle-buffer t)))
+       ;; (remove-hook 'xref-backend-functions #'literate-org-xref-backend t)
+       ))))
+#+END_SRC
+** enable literate org mode in org file
+#+BEGIN_SRC elisp
+(defun literate-org-mode-in-org-file ()
+  (when (aand (buffer-file-name (current-buffer))
+                 (equal "org" (f-ext it)))
+    (literate-org-mode 1)))
+#+END_SRC
+** format org code block when save
+#+BEGIN_SRC elisp
+(defun literate-org-format-code-block ()
+  (interactive)
+  (when (org-in-block-p '("src"))
+    (let* ((language (getf (second (org-element-at-point)) :language))
+           (header-args (cl-third (org-babel-get-src-block-info 'light)))
+           (file-name (cdr (assoc :tangle header-args))))
+      (cond ((find language '("python" "ipython") :test #'equalp)
+             (python-black-org-mode-block t))
+            ((find language '("tsx" "ts" "js" "vue" "vue-html" "css") :test #'equalp)
+             (let ((prettier-major-mode-parsers
+                    (append '((vue-html-mode vue)
+                              (tsx-ts-mode typescript))
+                            prettier-major-mode-parsers)))
+               (prettier-prettify-org-src-code-at-point)))
+            ((null language) (error "Unsupported language %s" language))))))
+#+END_SRC
+** format all org code blocks in current buffer
+#+BEGIN_SRC elisp
+(defun literate-org-format-code-blocks-in-current-buffer ()
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "#\\+BEGIN_SRC" nil t)
+      (forward-line 1)
+      (unless (string-prefix-p "#+END_SRC"
+                               (buffer-substring-no-properties
+                                (line-beginning-position) (line-end-position)))
+        (literate-org-format-code-block)))))
+#+END_SRC
+** tangle current file when save
+#+BEGIN_SRC elisp
+(defun literate-org-tangle-current-file ()
+  (interactive)
+  (when-let* ((header-args (cl-third (org-babel-get-src-block-info 'light)))
+              (file-name (cdr (assoc :tangle header-args))))
+    (if (and file-name (not (equal file-name "no")))
+        (progn
+          (org-babel-tangle '(16) file-name (f-ext file-name))
+          (run-hook-with-args 'literate-org-after-tangle-current-file file-name))
+      ;; Try to find the parent code block usng the current noweb-ref and tangle it.
+      (when-let* ((noweb-ref (cdr (assoc :noweb-ref header-args))))
+        (let ((noweb-ref-body (format "<<%s>>" noweb-ref)))
+          (save-excursion
+            (save-restriction
+              (goto-char (point-min))
+              (while (search-forward noweb-ref-body nil t)
+                (when-let* ((header-args (cl-third (org-babel-get-src-block-info 'light)))
+                            (file-name (cdr (assoc :tangle header-args)))
+                            (actual-file-p (and file-name (not (equal file-name "no")))))
+                  (org-babel-tangle '(16) file-name (f-ext file-name))
+                  (run-hook-with-args 'literate-org-after-tangle-current-file file-name))))))))))
+#+END_SRC
+** tangle whole buffer on save
+
+`literate-org-tangle-current-file' is point-based: it tangles only the
+code block under point. That is correct for an interactive
+"reformat-and-write-this-block" command (=M-x literate-org-tangle-current-file=
+on a specific block) but wrong for the after-save-hook case.
+
+When an external editor — Claude Code's =Edit= tool, an =emacsclient -e=
+call, or any agent that mutates content outside the block at point —
+triggers a save, point is unreliable. A point-based tangle silently
+misses every change that did not happen at point. The fix is to tangle
+*every* code block in the buffer; ~org-babel-tangle~ with no arguments
+does exactly that, and is idempotent, so the worst case of running it
+when nothing changed is one extra disk write of identical bytes.
+
+This is the function bound to ~after-save-hook~ in ~literate-org-mode~:
+
+#+BEGIN_SRC elisp
+(defun literate-org-tangle-buffer ()
+  "Tangle every code block in the current buffer, then format the .py
+output directories via `literate-org-format-py'.
+
+Per-block formatting via `python-black-org-mode-block' (in
+`before-save-hook') is necessary but not sufficient: a formatter's
+inter-definition rules — most visibly, two blank lines between
+top-level defs — require seeing the *concatenated* tangle output, not
+individual blocks. Running the formatter on the output directories
+closes that gap; the formatter itself is selected by
+`literate-org-py-formatter' (default `black', also `ruff' or nil).
+
+We gate on the buffer's file extension rather than on `major-mode',
+because `literate-elisp-load' temporarily switches the buffer to
+`emacs-lisp-mode' during loading and a `derived-mode-p' check would
+spuriously skip tangle in that window."
+  (when (and (buffer-file-name)
+             (string-suffix-p ".org" (buffer-file-name)))
+    ;; Re-apply file-local variables before reading them. Two callers
+    ;; would otherwise see stale values: `literate-org-tangle-by-path'
+    ;; reverts with PRESERVE-MODES=t (skips `hack-local-variables'
+    ;; intentionally to avoid restarting org-mode on every external
+    ;; edit), and `save-buffer' never calls it. Without this hack-call
+    ;; an updated `literate-org-py-formatter:' on the first line would
+    ;; not take effect until the next full file re-visit.
+    (hack-local-variables :no-mode)
+    (let* ((inhibit-message t)
+           (tangled (org-babel-tangle))
+           (py-dirs (delete-dups
+                     (mapcar #'file-name-directory
+                             (seq-filter (lambda (f) (string-suffix-p ".py" f))
+                                         tangled)))))
+      (dolist (d py-dirs)
+        (literate-org-format-py literate-org-py-formatter d)))))
+#+END_SRC
+
+** tangle by path (for external automation)
+
+The companion entry point that automation hooks call when they have a
+file path but no live buffer:
+
+- =find-file-noselect= returns the existing buffer if the file is
+  already open, otherwise loads it from disk.
+- If the buffer is clean but disk has been modified externally (Claude
+  wrote via =Edit=, or anything else changed it), revert the buffer so
+  the tangle reflects the on-disk truth.
+- If the buffer is dirty AND disk also changed externally, that is a
+  genuine dual-writer conflict — signal an error and bail. The agent
+  surfaces the message; the user resolves manually.
+
+#+BEGIN_SRC elisp
+(defun literate-org-tangle-by-path (path)
+  "Load PATH into a buffer if needed and tangle.
+Used by =.claude/hooks/tangle-org-buffer.sh= for the disk-write case.
+Errors out if the buffer is dirty AND disk has changed externally —
+that conflict requires human resolution."
+  (with-current-buffer (find-file-noselect path t)
+    (cond
+      ((and (buffer-modified-p)
+            (not (verify-visited-file-modtime (current-buffer))))
+       (error "Buffer for %s has unsaved changes and disk has changed externally; resolve manually" path))
+      ((not (verify-visited-file-modtime (current-buffer)))
+       (revert-buffer t t t)
+       (literate-org-tangle-buffer))
+      (t
+       (literate-org-tangle-buffer)))))
+#+END_SRC
+
+** Per-buffer formatter choice
+
+After tangling, the =.py= output needs a formatter pass that sees the
+*concatenated* file — Black/Ruff inter-definition rules (e.g. two
+blank lines between top-level defs) cannot run per-block. This section
+owns that pass and the knob that picks which formatter runs.
+
+Selection is one buffer-local symbol. Three built-ins ship: =black=
+(default; current behaviour), =ruff= (=ruff format=, fast Rust
+formatter), and =nil= (skip — useful for debugging tangle output
+verbatim). Override per file with the first-line file-local variable
+form, or globally via =M-x customize-variable=:
+
+#+begin_example
+,# -*- mode: org; literate-org-py-formatter: ruff -*-
+#+end_example
+
+The dispatch uses =cl-defgeneric= rather than =pcase= — same
+multimethod pattern already in =literate-org-node-name= (per-language
+tree-sitter dispatch) and =inspector= (Python registry). New
+formatters register without touching this section:
+
+#+begin_example
+;; in init.el or a plug-in literate-org file
+(cl-defmethod literate-org-format-py ((_ (eql autopep8)) dir)
+  (literate-org--run-formatter "autopep8" "--in-place" "--recursive" dir))
+#+end_example
+
+The =:safe= predicate is intentionally permissive (=symbolp=) so a
+user-registered method is selectable via the file-local var without
+extending an explicit allowlist. An unknown FORMATTER signals
+=cl-no-applicable-method= at tangle time — explicit, not silent.
+
+The =--run-formatter= helper wraps =call-process= in =ignore-errors=
+because a missing formatter binary must not block =after-save-hook= —
+the save still completes, the =.py= just lands unformatted. This is
+the documented silent-failure exception per
+=.claude/rules/code-quality-over-feature.md=: blocking saves on a
+formatter outage punishes the wrong workflow.
+
+#+BEGIN_SRC elisp
+(defcustom literate-org-py-formatter 'black
+  "Formatter applied to tangled Python output directories.
+
+Built-in: `black' (default), `ruff', or nil to skip. Extend by adding
+methods to `literate-org-format-py'. File-local override:
+
+    # -*- mode: org; literate-org-py-formatter: ruff -*-"
+  :type '(choice (const :tag "Black"          black)
+                 (const :tag "Ruff format"    ruff)
+                 (const :tag "None (skip)"    nil)
+                 (symbol :tag "Custom (user-defined method)"))
+  :group 'literate-org
+  :safe #'symbolp)
+
+(defun literate-org--run-formatter (cmd &rest args)
+  "Run \"poetry run CMD ARGS...\" silently. Errors are swallowed: a
+missing formatter must not break `after-save-hook'."
+  (ignore-errors
+    (apply #'call-process "poetry" nil nil nil "run" cmd args)))
+
+(cl-defgeneric literate-org-format-py (formatter dir)
+  "Format Python files in DIR using FORMATTER (a symbol).
+Dispatch via `(eql FORMATTER)' specializer; an unknown FORMATTER
+signals `cl-no-applicable-method'.")
+
+(cl-defmethod literate-org-format-py ((_formatter (eql nil)) _dir)
+  "Explicit opt-out; do nothing." nil)
+
+(cl-defmethod literate-org-format-py ((_formatter (eql black)) dir)
+  (literate-org--run-formatter "black" "--quiet" dir))
+
+(cl-defmethod literate-org-format-py ((_formatter (eql ruff)) dir)
+  (literate-org--run-formatter "ruff" "format" "--quiet" dir))
+#+END_SRC
+
+** xref backend
+*** visit a point in the tangled file of a code block
+#+BEGIN_SRC elisp
+(defun literate-org-visit-point-at-tangled-position ()
+  (when-let* ((header-args (cl-third (org-babel-get-src-block-info 'light)))
+              (file-name (cdr (assoc :tangle header-args))))
+    (when (file-exists-p file-name)
+      (let* ((column-index (- (point) (line-beginning-position)))
+             (last-code-block-line-no (save-excursion
+                                        (search-backward-regexp "^#\\+BEGIN_SRC" nil t)
+                                        (line-number-at-pos)))
+             (line-index (- (line-number-at-pos)
+                            last-code-block-line-no
+                            1))
+             ;; for each code block before the current code block for the same tangled file, count lines of each code block
+             (lines-of-before-code-blocks nil))
+        (save-excursion
+          (search-backward (format ":header-args: :tangle %s" file-name) nil)
+          (search-forward "#+BEGIN_SRC" nil)
+          (let ((begin-line-no (line-number-at-pos)))
+            (while (< begin-line-no last-code-block-line-no)
+              (setf begin-line-no (line-number-at-pos))
+              (search-forward "#+END_SRC" nil)
+              (push (- (line-number-at-pos) begin-line-no 1)
+                    lines-of-before-code-blocks)
+              (search-forward "#+BEGIN_SRC" nil)
+              (setf begin-line-no (line-number-at-pos)))))
+        (setf lines-of-before-code-blocks (reverse lines-of-before-code-blocks))
+        (with-current-buffer (find-file-noselect file-name)
+          (goto-char (point-min))
+          (while lines-of-before-code-blocks
+            (forward-line (pop lines-of-before-code-blocks))
+            (while (and (not (eobp))
+                        (save-excursion
+                          (beginning-of-line)
+                          (looking-at-p "^\\s-*$")))
+              (forward-line 1)))
+          (forward-line line-index)
+          (goto-char (line-beginning-position))
+          (forward-char column-index)
+          (values file-name (point)))))))
+#+END_SRC
+
+
+*** visit a point in a code block in the tangled file
+#+BEGIN_SRC elisp
+(cl-defun literate-org-point-at-code-block-of-tangled-location (org-buffer file-name point)
+  (when (file-exists-p file-name)
+    (with-current-buffer (find-file-noselect file-name)
+      (save-excursion
+        (goto-char point)
+        (let* ((column-index (- (point) (line-beginning-position)))
+               (line-index (line-number-at-pos))
+               (org-point nil)
+               (org-current-block-start-line nil)
+               (org-current-block-lines 0))
+          (goto-char (point-min))
+          (with-current-buffer org-buffer
+            (save-excursion
+              (goto-char (point-min))
+              (when (search-forward (format ":header-args: :tangle %s" file-name) nil t)
+                (setf org-point (point)))))
+          (when (null org-point)
+            (cl-return-from literate-org-point-at-code-block-of-tangled-location nil))
+          ;; while current block is not for current tangled line
+          (while (<= (+ (line-number-at-pos) org-current-block-lines) line-index)
+            ;; forward current block in tangled file.
+            (forward-line org-current-block-lines)
+            (while (and (not (eobp))
+                        (save-excursion
+                          (beginning-of-line)
+                          (looking-at-p "^\\s-*$")))
+              (forward-line 1))
+            ;; search next code block in org buffer
+            (with-current-buffer org-buffer
+              (save-excursion
+                (goto-char org-point)
+                (search-forward "#+BEGIN_SRC" nil)
+                (forward-line)
+                (setf org-point (point))
+                (setf org-current-block-start-line (line-number-at-pos))
+                (search-forward "#+END_SRC" nil)
+                (setf org-current-block-lines (- (line-number-at-pos) org-current-block-start-line)))))
+          (let ((lines (- line-index (line-number-at-pos))))
+            (with-current-buffer org-buffer
+              (save-excursion
+                (goto-char org-point)
+                (forward-line lines)
+                (goto-char (line-beginning-position))
+                (forward-char column-index)
+                (point-marker)))))))))
+#+END_SRC
+
+
+*** show xrefs in org file if possible
+#+BEGIN_SRC elisp
+(defun literate-org-xref-show-definitions-buffer (fetcher alist)
+  (let* ((xrefs (funcall fetcher))
+         (current (current-buffer))
+         (current-dir (when (buffer-file-name current)
+                        (file-name-directory (buffer-file-name current))))
+         ;; Search for org buffers in the same directory
+         (org-bufs (cl-remove-if-not
+                    (lambda (buf)
+                      (with-current-buffer buf
+                        (let ((buf-file (buffer-file-name)))
+                          (and buf-file current-dir
+                               (string= (file-name-directory buf-file)
+                                        current-dir)))))
+                    (org-buffer-list)))
+         ;; put current org buffer in the first place
+         (org-bufs (cons current (remove current org-bufs))))
+    (loop for xref in xrefs
+          for location = (xref-match-item-location xref)
+          for group = (xref-location-group location)
+          for (org-buffer . org-point-marker)
+            = (loop for buf in org-bufs
+                    for marker = (literate-org-point-at-code-block-of-tangled-location
+                                          buf group (marker-position (xref-location-marker location)))
+                    if marker
+                      return (cons buf marker))
+          if org-point-marker
+            do (setf (xref-match-item-location xref)
+                       (xref-make-buffer-location org-buffer (marker-position org-point-marker))))
+    (let (buf)
+      (cond
+        ((not (cdr xrefs))
+         (xref-pop-to-location (car xrefs)
+                               (assoc-default 'display-action alist)))
+        (t
+         (setq buf
+                 (xref--show-xref-buffer fetcher
+                                         (cons (cons 'fetched-xrefs xrefs)
+                                               alist)))
+         (xref--auto-jump-first buf (assoc-default 'auto-jump alist))
+         buf)))))
+#+END_SRC
+
+*** find definitions
+We try to open the tangled file, and move cursor to the same point as it is in the code block,
+then use lsp mode to find the definition, if the target position can be found in the current org file, we'll
+move point to the target position.
+#+BEGIN_SRC elisp
+(defun literate-org-find-dwim ()
+  (interactive)
+  (unless (string= "org" (f-ext (buffer-file-name (current-buffer))))
+    (lsp-find-definition)
+    (return))
+
+  (multiple-value-bind (tangled-file-name tangled-point)
+      (literate-org-visit-point-at-tangled-position)
+    (unless tangled-file-name
+      (user-error "literate-org-find-dwim: no tangled file resolves at point"))
+    (let ((loc
+           (with-current-buffer (find-file-noselect tangled-file-name)
+             (lsp 1)
+             (goto-char tangled-point)
+             (lsp-request "textDocument/definition" (lsp--text-document-position-params)))))
+      (if (seq-empty-p loc)
+        (lsp--error "Not found for: %s" (or (thing-at-point 'symbol t) ""))
+        (let ((xref-show-definitions-function 'literate-org-xref-show-definitions-buffer))
+          (lsp-show-xrefs (lsp--locations-to-xref-items loc) nil nil))))))
+#+END_SRC
+*** describe thing at point
+#+BEGIN_SRC elisp
+(defun literate-org-describe-thing-at-point ()
+  (interactive)
+  (unless (string= "org" (f-ext (buffer-file-name (current-buffer))))
+    (lsp-describe-thing-at-point)
+    (return))
+
+  (multiple-value-bind (tangled-file-name tangled-point)
+      (literate-org-visit-point-at-tangled-position)
+    (unless tangled-file-name
+      (user-error "literate-org-describe-thing-at-point: no tangled file resolves at point"))
+    (with-current-buffer (find-file-noselect tangled-file-name)
+      (lsp 1)
+      (goto-char tangled-point)
+      (lsp-describe-thing-at-point))))
+#+END_SRC
+
+* Python library for a literate server
+:PROPERTIES:
+:header-args: :results silent :session :tangle no
+:END:
+** Idea
+
+Python's import system is customisable via =sys.meta_path= — a
+=MetaPathFinder= can satisfy =import foo= from any source the finder
+chooses. We hand it org-section content so a single =literate-org.org=
+serves as the package, no on-disk =.py= required at import time.
+Per-block execution in the *target* module's namespace (instead of a
+scratch REPL) keeps the org buffer and the live Python world in sync.
+
+** Prototype
+:PROPERTIES:
+:header-args: :results silent :session :tangle no
+:END:
+
+End-to-end sanity check that =sys.modules= injection plus =exec= into
+=module.__dict__= gives a real, importable module.
+
+1. import the necessary modules
+#+BEGIN_SRC python
+import sys
+import importlib
+#+END_SRC
+
+2. create a new module dynamically
+#+BEGIN_SRC python
+spec_module_a = importlib.util.spec_from_loader("module_a", loader=None)
+module_a = importlib.util.module_from_spec(spec_module_a)
+sys.modules["module_a"] = module_a
+#+END_SRC
+
+3. add a function to the module
+#+BEGIN_SRC python
+exec('def say_hello(): print("Hello from module_a.")', module_a.__dict__)
+exec('def a(): return 3', module_a.__dict__)
+exec('def b(): return 4 + a()', module_a.__dict__)
+#+END_SRC
+4. run this function
+#+BEGIN_SRC python
+from module_a import say_hello
+from module_a import b
+say_hello()
+b()
+#+END_SRC
+
+** Module Layout in an Org file
+
+Mapping from org structure to Python packages:
+
+- Each org section with a =:LITERATE_ORG_MODULE:= property *is* a
+  Python module; nesting depth mirrors dotted-module depth.
+- Python =#+begin_src= blocks inside the section contribute its
+  top-level defs, classes, and assignments.
+- A block is loaded only when =LITERATE_ORG_LOAD= is unset, set to
+  =yes=, or matched by the environment variable of the same name —
+  the third case is how test-only blocks stay quiet during normal
+  loading.
+
+#+BEGIN_EXAMPLE
+ * Module A
+   :PROPERTIES:
+   :LITERATE_ORG_MODULE: module_a
+   :END:
+  ** Module A.a
+   :PROPERTIES:
+   :LITERATE_ORG_MODULE: module_a.a
+   :END:
+  *** a function for module A.a
+   ,#+BEGIN_SRC python
+   def say_hello():
+        print("Hello from module_a.a.")
+   ,#+END_SRC
+  *** a test code for above function
+   ,#+BEGIN_SRC python :load test
+   say_hello()
+   ,#+END_SRC
+#+END_EXAMPLE
+** Implementation in python side
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python
+:LITERATE_ORG_ROOT_MODULE_PATH: ./
+:END:
+*** __init__
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.__init__
+:header-args: :tangle ./literate_python/__init__.py
+:END:
+**** Assignment __version__
+#+BEGIN_SRC python
+__version__ = "0.0.5"
+
+#+END_SRC
+*** __main__
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.__main__
+:header-args: :tangle ./literate_python/__main__.py
+:END:
+**** Import statements
+#+BEGIN_SRC python
+from .pipe import run_server
+
+#+END_SRC
+**** Call run_server
+#+BEGIN_SRC python
+run_server()
+
+#+END_SRC
+*** literate module loader
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.loader
+:header-args: :tangle ./literate_python/loader.py
+:END:
+**** Import statements
+#+BEGIN_SRC python
+import sys
+import types
+import importlib
+import importlib.abc
+import importlib.machinery
+import logging
+import orgparse
+
+#+END_SRC
+**** logger
+#+BEGIN_SRC python
+logger = logging.getLogger(__name__)
+
+#+END_SRC
+**** in-memory module storage
+
+A process-global =inMemoryModules= dict holds loaded module specs so
+=LiterateImporter= can hand back the right code without re-parsing
+the org tree on every import. The dict is initialised exactly once
+(idempotent guard against re-registration) and module specs flow in
+via =register_literate_modules=.
+
+#+BEGIN_SRC python
+if "inMemoryModules" not in globals():
+    inMemoryModules = {}
+
+#+END_SRC
+
+#+BEGIN_SRC python
+def register_literate_modules(module_spec_list: list) -> None:
+    for module_spec in module_spec_list:
+        inMemoryModules[module_spec["name"]] = module_spec
+
+#+END_SRC
+**** find a module
+#+BEGIN_SRC python
+def _get_module_spec(fullname: str) -> bool:
+    return inMemoryModules.get(fullname) or inMemoryModules.get(fullname + ".__init__")
+
+#+END_SRC
+
+**** a literate module importer
+#+BEGIN_SRC python
+class LiterateImporter(object):
+    def find_module(self, fullname: str, _path=None):
+        if _get_module_spec(fullname):
+            logger.debug(f"Found literate module {fullname}")
+            return self
+        else:
+            return None
+
+    def load_module(self, fullname: str):
+        """Create a new module object."""
+        mod_spec = _get_module_spec(fullname)
+        mod = types.ModuleType(fullname)
+        mod.__loader__ = self
+        mod.__file__ = mod_spec.get("filepath", "")
+        # Set module path - get filepath and keep only the path until filename
+        mod.__path__ = ["/".join(mod.__file__.split("/")[:-1]) + "/"]
+        mod.__package__ = fullname
+        sys.modules[fullname] = mod
+        # Execute the module/package code into the Module object
+        logger.debug(f"Load literate module {fullname}")
+        exec(mod_spec["content"], mod.__dict__)
+        return mod
+
+#+END_SRC
+**** Register the Loader with the Import System
+#+BEGIN_SRC python
+class LiterateModuleFinder(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, _path, _target=None):
+        if _get_module_spec(fullname):
+            logger.debug(f"Found literate module {fullname}")
+            return importlib.machinery.ModuleSpec(fullname, LiterateImporter())
+        return None
+
+#+END_SRC
+**** a routine to register the finder
+#+BEGIN_SRC python
+def register_literate_module_finder():
+    sys.meta_path = [
+        f for f in sys.meta_path if not isinstance(f, LiterateModuleFinder)
+    ]
+    print("Register literate importer.\n")
+    sys.meta_path.append(LiterateModuleFinder())
+
+#+END_SRC
+**** operations with org files
+
+Three I/O entry points the importer needs once it has been wired into
+=sys.meta_path=. =load_literate_modules_from_org_file= reads a path
+and delegates to orgparse; =load_literate_modules_from_org_node=
+walks a single parsed node into the in-memory store; the third
+helper round-trips a local Python package back into an org-friendly
+string. The latter two are stubs at the moment — kept here as the
+intended shape of the API.
+
+#+BEGIN_SRC python
+def load_literate_modules_from_org_file(org_file: str) -> None:
+    orgparse.load(org_file)
+
+#+END_SRC
+
+#+BEGIN_SRC python
+def load_literate_modules_from_org_node(node: orgparse.OrgNode) -> None:
+    # root_module = LITERATE_ORG_ROOT_MODULE
+    pass
+
+#+END_SRC
+
+#+BEGIN_SRC python
+def build_org_model_from_local_python_package(_package_path: str) -> str:
+    pass
+
+#+END_SRC
+*** build hierarchical code structure
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.sections
+:header-args: :tangle ./literate_python/sections.py
+:END:
+**** Introduction
+The hierarchical code structure is a tree structure that represents the code blocks in an org file.
+We group each code block by a hybrid Approach:
+- Initial Clustering: Use text similarity analysis to generate initial clusters.
+- LLM Refinement: Then, pass the clustered groups to an LLM to refine the groups,
+  suggest task names, or provide explanations for why items are grouped together.
+**** import statements
+#+BEGIN_SRC python
+from sentence_transformers import SentenceTransformer
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+#+END_SRC
+**** optimal_clusters
+#+BEGIN_SRC python
+def optimal_clusters(definitions, embeddings, min_k=2, max_k=10, threshold=0.05):
+    """
+    Computes the optimal clusters for the given definitions and embeddings.
+
+    It evaluates KMeans clustering for k in range(min_k, max_k+1) by computing the
+    silhouette score for each k. If a candidate with more clusters has a silhouette score
+    only marginally lower than the best score (within the threshold), it favors the higher k.
+
+    Args:
+        definitions: List of text definitions (e.g. function, class, or constant definitions).
+        embeddings: Numpy array or list of embeddings corresponding to each definition.
+        min_k: Minimum number of clusters to try.
+        max_k: Maximum number of clusters to try.
+        threshold: If the difference between the best score and a candidate score is less than
+                   this threshold, choose the candidate with more clusters.
+
+    Returns:
+        clusters: A dictionary mapping each cluster label to a list of definitions.
+        optimal_k: The optimal number of clusters chosen.
+        scores: A dictionary mapping k to its silhouette score.
+    """
+    scores = {}
+    # # Cap k at sample count and short-circuit the trivial "too few samples" case.
+    # Limit max_k to the number of samples
+    max_k = min(max_k, len(embeddings))
+
+    # If too few samples, return one cluster containing all definitions.
+    if len(embeddings) < 2:
+        return {0: definitions}, 1, scores
+
+    best_k = None
+    best_score = -1
+
+    # # Sweep k = min_k..max_k by silhouette score; ties within `threshold` favour the larger k.
+    # Evaluate silhouette scores for each candidate k.
+    for k in range(min_k, max_k + 1):
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        labels = kmeans.fit_predict(embeddings)
+        score = silhouette_score(embeddings, labels)
+        scores[k] = score
+        print(f"k={k}, silhouette score={score:.4f}")
+
+        # For the first candidate, simply assign best_k.
+        if best_k is None:
+            best_k = k
+            best_score = score
+        else:
+            # If a candidate has a slightly lower score (within threshold) but with more clusters,
+            # favor it for increased granularity.
+            if score > best_score:
+                best_k = k
+                best_score = score
+            elif (best_score - score) < threshold and k > best_k:
+                best_k = k
+                best_score = score
+
+    optimal_k = best_k
+    print(f"\nOptimal number of clusters chosen: {optimal_k}")
+
+    # # Re-run KMeans once more with the chosen k to get the final label assignments.
+    # Run final clustering with the optimal number of clusters.
+    final_kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+    final_labels = final_kmeans.fit_predict(embeddings)
+
+    # # Group input definitions by their final cluster label and return the mapping.
+    # Group definitions by cluster.
+    clusters = {}
+    for label, definition in zip(final_labels, definitions):
+        clusters.setdefault(label, []).append(definition)
+
+    return clusters, optimal_k, scores
+
+#+END_SRC
+**** example
+#+BEGIN_SRC python
+# Example usage:
+def test_optimal_clusters():
+    # Sample list of definitions (could be function/class definitions, etc.)
+    definitions = [
+        "def load_data(filepath):\n    # loads the data from a file",
+        "def preprocess_data(data):\n    # cleans and normalizes the data",
+        "class DataLoader:\n    # class for loading data from various sources",
+        "def train_model(data):\n    # trains a machine learning model",
+        "class ModelTrainer:\n    # class that encapsulates the training logic",
+        "def predict(input):\n    # makes predictions using the trained model",
+        "def render_vue_component(props):\n    // renders a Vue component based on the props",
+        "class VueComponent:\n    // defines a Vue component with state and methods",
+        "def mount_vue_app(selector, component):\n    // mounts a Vue app to the DOM element",
+        # Add more definitions as needed...
+    ]
+
+    # Load a pre-trained model to compute sentence embeddings.
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+    embeddings = model.encode(definitions)
+
+    # Compute optimal clusters.
+    clusters, optimal_k, scores = optimal_clusters(
+        definitions, embeddings, min_k=2, max_k=5, threshold=0.05
+    )
+
+    # Print out the resulting clusters.
+    for cluster_id, items in clusters.items():
+        print(f"\nCluster {cluster_id}:")
+        for item in items:
+            print(f"  - {item}")
+
+#+END_SRC
+
+*** module reloader
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.reloader
+:header-args: :tangle ./literate_python/reloader.py
+:END:
+**** Import statements
+#+BEGIN_SRC python
+import ast
+import sys
+import time
+import weakref
+from dataclasses import dataclass, field
+from typing import Dict, Set, List, Optional, Tuple
+import logging
+
+#+END_SRC
+**** Logger setup
+#+BEGIN_SRC python
+logger = logging.getLogger(__name__)
+
+#+END_SRC
+**** ImportData dataclass
+#+BEGIN_SRC python
+@dataclass
+class ImportData:
+    """Represents an import statement in a module."""
+    module: str           # Source module (e.g., "module_a")
+    definition: str       # Name in importing module (e.g., "func" or "alias_func")  
+    imported_symbol: Optional[str] = None  # Original symbol (e.g., "module_a.func")
+    is_alias: bool = False  # Whether it's imported with an alias
+    is_wildcard: bool = False  # Whether it's from module import *
+
+#+END_SRC
+**** ModuleInfo dataclass
+#+BEGIN_SRC python
+@dataclass
+class ModuleInfo:
+    """Information about a module and its dependencies."""
+    name: str
+    imports: List[ImportData] = field(default_factory=list)
+    imported_by: Set[str] = field(default_factory=set)  # Modules that import from this
+    last_modified: float = field(default_factory=time.time)
+    top_level_names: Set[str] = field(default_factory=set)
+
+#+END_SRC
+**** Extract imports from AST
+#+BEGIN_SRC python
+def extract_imports_from_code(code: str, module_name: str) -> List[ImportData]:
+    """Extract import statements from Python code."""
+    imports = []
+    # # Walk the AST; bail to an empty list on parse failure.
+    try:
+        tree = ast.parse(code)
+        for node in ast.walk(tree):
+            # # Plain `import X` / `import X as Y` — one entry per name in the import list.
+            if isinstance(node, ast.Import):
+                # Handle: import module_a, module_b as b
+                for alias in node.names:
+                    imports.append(ImportData(
+                        module=alias.name,
+                        definition=alias.asname or alias.name,
+                        imported_symbol=None,
+                        is_alias=alias.asname is not None,
+                        is_wildcard=False
+                    ))
+            # # `from X import ...` — split the wildcard case from the named-symbol case.
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:  # from module import ...
+                    for alias in node.names:
+                        if alias.name == '*':
+                            # from module import *
+                            imports.append(ImportData(
+                                module=node.module,
+                                definition='*',
+                                imported_symbol=None,
+                                is_alias=False,
+                                is_wildcard=True
+                            ))
+                        else:
+                            # from module import name [as alias]
+                            imports.append(ImportData(
+                                module=node.module,
+                                definition=alias.asname or alias.name,
+                                imported_symbol=f"{node.module}.{alias.name}",
+                                is_alias=alias.asname is not None,
+                                is_wildcard=False
+                            ))
+    # # Syntax-broken code is logged and treated as "no imports".
+    except SyntaxError:
+        logger.warning(f"Failed to parse imports from code in module {module_name}")
+    return imports
+
+#+END_SRC
+**** ModuleReloader class
+#+BEGIN_SRC python
+class ModuleReloader:
+    """Manages module dependencies and hot reloading."""
+    
+    def __init__(self):
+        # Track module information
+        self.modules: Dict[str, ModuleInfo] = {}
+        # Track stale modules that need reloading
+        self.stale_modules: Set[str] = set()
+        # Object references for patching
+        self.old_objects: Dict[Tuple[str, str], List[weakref.ref]] = {}
+        
+    def register_module(self, module_name: str) -> ModuleInfo:
+        """Register a module if not already registered."""
+        if module_name not in self.modules:
+            self.modules[module_name] = ModuleInfo(name=module_name)
+        return self.modules[module_name]
+    
+    def track_module_execution(self, module_name: str, code: str, 
+                              top_level_names: Set[str]) -> Set[str]:
+        """Track when a module is executed and return affected modules."""
+        # Register this module
+        module_info = self.register_module(module_name)
+        
+        # Extract imports from the code
+        imports = extract_imports_from_code(code, module_name)
+        module_info.imports = imports
+        module_info.top_level_names = top_level_names
+        module_info.last_modified = time.time()
+        
+        # Update imported_by relationships
+        for import_data in imports:
+            if import_data.module in self.modules:
+                self.modules[import_data.module].imported_by.add(module_name)
+        
+        # Find modules that import from this module
+        affected_modules = self.find_dependent_modules(module_name)
+        
+        # Mark them as stale
+        self.stale_modules.update(affected_modules)
+        
+        return affected_modules
+    
+    def find_dependent_modules(self, module_name: str) -> Set[str]:
+        """Find all modules that depend on the given module."""
+        if module_name not in self.modules:
+            return set()
+        
+        dependent = set()
+        module_info = self.modules[module_name]
+        
+        # Direct dependencies
+        dependent.update(module_info.imported_by)
+        
+        # Transitive dependencies (modules that import the dependent modules)
+        to_check = list(dependent)
+        checked = {module_name}
+        
+        while to_check:
+            checking = to_check.pop()
+            if checking in checked:
+                continue
+            checked.add(checking)
+            
+            if checking in self.modules:
+                new_deps = self.modules[checking].imported_by
+                for dep in new_deps:
+                    if dep not in checked:
+                        dependent.add(dep)
+                        to_check.append(dep)
+        
+        return dependent
+    
+    def update_dependent_modules(self, source_module: str) -> Dict[str, List[str]]:
+        """Update symbols in modules that import from source_module."""
+        updates = {}
+
+        # # Bail unless the source module is loaded *and* tracked by the reloader.
+        if source_module not in sys.modules:
+            return updates
+
+        source_mod = sys.modules[source_module]
+        module_info = self.modules.get(source_module)
+
+        if not module_info:
+            return updates
+
+        # # For every module that imports from `source_module`, find its tracked metadata or skip.
+        for dependent_module_name in module_info.imported_by:
+            if dependent_module_name not in sys.modules:
+                continue
+
+            dependent_mod = sys.modules[dependent_module_name]
+            dependent_info = self.modules.get(dependent_module_name)
+
+            if not dependent_info:
+                continue
+
+            updated_names = []
+
+            # # Walk that module's imports and dispatch on the import shape: wildcard / named / module-only.
+            for import_data in dependent_info.imports:
+                if import_data.module != source_module:
+                    continue
+
+                if import_data.is_wildcard:
+                    # Handle from module import *
+                    for name in module_info.top_level_names:
+                        if hasattr(source_mod, name):
+                            setattr(dependent_mod, name, getattr(source_mod, name))
+                            updated_names.append(name)
+                elif import_data.imported_symbol:
+                    # Handle from module import name [as alias]
+                    # Extract the actual name from imported_symbol
+                    parts = import_data.imported_symbol.split('.')
+                    if len(parts) > 1:
+                        actual_name = parts[-1]
+                        if hasattr(source_mod, actual_name):
+                            # Update with the correct name (definition is the alias or original)
+                            setattr(dependent_mod, import_data.definition,
+                                   getattr(source_mod, actual_name))
+                            updated_names.append(import_data.definition)
+                else:
+                    # Handle import module [as alias]
+                    # Update the module reference itself
+                    setattr(dependent_mod, import_data.definition, source_mod)
+                    updated_names.append(import_data.definition)
+
+            # # Record the rebound names per dependent module and return the full map.
+            if updated_names:
+                updates[dependent_module_name] = updated_names
+
+        return updates
+    
+    def clear_stale_modules(self):
+        """Clear the set of stale modules."""
+        self.stale_modules.clear()
+    
+    def get_import_info(self, module_name: str) -> List[ImportData]:
+        """Get import information for a module."""
+        if module_name in self.modules:
+            return self.modules[module_name].imports
+        return []
+
+#+END_SRC
+
+**Verified by:** [[*test hot reload functionality][test hot reload functionality]] — exercises =extract_imports_from_code=, =ModuleReloader=, and the integration with =process_a_message=.
+
+*** web server
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.server
+:header-args: :tangle ./literate_python/server.py
+:END:
+**** Import statements
+#+BEGIN_SRC python
+import ast
+import importlib
+import os
+import sys
+from flask import Flask, request, jsonify
+
+import traceback
+
+from contextlib import redirect_stdout
+from contextlib import redirect_stderr
+from io import StringIO
+
+import logging
+
+from textwrap import shorten
+from literate_python.loader import (
+    register_literate_modules,
+    register_literate_module_finder,
+)
+
+from literate_python.inspector import _inspect
+from literate_python.reloader import ModuleReloader
+
+#+END_SRC
+**** Assignment logger
+#+BEGIN_SRC python
+logger = logging.getLogger(__name__)
+
+#+END_SRC
+**** Assignment app
+#+BEGIN_SRC python
+app = Flask(__name__)
+
+#+END_SRC
+**** Module reloader instance
+#+BEGIN_SRC python
+# Global module reloader instance
+module_reloader = ModuleReloader()
+
+#+END_SRC
+**** collect names in a code
+#+BEGIN_SRC python
+def get_top_level_names(code):
+    tree = ast.parse(code)
+    variables = []
+    functions = []
+    classes = []
+
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            # Handle assignments like x = 1 or x, y = 2, 3.
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    variables.append(target.id)
+                elif isinstance(target, ast.Tuple):
+                    for elt in target.elts:
+                        if isinstance(elt, ast.Name):
+                            variables.append(elt.id)
+        elif isinstance(node, ast.AnnAssign):
+            # Handle annotated assignments like: x: int = 1.
+            if isinstance(node.target, ast.Name):
+                variables.append(node.target.id)
+        elif isinstance(node, ast.FunctionDef):
+            functions.append(node.name)
+        elif isinstance(node, ast.ClassDef):
+            classes.append(node.name)
+
+    return variables, functions, classes
+
+#+END_SRC
+
+**** locals in current port
+#+BEGIN_SRC python
+#: app locals in current port
+server_locals = {}
+
+#+END_SRC
+
+**** ensure a module is loaded
+#+BEGIN_SRC python
+def ensure_module(module_name, module_create_method):
+    """Ensure a module is loaded and return it."""
+    if module_name in sys.modules:
+        return sys.modules[module_name]
+
+    match module_create_method:
+        case "create":
+            spec_module = importlib.util.spec_from_loader(module_name, loader=None)
+            module = importlib.util.module_from_spec(spec_module)
+            sys.modules[module_name] = module
+            return module
+        case "import":
+            importlib.import_module(module_name)
+            return sys.modules[module_name]
+        case "import_or_create":
+            if importlib.util.find_spec(module_name):
+                importlib.import_module(module_name)
+                return sys.modules[module_name]
+            else:
+                spec_module = importlib.util.spec_from_loader(module_name, loader=None)
+                module = importlib.util.module_from_spec(spec_module)
+                sys.modules[module_name] = module
+                return module
+        case _:
+            msg = f"Module {module_create_method} doesn't exist"
+            raise ValueError(msg)
+
+#+END_SRC
+
+**** Function process_a_message
+#+BEGIN_SRC python
+def process_a_message(message):
+    # # Capture buffers and the slots that will hold the response.
+    stdout_stream = StringIO()
+    stderr_stream = StringIO()
+    error = None
+    result = None
+    locals = []
+    updated_modules = {}  # Track modules updated by hot reload
+
+    # # Inside stdout/stderr capture, parse the message and resolve the target module's namespace dict.
+    with redirect_stdout(stdout_stream):
+        with redirect_stderr(stderr_stream):
+            try:
+                type = message["type"]
+                code = message["code"]
+                dict = globals()
+                module_name = message["module"] if "module" in message else None
+                if module_name:
+                    module_create_method = message.get("module-create-method", "import")
+                    module = ensure_module(module_name, module_create_method)
+                    dict = module.__dict__
+
+                # # Dispatch on request type — `eval` and `exec` both run user code in the module namespace; only `exec` then resyncs server_locals to reflect any rebinding.
+                if type == "eval":
+                    exec(compile(code, module_name or "code", "exec"), dict)
+                    message.get("result-name", "_")
+                    result = dict.get("_", None)
+                elif type == "exec":
+                    result = exec(compile(code, module_name or "code", "exec"), dict)
+                    vars_, funcs, classes = get_top_level_names(code)
+                    all_top_level_names = set(vars_ + funcs + classes)
+
+                    # Original server_locals tracking
+                    for local in all_top_level_names:
+                        if local in server_locals:
+                            _local = server_locals[local]
+                            if hasattr(_local, "__module__"):
+                                _module_name = _local.__module__
+                                if _module_name == module_name:
+                                    # update the local with the new value
+                                    server_locals[local] = getattr(module, local)
+                                    locals.append(local)
+
+                    # # Hot reload: track this module's execution and propagate new bindings to every module that imported it.
+                    # Hot reload: Track module execution and update dependencies
+                    if module_name:
+                        # Track this module execution
+                        module_reloader.track_module_execution(
+                            module_name, code, all_top_level_names
+                        )
+                        
+                        # Update dependent modules
+                        updated_modules = module_reloader.update_dependent_modules(module_name)
+                        
+                        # Log what was updated
+                        if updated_modules:
+                            logger.debug(f"Hot reload updated modules: {updated_modules}")
+
+                # # Other request shapes — `quit` clears the result; anything else is an error we re-raise.
+                elif type == "quit":
+                    result = None
+                else:
+                    error = "Unknown type: {}".format(type)
+                    raise ValueError(error)
+            except Exception as e:
+                # printing stack trace
+                traceback.print_exc()
+                error = str(e)
+
+    # # Build the response payload (success or error shape) and exit the process if `quit` was requested.
+    if error is None:
+        return_value = {
+            "result": _inspect(result),
+            "type": "result",
+            "locals": locals,
+            "stdout": stdout_stream.getvalue(),
+            "stderr": stderr_stream.getvalue(),
+        }
+        # Add hot reload information if available
+        if updated_modules:
+            return_value["updated_modules"] = updated_modules
+            return_value["stale_modules"] = list(module_reloader.stale_modules)
+    else:
+        return_value = {
+            "error": error,
+            "type": "error",
+            "stdout": stdout_stream.getvalue(),
+            "stderr": stderr_stream.getvalue(),
+        }
+
+    if type == "quit":
+        sys.exit(0)
+    else:
+        return return_value
+
+#+END_SRC
+**** register
+#+BEGIN_SRC python
+def register(request):
+    # Get JSON data
+    data = request.get_json()
+
+    # Process the data (example)
+    logger.debug(
+        "/register Received:%s", shorten(str(data), width=100, placeholder="...")
+    )
+    try:
+        register_literate_modules(data)
+        return_value = {"type": "done"}
+    except Exception as e:
+        # printing stack trace
+        return_value = {"type": "error", "stderr": str(e)}
+        traceback.print_exc()
+
+    # Return a response
+    logger.debug("/register Returning:%s", return_value)
+    return jsonify(return_value)
+
+#+END_SRC
+
+**** @app.route('/lpy/register, methods=['POST']): register literate modules
+#+BEGIN_SRC python
+@app.route("/lpy/register", methods=["POST"])
+def register_router():
+    return register(request)
+
+#+END_SRC
+**** execute
+#+BEGIN_SRC python
+def _execute(request):
+    # Get JSON data
+    data = request.get_json()
+
+    # Process the data (example)
+    logger.debug(
+        "/execute Received:%s", shorten(str(data), width=100, placeholder="...")
+    )
+    return_value = process_a_message(data)
+
+    # Return a response
+    logger.debug("/execute Returning:%s", return_value)
+    return jsonify(return_value)
+
+#+END_SRC
+
+**** @app.route('/execute', methods=['POST']): Function execute
+#+BEGIN_SRC python
+@app.route("/lpy/execute", methods=["POST"])
+def execute():
+    return _execute(request)
+
+#+END_SRC
+
+**** status
+#+BEGIN_SRC python
+def _status(request):
+    return jsonify({"status": "ok"})
+
+#+END_SRC
+
+**** status router
+#+BEGIN_SRC python
+@app.route("/lpy/status", methods=["GET"])
+def status():
+    return _status(request)
+
+#+END_SRC
+
+**** Function run_web_server
+#+BEGIN_SRC python
+def run_server():
+    host = "127.0.0.1"
+    port = 7330
+    if "LITERATE_PYTHON_HOST" in os.environ:
+        host = os.environ["LITERATE_PYTHON_HOST"]
+    if "LITERATE_PYTHON_PORT" in os.environ:
+        port = int(os.environ["LITERATE_PYTHON_PORT"])
+    register_literate_module_finder()
+    app.run(debug=True, port=port, host=host, use_reloader=False)
+
+#+END_SRC
+
+**Verified by:** [[*test hot reload functionality][test hot reload functionality]] (=process_a_message= path) and [[*test update locals in marimo notebook automatically][test update locals in marimo notebook automatically]] (locals propagation across requests).
+
+** Tests
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.tests
+:END:
+*** test update locals in marimo notebook automatically 
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.tests.test_server
+:header-args: :tangle ./literate_python/tests/test_server.py
+:END:
+*** test hot reload functionality
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.tests.test_hot_reload
+:header-args: :tangle ./literate_python/tests/test_hot_reload.py
+:END:
+**** Import statements
+#+BEGIN_SRC python
+import sys
+import unittest
+from literate_python.reloader import ModuleReloader, extract_imports_from_code
+from literate_python.server import process_a_message
+
+#+END_SRC
+**** Test extract imports from code
+#+BEGIN_SRC python
+class TestExtractImports(unittest.TestCase):
+    """Test the import extraction functionality."""
+    
+    def test_simple_import(self):
+        """Test extraction of simple import statements."""
+        code = "import os"
+        imports = extract_imports_from_code(code, "test_module")
+        self.assertEqual(len(imports), 1)
+        self.assertEqual(imports[0].module, "os")
+        self.assertEqual(imports[0].definition, "os")
+        self.assertFalse(imports[0].is_alias)
+        
+    def test_import_with_alias(self):
+        """Test extraction of aliased imports."""
+        code = "import numpy as np"
+        imports = extract_imports_from_code(code, "test_module")
+        self.assertEqual(len(imports), 1)
+        self.assertEqual(imports[0].module, "numpy")
+        self.assertEqual(imports[0].definition, "np")
+        self.assertTrue(imports[0].is_alias)
+        
+    def test_from_import(self):
+        """Test extraction of from imports."""
+        code = "from math import sqrt, pi"
+        imports = extract_imports_from_code(code, "test_module")
+        self.assertEqual(len(imports), 2)
+        self.assertEqual(imports[0].module, "math")
+        self.assertEqual(imports[0].definition, "sqrt")
+        self.assertEqual(imports[0].imported_symbol, "math.sqrt")
+        
+    def test_from_import_with_alias(self):
+        """Test extraction of from imports with aliases."""
+        code = "from collections import defaultdict as dd"
+        imports = extract_imports_from_code(code, "test_module")
+        self.assertEqual(len(imports), 1)
+        self.assertEqual(imports[0].module, "collections")
+        self.assertEqual(imports[0].definition, "dd")
+        self.assertEqual(imports[0].imported_symbol, "collections.defaultdict")
+        self.assertTrue(imports[0].is_alias)
+        
+    def test_wildcard_import(self):
+        """Test extraction of wildcard imports."""
+        code = "from os import *"
+        imports = extract_imports_from_code(code, "test_module")
+        self.assertEqual(len(imports), 1)
+        self.assertEqual(imports[0].module, "os")
+        self.assertEqual(imports[0].definition, "*")
+        self.assertTrue(imports[0].is_wildcard)
+
+#+END_SRC
+**** Test ModuleReloader
+#+BEGIN_SRC python
+class TestModuleReloader(unittest.TestCase):
+    """Test the ModuleReloader class."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        self.reloader = ModuleReloader()
+        # Clean up any test modules from sys.modules
+        for key in list(sys.modules.keys()):
+            if key.startswith("test_module"):
+                del sys.modules[key]
+                
+    def test_register_module(self):
+        """Test module registration."""
+        module_info = self.reloader.register_module("test_module_a")
+        self.assertEqual(module_info.name, "test_module_a")
+        self.assertIn("test_module_a", self.reloader.modules)
+        
+    def test_track_module_execution(self):
+        """Test tracking module execution with dependencies."""
+        # First, create module_a
+        code_a = """
+def func_a():
+    return 'a'
+x = 10
+"""
+        self.reloader.track_module_execution("module_a", code_a, {"func_a", "x"})
+        
+        # Create module_b that imports from module_a
+        code_b = """
+from module_a import func_a, x
+import module_a as ma
+
+def func_b():
+    return func_a() + str(x)
+"""
+        self.reloader.track_module_execution("module_b", code_b, {"func_b"})
+        
+        # module_b should have imports from module_a
+        module_b_info = self.reloader.modules["module_b"]
+        self.assertEqual(len(module_b_info.imports), 3)  # func_a, x, and ma
+        
+        # module_a should know that module_b imports from it
+        module_a_info = self.reloader.modules["module_a"]
+        self.assertIn("module_b", module_a_info.imported_by)
+        
+    def test_find_dependent_modules(self):
+        """Test finding dependent modules."""
+        # Set up a dependency chain: module_c -> module_b -> module_a
+        self.reloader.track_module_execution("module_a", "x = 1", {"x"})
+        self.reloader.track_module_execution("module_b", "from module_a import x", set())
+        self.reloader.track_module_execution("module_c", "from module_b import x", set())
+        
+        # Find modules dependent on module_a
+        dependents = self.reloader.find_dependent_modules("module_a")
+        self.assertIn("module_b", dependents)
+        self.assertIn("module_c", dependents)  # Transitive dependency
+        
+    def test_update_dependent_modules_with_alias(self):
+        """Test updating dependent modules with aliased imports."""
+        # # Arrange: source module_a with a function and a constant, registered with the reloader.
+        # Create actual modules in sys.modules
+        import types
+
+        # Create module_a
+        module_a = types.ModuleType("module_a")
+        module_a.original_func = lambda: "original"
+        module_a.value = 100
+        sys.modules["module_a"] = module_a
+
+        # Track module_a
+        self.reloader.track_module_execution("module_a", "", {"original_func", "value"})
+
+        # # Arrange: dependent module_b that imports both names from module_a under different aliases.
+        # Create module_b that imports with alias
+        module_b = types.ModuleType("module_b")
+        module_b.my_func = module_a.original_func  # Simulating: from module_a import original_func as my_func
+        module_b.my_value = module_a.value  # Simulating: from module_a import value as my_value
+        sys.modules["module_b"] = module_b
+
+        # Track module_b with aliased imports
+        code_b = """
+from module_a import original_func as my_func
+from module_a import value as my_value
+"""
+        self.reloader.track_module_execution("module_b", code_b, set())
+
+        # # Act: rebind both names in module_a, then ask the reloader to propagate.
+        # Now update module_a
+        module_a.original_func = lambda: "updated"
+        module_a.value = 200
+
+        # Update dependent modules
+        updates = self.reloader.update_dependent_modules("module_a")
+
+        # # Assert: the alias-side names in module_b reflect the new bindings.
+        # Check that module_b was updated
+        self.assertIn("module_b", updates)
+        self.assertIn("my_func", updates["module_b"])
+        self.assertIn("my_value", updates["module_b"])
+
+        # Verify the actual updates
+        self.assertEqual(module_b.my_func(), "updated")
+        self.assertEqual(module_b.my_value, 200)
+        
+    def tearDown(self):
+        """Clean up after tests."""
+        # Remove test modules from sys.modules
+        for key in list(sys.modules.keys()):
+            if key.startswith("test_module") or key.startswith("module_"):
+                del sys.modules[key]
+
+#+END_SRC
+**** Test integration with process_a_message
+#+BEGIN_SRC python
+class TestProcessMessageIntegration(unittest.TestCase):
+    """Test hot reload integration with process_a_message."""
+    
+    def setUp(self):
+        """Set up test environment."""
+        # Clean up test modules
+        for key in list(sys.modules.keys()):
+            if key.startswith("test_"):
+                del sys.modules[key]
+                
+    def test_exec_with_hot_reload(self):
+        """Test that exec messages trigger hot reload."""
+        # # Arrange — define `test_module_x` with helper() and VALUE via the exec entry point.
+        # First, create module_x
+        message1 = {
+            "type": "exec",
+            "module": "test_module_x",
+            "module-create-method": "create",
+            "code": """
+def helper():
+    return 42
+
+VALUE = 100
+"""
+        }
+        result1 = process_a_message(message1)
+        self.assertEqual(result1["type"], "result")
+
+        # # Arrange — define `test_module_y` that imports both names from x and combines them in use_helper().
+        # Create module_y that imports from module_x
+        message2 = {
+            "type": "exec",
+            "module": "test_module_y",
+            "module-create-method": "create",
+            "code": """
+from test_module_x import helper, VALUE
+
+def use_helper():
+    return helper() + VALUE
+"""
+        }
+        result2 = process_a_message(message2)
+        self.assertEqual(result2["type"], "result")
+
+        # # Verify initial state, then act — re-exec test_module_x with new bindings to trigger hot reload.
+        # Verify initial state
+        import test_module_y
+        self.assertEqual(test_module_y.use_helper(), 142)
+
+        # Update module_x
+        message3 = {
+            "type": "exec",
+            "module": "test_module_x",
+            "code": """
+def helper():
+    return 99
+
+VALUE = 200
+"""
+        }
+        result3 = process_a_message(message3)
+        self.assertEqual(result3["type"], "result")
+
+        # # Assert — the response carries hot-reload metadata and module_y now reflects the new bindings.
+        # Check that hot reload information is present
+        self.assertIn("updated_modules", result3)
+        self.assertIn("test_module_y", result3["updated_modules"])
+
+        # Verify that module_y was updated
+        self.assertEqual(test_module_y.helper(), 99)
+        self.assertEqual(test_module_y.VALUE, 200)
+        self.assertEqual(test_module_y.use_helper(), 299)
+        
+    def test_exec_with_import_alias(self):
+        """Test hot reload with import aliases."""
+        # # Arrange — define test_lib with a Calculator class and a compute() function via exec.
+        # Create module_lib
+        message1 = {
+            "type": "exec",
+            "module": "test_lib",
+            "module-create-method": "create",
+            "code": """
+class Calculator:
+    def add(self, a, b):
+        return a + b
+        
+def compute():
+    return 'v1'
+"""
+        }
+        result1 = process_a_message(message1)
+        self.assertEqual(result1["type"], "result")
+
+        # # Arrange — define test_app that imports Calculator as Calc and compute as calc_func, exercising both alias forms.
+        # Create module_app with aliased imports
+        message2 = {
+            "type": "exec",
+            "module": "test_app",
+            "module-create-method": "create",
+            "code": """
+from test_lib import Calculator as Calc
+from test_lib import compute as calc_func
+
+my_calc = Calc()
+result = calc_func()
+"""
+        }
+        result2 = process_a_message(message2)
+        self.assertEqual(result2["type"], "result")
+
+        # # Verify the pre-update behaviour, then act — re-exec test_lib with new Calculator behaviour and a new compute() return.
+        # Verify initial state
+        import test_app
+        self.assertEqual(test_app.result, 'v1')
+        self.assertEqual(test_app.my_calc.add(1, 2), 3)
+
+        # Update test_lib
+        message3 = {
+            "type": "exec",
+            "module": "test_lib",
+            "code": """
+class Calculator:
+    def add(self, a, b):
+        return (a + b) * 10  # Changed behavior
+        
+def compute():
+    return 'v2'  # Changed return value
+"""
+        }
+        result3 = process_a_message(message3)
+
+        # # Assert — both aliased names appear in the hot-reload report and resolve to the new Calculator / compute behaviour.
+        # Check hot reload occurred
+        self.assertIn("updated_modules", result3)
+        self.assertIn("test_app", result3["updated_modules"])
+
+        # Verify aliased names were updated
+        self.assertIn("Calc", result3["updated_modules"]["test_app"])
+        self.assertIn("calc_func", result3["updated_modules"]["test_app"])
+
+        # Create new instance with updated class
+        new_calc = test_app.Calc()
+        self.assertEqual(new_calc.add(1, 2), 30)
+
+        # Verify function alias was updated
+        self.assertEqual(test_app.calc_func(), 'v2')
+        
+    def tearDown(self):
+        """Clean up after tests."""
+        # Remove test modules
+        for key in list(sys.modules.keys()):
+            if key.startswith("test_"):
+                del sys.modules[key]
+
+#+END_SRC
+**** Run all tests
+#+BEGIN_SRC python
+def run_all_tests():
+    """Run all hot reload tests."""
+    loader = unittest.TestLoader()
+    suite = unittest.TestSuite()
+    
+    # Add all test classes
+    suite.addTests(loader.loadTestsFromTestCase(TestExtractImports))
+    suite.addTests(loader.loadTestsFromTestCase(TestModuleReloader))
+    suite.addTests(loader.loadTestsFromTestCase(TestProcessMessageIntegration))
+    
+    # Run tests
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+    
+    # Return success status
+    return result.wasSuccessful()
+
+if __name__ == "__main__":
+    success = run_all_tests()
+    sys.exit(0 if success else 1)
+
+#+END_SRC
+
+* Emacs library for python literate server
+:PROPERTIES:
+:literate-lang: elisp
+:END:
+** Import required elisp libraries
+#+BEGIN_SRC elisp
+(require 'f)
+(require 'files)
+(require 'ob-python)
+(require 'lsp);; for `lsp-workspace-root'
+(require 'python-black)
+(require 'prettier)
+(require 'emacsql-sqlite) ; for local cache
+(require 'llm-prompt)
+#+END_SRC
+
+** Server connection helpers
+
+The two helpers in this section are the *only* I/O surface between
+Emacs and the running Python literate-server. Keeping them grouped
+makes the boundary easy to find and easy to swap (HTTP today; could
+become a socket or stdio bridge later).
+
+*** connect to a literate server
+#+BEGIN_SRC elisp
+(defun literate-org-connect ()
+  (interactive)
+  (when-let* ((url (read-from-minibuffer "URL: " literate-org-rest-server)))
+    (setf literate-org-rest-server url)
+    (literate-org-request "status" :type "GET")
+    (message "Connected to %s" literate-org-rest-server)))
+#+END_SRC
+
+*** send request to remote literate server
+#+BEGIN_SRC elisp
+(defvar literate-org-last-response nil)
+
+(cl-defun literate-org-request (path &key params data (type "GET"))
+  (setf literate-org-last-response nil)
+  (awhen (get-buffer "*literate-org-error*")
+    ;; Close the buffer as it will be out of date.
+    (kill-buffer it))
+  (let* ((request-backend 'url-retrieve)
+         (server literate-org-rest-server)
+         resp)
+    (request (concat server "lpy/" path)
+        :params params
+        :parser 'json-read
+        :type type
+        :headers '(("Content-Type" . "application/json"))
+        :sync t
+        :data (encode-coding-string (json-encode data) 'utf-8 t) ; Encode and ensure unibyte
+        :complete (cl-function
+                   (lambda (&key response &allow-other-keys)
+                     (setf literate-org-last-response response)
+                     (case (request-response-status-code response)
+                       (200 (setf resp (request-response-data response)))
+
+                       (500 (user-error "Literate Python server failed:%s" response))
+                       (t (user-error "Failed to request to remote Python server:%s" response))))))
+    (let ((type (cdr (assoc 'type resp))))
+      (cond ((equal type "error")
+             (let ((stdout (cdr (assoc 'stdout resp)))
+                   (stderr (cdr (assoc 'stderr resp))))
+               (with-current-buffer (get-buffer-create "*literate-org-error*")
+                 (erase-buffer)
+                 (insert "=== Data ===\n" (encode-coding-string (json-encode data) 'utf-8 t) "\n\n")
+                 (insert "==== Error ===\n" (or (cdr (assoc 'error resp)) ""))
+                 (when stdout 
+                   (insert "\n\n=== stdout ===\n" stdout))
+                 (when stderr
+                   (insert "\n\n=== stderr ===\n" (cdr (assoc 'stderr resp)))))
+               (switch-to-buffer-other-window "*literate-org-error*")))))
+    resp))
+#+END_SRC
+
+
+** Source Code Execution
+*** customized variables for server host and port
+#+BEGIN_SRC elisp
+(defcustom literate-org-rest-server "http://localhost:7330/"
+  "The server address for literate python server."
+  :type 'string
+  :group 'literate-org)
+
+#+END_SRC
+*** execute source codes in specified module for org-babel-python-evaluate
+#+BEGIN_SRC elisp
+(defun literate-org-setup-org-babel ()
+  (setf org-babel-python--exec-tmpfile
+        "\
+with open('%s') as __org_babel_python_tmpfile:
+    exec(compile(__org_babel_python_tmpfile.read(), __org_babel_python_tmpfile.name, 'exec'))"))
+#+END_SRC
+*** execute source code in remote server
+#+BEGIN_SRC elisp
+(cl-defun literate-org-remote-execute-code (code &key (type :exec) (module) (module-create-method "import_or_create"))
+  (literate-org-request "execute" :type "POST"
+                           :data `((type . ,(subseq (symbol-name type) 1))
+                                   (module . ,module)
+                                   (module-create-method . ,module-create-method)
+                                   (code . ,code))))
+#+END_SRC
+*** execute source code in current code block
+We have to switch back to org buffer, otherwise =org-babel-execute-src-block-maybe= will report a message and
+override our own compilation report.
+#+BEGIN_SRC elisp
+(defun literate-org-execute-current-code-block ()
+  (interactive)
+  ;; Check if we're in a Python file and delegate to the Python-specific function
+  (if (derived-mode-p 'python-mode 'python-ts-mode)
+      (literate-org-execute-python-code)
+    ;; Original org-mode code block execution
+    (let* ((context-info (second (org-element-context)))
+           (block-arguments (third (org-babel-get-src-block-info)))
+           (info (org-babel-get-src-block-info))
+           (body (nth 1 info))
+           (code (plist-get context-info :value))
+           (type (intern (or (org-entry-get (point) "LITERATE_ORG_EXECUTE_TYPE" t)
+                             ":exec")))
+           (module-create-method (or (org-entry-get (point) "LITERATE_ORG_MODULE_CREATE_METHOD" t)
+                                     "import_or_create"))
+           (module-name (org-entry-get (point) "LITERATE_ORG_MODULE" t))
+           (resp (literate-org-remote-execute-code code :type type :module module-name :module-create-method module-create-method)))
+      (with-current-buffer (get-buffer-create "*literate-org-stdout*")
+        (awhen (cdr (assoc 'stdout resp))
+          (goto-char (point-max))
+          (insert "\n" it "\n")))
+      (if (equal type :exec)
+        (message "Executed code block in module %s, updated locals %s"
+                 module-name (cdr (assoc 'locals resp)))
+        (let ((json-encoding-pretty-print t))
+          (when (not (equal "none" (cdr (assoc :results block-arguments))))
+            (org-babel-insert-result (json-encode (cdr (assoc 'result resp))) '("replace")))
+          (message "Evaluated code block in module %s:\n%s" module-name (cdr (assoc 'result resp))))))))
+#+END_SRC
+*** get top level python code
+#+BEGIN_SRC elisp
+(defun literate-org-get-top-level-node-at-point ()
+  "Get the current top level node at point, return a cons of start and end position."
+  (let* ((node (treesit-node-at (point)))
+         (parent (treesit-node-parent node)))
+    (while (and parent (not (equal "module" (treesit-node-type parent))))
+      (setq node parent)
+      (setq parent (treesit-node-parent node)))
+    node))
+#+END_SRC
+*** get the module name for a file name
+#+BEGIN_SRC elisp
+(cl-defun literate-org-module-name-from-file-name (&optional (file (buffer-file-name)))
+  "Get the module name from a file name."
+  (let* ((package-root (lsp-workspace-root))
+         (relative-name (f-no-ext (f-relative file package-root))))
+    (when (locate-dominating-file relative-name "site-packages")
+      (setf relative-name (apply 'f-join (nthcdr 4 (split-string relative-name "/")))))
+    (dired-replace-in-string "/" "." relative-name)))
+#+END_SRC
+*** load python code to current module
+#+BEGIN_SRC elisp
+(defun literate-org-load-code-in-current-namespace ()
+  (interactive)
+  (let* ((node (literate-org-get-top-level-node-at-point))
+         (begin (treesit-node-start node))
+         (end (treesit-node-end node))
+         (code (buffer-substring-no-properties begin end))
+         (file (buffer-file-name))
+         (org-babel-p (equalp "org" (f-ext file)))
+         (module-name (if org-babel-p
+                        (org-entry-get (point) "LITERATE_ORG_MODULE" t)
+                        (literate-org-module-name-from-file-name file)))
+         (module-create-method (or (org-entry-get (point) "LITERATE_ORG_MODULE_CREATE_METHOD" t)
+                                   "import_or_create")))
+    ;; To Fix module name with syntax `...literate-org.literate_python.module_a'
+    (let ((prefix-dot-count 0))
+      (while (eq ?. (aref module-name prefix-dot-count))
+        (incf prefix-dot-count))
+      (let ((index prefix-dot-count))
+        (while (> prefix-dot-count 1)
+          (setf index (1+ (position ?. module-name :start index)))
+          (decf prefix-dot-count))
+        (when (> index 0)
+          (setf module-name (substring module-name index)))))
+
+    (literate-org-remote-execute-code code :type :exec :module module-name :module-create-method module-create-method)
+    (message "Loaded %s[%s:%s] in module %s" (treesit-node-type node) begin end module-name)))
+#+END_SRC
+*** execute python code in python file
+#+BEGIN_SRC elisp
+(defun literate-org-execute-python-code ()
+  "Execute current top level Python code or selected Python code in a Python file.
+If there is an active region, execute the selected code.
+Otherwise, execute the current top-level Python construct at point."
+  (interactive)
+  (let* ((code (if (use-region-p)
+                 (buffer-substring-no-properties (region-beginning) (region-end))
+                 (let* ((node (literate-org-get-top-level-node-at-point))
+                        (begin (treesit-node-start node))
+                        (end (treesit-node-end node)))
+                   (buffer-substring-no-properties begin end))))
+         (file (buffer-file-name))
+         (module-name (literate-org-module-name-from-file-name file))
+         (module-create-method "import_or_create")
+         (node (literate-org-get-top-level-node-at-point))
+         (code-desc (if (use-region-p) 
+                      "selected code" 
+                      (format "%s[%s:%s]"  
+                              (treesit-node-type node)
+                              (treesit-node-start node)
+                              (treesit-node-end node)
+                              ;;(literate-org-node-name 'python (treesit-node-type node) node)
+                              ))))
+    
+    ;; Clean up module name (remove leading dots if present)
+    (let ((prefix-dot-count 0))
+      (while (and (< prefix-dot-count (length module-name))
+                  (eq ?. (aref module-name prefix-dot-count)))
+        (incf prefix-dot-count))
+      (let ((index prefix-dot-count))
+        (while (> prefix-dot-count 1)
+          (setf index (1+ (position ?. module-name :start index)))
+          (decf prefix-dot-count))
+        (when (> index 0)
+          (setf module-name (substring module-name index)))))
+    
+    (let ((resp (literate-org-remote-execute-code code :type :exec :module module-name :module-create-method module-create-method)))
+      (with-current-buffer (get-buffer-create "*literate-org-stdout*")
+        (awhen (cdr (assoc 'stdout resp))
+          (goto-char (point-max))
+          (insert "\n" it "\n")))
+      (message "Executed %s in module %s, updated locals %s"
+               code-desc module-name (cdr (assoc 'locals resp))))))
+#+END_SRC
+*** a cache db
+**** get db
+#+BEGIN_SRC elisp
+(defvar literate-org-db-instance nil) 
+(defun literate-org-db ()
+  (unless literate-org-db-instance
+    (setf literate-org-db-instance (emacsql-sqlite (f-join user-emacs-directory "literate-org.db")))
+    (emacsql literate-org-db-instance [:create-table :if :not :exists summary
+                                        ([(key text :primary-key)
+                                          (value text)])])
+    (emacsql literate-org-db-instance [:create-table :if :not :exists embedding
+                                        ([(key text :primary-key)
+                                          (value text)])]))
+  literate-org-db-instance)
+#+END_SRC
+**** as a key value
+
+A two-function key/value façade over the cache db. =literate-org-db-get=
+reads the latest value for =(table, key)=; =literate-org-db-set= upserts.
+The :insert-or-replace semantics let callers treat the cache as a
+plain hash without worrying about prior writes.
+
+#+BEGIN_SRC elisp
+(defun literate-org-db-get (table key)
+  (caar (emacsql (literate-org-db) [:select value :from $s2 :where (= key $s1)] key table)))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+(defun literate-org-db-set (table key value)
+  (emacsql (literate-org-db) [:insert-or-replace-into $s3 :values ([$s1 $s2])] key value table))
+#+END_SRC
+* Python inspector for Emacs
+:PROPERTIES:
+:LITERATE_ORG_MODULE: literate_python.inspector
+:header-args: :tangle ./literate_python/inspector.py
+:END:
+*** Import required packages
+#+BEGIN_SRC python
+from inspect import getmembers, isbuiltin, ismethod
+from typing import Dict
+from datetime import datetime
+from multimethod import multimethod
+
+#+END_SRC
+*** Utility functions
+**** stringify a variable
+#+BEGIN_SRC python
+def stringify_val(member):
+    key, val = member
+    if isinstance(val, str):
+        return key, '"{}"'.format(val)
+    if type(val) in (dict, tuple, list):
+        return key, _inspect(val)
+    return key, f"{str(val)} {str(type(val))}"
+
+#+END_SRC
+**** is trash
+#+BEGIN_SRC python
+def is_trash(member):
+    key, val = member
+    return (
+        key in ["__doc__", "__class__", "__hash__", "__dict__"]
+        or ismethod(val)
+        or isbuiltin(val)
+        or type(val).__name__ == "method-wrapper"
+    )
+
+#+END_SRC
+**** Turns a non-primitive obj into a dictionary of its fields and their values.
+#+BEGIN_SRC python
+def _pyinspect_inspect_object(obj):
+    """
+    Turns a **non-primitive** obj into a dictionary of its fields and their values.
+    Filters out some built-in magic fields and pretty-prints dictionary values via `json.dumps`.
+    Doesn't display methods.
+    """
+    return dict(stringify_val(m) for m in reversed(getmembers(obj)) if not is_trash(m))
+
+#+END_SRC
+**** Surrounds string key with extra quotes
+#+BEGIN_SRC python
+def _pyinspect_add_quotes(key):
+    """
+    Surrounds string key with extra quotes because Emacs parses them as just symbols
+    and makes it hard to distinguish between them and non-string symbols
+
+    >>> _pyinspect_add_quotes("hello")
+    '"hello"'
+
+    >>> _pyinspect_add_quotes(1)
+    1
+    """
+    return '"{}"'.format(key) if type(key) is str else key
+
+#+END_SRC
+**** trim_seq
+#+BEGIN_SRC python
+def trim_seq(seq, elem_cap):
+    if type(seq) is dict:
+        return _pyinspect_take_dict(seq, elem_cap)
+    elif type(seq) in (tuple, list):
+        return seq[:elem_cap]
+
+#+END_SRC
+**** Returns a new dictionary with the first n pairs from d
+#+BEGIN_SRC python
+def _pyinspect_take_dict(d: Dict, n: int):
+    "Returns a new dictionary with the first n pairs from d"
+
+    def iterator():
+        i = 0
+        for item in d.items():
+            if i == n:
+                break
+            yield item
+            i += 1
+
+    return dict(iterator())
+
+#+END_SRC
+*** Dispatches the appropriate inspection according to obj type
+**** generic method
+#+BEGIN_SRC python
+@multimethod
+def _inspect(obj) -> dict:
+    return {"type": "object", "value": _pyinspect_inspect_object(obj)}
+
+#+END_SRC
+**** str
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: str) -> dict:
+    return {"type": "string", "value": obj}
+
+#+END_SRC
+**** bool
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: bool) -> dict:
+    return {"type": "bool", "value": obj}
+
+#+END_SRC
+**** int
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: int) -> dict:
+    return {"type": "integer", "value": obj}
+#+END_SRC
+
+**** float
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: float) -> dict:
+    return {"type": "float", "value": obj}
+#+END_SRC
+
+**** complex
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: complex) -> dict:
+    return {"type": "complex", "value": obj}
+#+END_SRC
+**** tuple
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: tuple) -> dict:
+    return {
+        "type": "tuple",
+        "value": [_inspect(item) for item in obj],
+    }
+
+#+END_SRC
+
+**** list
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: list) -> dict:
+    return {
+        "type": "list",
+        "value": [_inspect(item) for item in obj],
+    }
+
+#+END_SRC
+
+**** dict
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: dict) -> dict:
+    return {
+        "type": "dict",
+        "value": {_pyinspect_add_quotes(k): _inspect(v) for (k, v) in obj.items()},
+    }
+
+#+END_SRC
+
+**** datetime
+#+BEGIN_SRC python
+@_inspect.register  # type: ignore
+def _(obj: datetime) -> dict:
+    print(f"obj: {obj}")
+    return {
+        "type": "datetime",
+        "value": obj.isoformat(),
+    }
+
+#+END_SRC
+
+* LLM with code blocks
+:PROPERTIES:
+:literate-lang: elisp
+:END:
+** the provider
+#+BEGIN_SRC elisp
+(defvar literate-org-llm-refactoring-provider nil "The provider for literate refactoring.")
+#+END_SRC
+
+** embed
+*** embedding
+#+BEGIN_SRC elisp
+(defun literate-org-embed-code-block (code lang)
+  "Return an embedding vector for CODE."
+  (let* ((source (format "%s\n%s" lang code))
+         (embedding (literate-org-db-get 'embedding source)))
+    (if embedding
+      (read embedding)
+      (let ((embedding (llm-embedding literate-org-llm-refactoring-provider source)))
+        (literate-org-db-set 'embedding source (prin1-to-string embedding))
+        embedding))))
+#+END_SRC
+*** normalize
+#+BEGIN_SRC elisp
+(defun literate-org-normalize-vector (vec)
+  "Normalize a vector to unit length."
+  (let ((norm (sqrt (apply #'+ (mapcar (lambda (x) (* x x)) vec)))))
+    (mapcar (lambda (x) (/ x norm)) vec)))
+#+END_SRC
+** semantic clustering
+
+Group related code blocks by their LLM-generated summaries. The data
+structure carries a per-block embedding + a generated summary (cached
+in the local sqlite db); a downstream clustering step consumes those
+to propose hierarchical groupings.
+
+*** data structure of a code block
+#+BEGIN_SRC elisp
+(cl-defstruct literate-org-code-block
+  title
+  body
+  language
+  properties
+  summary
+  level)
+#+END_SRC
+*** summary of a code block
+**** prompt
+#+BEGIN_SRC elisp
+(llm-defprompt literate-org-summary-prompt "Please summarize the following {{language}} code block {{code}}")
+#+END_SRC
+
+**** impl
+#+BEGIN_SRC elisp
+(cl-defun literate-org-code-summary (code lang callback &key force)
+  "Summarize the code block."
+  (lexical-let* ((prompt (llm-prompt-fill 'literate-org-summary-prompt literate-org-llm-refactoring-provider
+                                          :language lang :code code))
+                 (summary (literate-org-db-get 'summary prompt))
+                 (callback callback)
+                 (internal-callback (lambda (summary)
+                                      (literate-org-db-set 'summary prompt summary)
+                                      (funcall callback summary))))
+    (if (and (not force) summary)
+      (funcall callback summary)
+      (llm-chat-async
+       literate-org-llm-refactoring-provider
+       (llm-make-chat-prompt
+        prompt :context "
+Summarize the entire code block concisely and elegantly in English with markdown syntax .
+Only elaborate on parts that may not be immediately clear to a senior engineer.
+If the code is self-explanatory, you may return nothing.")
+       internal-callback
+       (lambda (_ error)
+         (message "Failed to summarize code block: %s" error))
+       ))))
+#+END_SRC
+
+**** an interactive command
+#+BEGIN_SRC elisp
+(defun literate-org-code-summary-for-current-code-block ()
+  (interactive)
+  (let* ((context-info (second (org-element-context)))
+         (block-arguments (third (org-babel-get-src-block-info)))
+         (info (org-babel-get-src-block-info))
+         (language (nth 0 info))
+         (body (nth 1 info))
+         (code (plist-get context-info :value)))
+    (message "Summarizing code block in %s..." language)
+    (literate-org-code-summary
+     code language
+     (lambda (summary)
+       (with-current-buffer (get-buffer-create "*literate-org-summary*")
+         (delete-region (point-min) (point-max))
+         (insert summary)
+         (markdown-mode))
+       (switch-to-buffer-other-window "*literate-org-summary*")))))
+#+END_SRC
+
+* Sync between org files and source files
+:PROPERTIES:
+:literate-lang: elisp
+:END:
+** Introduction
+
+Team workflows still want hand-editable =.py= / =.tsx= / =.vue= /
+=.rs= source files — for code review, IDE jump-to-def, or contributors
+who don't run Emacs. Import + export round-trips between those files
+and org sections so the LP form is not a one-way trap.
+
+** Import
+*** How
+
+Import parses source via [[https://tree-sitter.github.io/tree-sitter/using-parsers][tree-sitter]] and emits one org section per
+top-level definition. The tree-sitter route avoids per-language
+regex/heuristic parsers and keeps name extraction (function /
+class / variable) grammar-accurate. A minimal proof:
+
+#+BEGIN_SRC elisp :load no
+(with-temp-buffer
+    ;; (insert "def say_hello():\n  print('Hello')\n")
+    (insert "yaml.add_representer(Canonical, dataclass_representer)\n")
+  (let ((language (tree-sitter-require 'python))
+        (parser (tsc-make-parser)))
+    (tsc-set-language parser language)
+    (let* ((str (buffer-string))
+           (tree (tsc-parse-string parser str))
+           (root (tsc-root-node tree))
+           (first-child (tsc-get-nth-child root 0))
+           (first-child-name (tsc-get-child-by-field first-child :name)))
+      ;; (message "first child node type: %s, name:%s" (tsc-node-type first-child) (tsc-node-text first-child-name))
+      (let ((grandchild (tsc-get-nth-child first-child 0)))
+        (message "%s" (tsc-node-text (tsc-get-child-by-field grandchild :function))))
+      ;; (message "%s" (tsc-tree-to-sexp tree))
+      )))
+#+END_SRC
+
+*** Implementation
+**** import required elisp libraries
+#+BEGIN_SRC elisp
+(require 'tree-sitter)
+(require 'tree-sitter-langs)
+(require 'f); for file operations
+#+END_SRC
+**** Configurations
+
+Two user-tunable knobs that govern source-file import: which
+directories to skip on disk (=literate-org-ignored-dirs=) and how
+long an org section title may grow before truncation
+(=literate-org-max-title-size=).
+
+#+BEGIN_SRC elisp
+(defcustom literate-org-ignored-dirs '("__pycache__" ".git" ".vscode" ".idea" ".venv" "__marimo__" "node_modules")
+  "The directories to be ignored when importing source files."
+  :group 'literate-org)
+#+END_SRC
+
+#+BEGIN_SRC elisp
+(defcustom literate-org-max-title-size 80
+  "The maximum size of a title for an org section."
+  :group 'literate-org)
+#+END_SRC
+**** generic methods
+#+BEGIN_SRC elisp
+(cl-defgeneric literate-org-module-comment (language node)
+  (:documentation "Get the module comment."))
+
+(cl-defgeneric literate-org-node-name (language node-type node)
+  (:documentation "Get the name of a node."))
+(cl-defgeneric literate-org-next-code-block-index (language root start-index)
+  (:documentation "Get the next code block index."))
+
+(cl-defgeneric literate-org-file-extension (language)
+  (:documentation "the file extension for a language."))
+
+(cl-defgeneric literate-org-alias-language (language)
+  (:documentation "the alias language for a language if have.")
+  (:method (language)
+    ;; default implementation
+    language))
+
+(cl-defgeneric literate-org-treesit-parser-language (language)
+  (:documentation "Get the treesit parser language for a language."))
+
+(cl-defgeneric literate-org-babel-language-name (language)
+  (:documentation "the source code block name for a language."))
+
+(cl-defgeneric literate-org-properties-for-a-module (language module-name path)
+  (:documentation "the default header-args for a file."))
+
+(cl-defgeneric literate-org-get-code-blocks-in-current-buffer (language module-name section-level)
+  (:documentation "Get the code blocks in a file."))
+
+#+END_SRC
+**** Tree-sitter parse helpers
+
+A thin language-agnostic wrapper around =treesit-parser-create=. The
+caller passes the language symbol and gets back a parse tree rooted
+at the buffer; everything else in this module dispatches off that
+tree.
+
+#+BEGIN_SRC elisp
+(cl-defun literate-org-parse-tree-for-current-file (language)
+  (let* ((language (literate-org-treesit-parser-language language))
+         (language (tree-sitter-require language))
+         (parser (tsc-make-parser)))
+    (tsc-set-language parser language)
+    (tsc-parse-string parser (buffer-string))))
+#+END_SRC
+
+**** default implementation for generic methods
+***** babel block language name
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-babel-language-name (language)
+  (symbol-name language))
+#+END_SRC
+
+***** module comment for a language
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-module-comment (language node)
+  nil)
+#+END_SRC
+
+***** file extensions for a language
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-file-extension (language)
+  (symbol-name language))
+#+END_SRC
+
+***** determine treesit parser language in current buffer
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-treesit-parser-language (language)
+  language)
+#+END_SRC
+
+
+***** How to get the name of a parse node
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-node-name (language node-type node)
+  (format "%s" node-type))
+#+END_SRC
+
+***** header-args for a file
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-properties-for-a-module (language module-name path)
+  (list (cons "LITERATE_ORG_MODULE" module-name)
+        (cons "header-args" (format ":tangle %s" path))))
+#+END_SRC
+
+***** get pieces of code blocks in a source file
+To investigate the parse tree, we can use Emacs command [[https://github.com/emacs-mirror/emacs/blob/master/admin/notes/tree-sitter/starter-guide#query-references][treesit-explore-mode]]
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-get-code-blocks-in-current-buffer (language module-name section-level)
+  (let* ((language (literate-org-alias-language language))
+         (tree (literate-org-parse-tree-for-current-file language))
+         (root (tsc-root-node tree))
+         (count-of-children (tsc-count-children root))
+         (module-comment (when (> count-of-children 0)
+                           (literate-org-module-comment language root)))
+         (current-index 0)
+         (next-index 0)
+         (next-title nil)
+         (code-blocks nil))
+    (while (< current-index count-of-children)
+      (cl-multiple-value-setq (next-index next-title)
+        (literate-org-next-code-block-index language root current-index))
+      (setf code-blocks
+              (nconc code-blocks
+                     (list
+                      (make-literate-org-code-block
+                       :title (dired-replace-in-string "\n" " " next-title)
+                       :body (let ((begin (tsc-node-start-position (ts-get-nth-child root current-index)))
+                                   (end (tsc-node-end-position (ts-get-nth-child root next-index))))
+                               (concat (buffer-substring-no-properties begin end) "\n"))
+                       :language language
+                       :level section-level))))
+      (setf current-index (1+ next-index)))
+    (cons module-comment code-blocks)))
+#+END_SRC
+
+**** import source files
+
+The four sections that follow implement the round-trip from a Python
+package on disk back into a literate-org document. Each is a single
+function:
+
+1. *Prepare a new org section* — emit headers + properties for a
+   module given a name, level, and path.
+2. *Iterate a directory or file* — top-level entry point that picks
+   between directory walk and single-file import.
+3. *Import a directory* — recursive walk, one section per submodule.
+4. *Import a file* — parse a single source file's tree and emit a
+   section with one src block per top-level definition.
+
+**** Prepare a new org section for a module
+#+BEGIN_SRC elisp
+(cl-defun literate-org-new-org-section-for-a-module (module-name new-level &key (title module-name) language path)
+  (loop repeat new-level do (insert "*"))
+  (insert " " title "\n")
+  (cl-loop for (key . value) in (literate-org-properties-for-a-module language module-name path)
+           do (org-entry-put (point) key value)))
+#+END_SRC
+**** Iterate a directory or a file to import source codes
+#+BEGIN_SRC elisp
+(cl-defun literate-org-import (&key (level (or (org-current-level) 0))
+                                    module-name module-path)
+  "Import source codes from a directory to an org file."
+  (interactive "")
+  (let* ((module-names (or (ensure-list module-name)
+                           (aand (or (org-entry-get (point) "LITERATE_ORG_MODULE" t)
+                                     (org-entry-get (point) "LITERATE_ORG_ROOT_MODULE" t))
+                                 (split-string it))
+                           ;; for all modules in `LITERATE_ORG_ROOT_MODULE'
+                           (list nil)))
+         (root-path (org-entry-get (point) "LITERATE_ORG_ROOT_MODULE_PATH" t)))
+    (dolist (module-name module-names)
+      (let ((module-path (or module-path
+                             (when root-path
+                               (if module-name
+                                 (concat root-path "/"
+                                         (dired-replace-in-string
+                                          "\\." "/" module-name))
+                                 root-path)))))
+        (if (f-directory? module-path)
+          ;; if there are multiple module-names, then we need to create a new org header for each of them.
+          ;; it usually happens in global org property `LITERATE_ORG_ROOT_MODULE'.
+          (if (> (length module-names) 1)
+            (let ((new-level (1+ level)))
+              (literate-org-new-org-section-for-a-module
+               module-name new-level
+               :title module-name
+               :path module-path)
+              (literate-org-import-directory module-name module-path :level new-level))
+            (literate-org-import-directory module-name module-path))
+          (literate-org-import-file module-name module-path))
+        (message "Finished importing module %s from %s" module-name module-path)))))
+#+END_SRC
+**** Import a directory
+#+BEGIN_SRC elisp
+(cl-defun literate-org-import-directory (module-name module-directory &key (level (or (org-current-level) 0)))
+  (let* ((languages (or (aand (org-entry-get (point) "LITERATE_ORG_LANGUAGES" t)
+                              (mapcar #'intern (split-string it)))
+                        (aand (org-entry-get (point) "LITERATE_ORG_LANGUAGE" t)
+                              (list (intern it)))
+                        (list (intern (read-from-minibuffer "Which language: ")))))
+         (excluded-modules (aand (org-entry-get (point) "LITERATE_ORG_EXCLUDED_MODULES" t)
+                                 (split-string it)))
+         (new-level (1+ level)))
+    (labels ((%build-module-name (relative-name)
+               (if module-name
+                 (format "%s.%s" module-name
+                         (dired-replace-in-string
+                          "/" "." relative-name))
+                 (dired-replace-in-string
+                  "/" "." relative-name))))
+      ;; TODO: cleanup empty directories.
+      (dolist (file (directory-files module-directory t))
+        (when-let* ((ext (f-ext file))
+                    (language (find-if #'(lambda (language)
+                                           (equal ext (literate-org-file-extension language)))
+                                       languages)))
+          (let* ((relative-name (f-no-ext (f-relative file module-directory)))
+                 (new-module-name (%build-module-name relative-name)))
+            (unless (find new-module-name excluded-modules :test #'string=) 
+              (literate-org-import-source-file-to-org
+               language file new-level new-module-name)))))
+
+      (dolist (directory (f-directories module-directory))
+        (let* ((relative-name (f-no-ext (f-relative directory module-directory)))
+               (new-module-name (%build-module-name relative-name)))
+          (unless (or (find new-module-name excluded-modules :test #'string=)
+                      (loop for ignored-name in literate-org-ignored-dirs
+                            thereis (search ignored-name new-module-name)))
+            (literate-org-new-org-section-for-a-module
+             new-module-name new-level
+             :title (or (f-ext relative-name) relative-name)
+             :path directory)
+            (literate-org-import :level new-level
+                                 :module-name new-module-name
+                                 :module-path directory)))))))
+#+END_SRC
+
+**** Import a file
+#+BEGIN_SRC elisp
+(defun literate-org-import-file (module-name module-path)
+  (let* ((languages (or (aand (org-entry-get (point) "LITERATE_ORG_LANGUAGES" t)
+                              (mapcar #'intern (split-string it)))
+                        (aand (org-entry-get (point) "LITERATE_ORG_LANGUAGE" t)
+                              (list (intern it)))
+                        (intern (read-from-minibuffer "Which language: "))))
+         (language
+           (if (null (cdr languages))
+             (car languages)
+             (intern (completing-read "Which language: " languages))))
+         (path-extension (literate-org-file-extension language))
+         (path (concat module-path "." path-extension)))
+    (when (f-exists-p path)
+      (literate-org-import-source-file-to-org
+       language path level module-name :with-org-section nil))))
+#+END_SRC
+
+**** build org sections for a file
+#+BEGIN_SRC elisp
+(cl-defun literate-org-import-source-file-to-org
+    (language file level module-name &key (with-org-section t))
+  (message "literate importing module %s from file %s with language %s" module-name file language)
+  (let* ((new-level (1+ level))
+         (code-blocks-info
+           (with-temp-buffer ;; To avoid running any hooks in original file, which may cause side effects.
+             (insert-file-contents file)
+             (literate-org-get-code-blocks-in-current-buffer language module-name new-level)))
+         (module-comment (car code-blocks-info))
+         (module-title (when module-comment
+                         (first (split-string module-comment "\n" t nil))))
+         (code-blocks (cdr code-blocks-info)))
+    (when with-org-section
+      (literate-org-new-org-section-for-a-module module-name level
+                                                 :language language
+                                                 :path file
+                                                 :title (or module-title (f-ext module-name) module-name))
+      (let* ((module-root-path (org-entry-get (point) "LITERATE_ORG_ROOT_MODULE_PATH" t))
+             (root-module (org-entry-get (point) "LITERATE_ORG_ROOT_MODULE" t)))
+        (when (and (> (length module-root-path) 0)
+                   (not (string-suffix-p "/" module-root-path)))
+          (setf module-root-path (concat module-root-path "/")))))
+
+    (cl-loop for block in code-blocks do
+             (cl-loop repeat (literate-org-code-block-level block) do (insert "*"))
+             (insert " " (literate-org-code-block-title block) "\n")
+             (cl-loop for (key . value) in (literate-org-code-block-properties block)
+                      do (org-entry-put (point) key value))
+             (awhen (literate-org-code-block-body block)
+               (insert "#+BEGIN_SRC "
+                       (literate-org-babel-language-name (literate-org-code-block-language block))
+                       "\n")
+               (insert it)
+               (insert "\n#+END_SRC\n")))))
+#+END_SRC
+**** Python
+***** module comment for a language
+The comment for a module is usually the first string in the Python file before any meaning code.
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-module-comment ((language (eql python)) node)
+  (when (eq 'module (tsc-node-type node)) 
+    (let* ((index 0)
+                (child (tsc-get-nth-child node index)))
+      (while (and child
+                  (eq 'comment (tsc-node-type child)))
+        (incf index)
+        (setq child (tsc-get-nth-child node index)))
+      (when (and child
+                 (eq 'expression_statement (tsc-node-type child)))
+        (setf child (tsc-get-nth-child child 0))
+        (when (eq 'string (tsc-node-type child))
+          (tsc-node-text (tsc-get-nth-child child 1)))))))
+#+END_SRC
+***** file extensions for a language
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-file-extension ((language (eql python)))
+  "py")
+#+END_SRC
+
+
+***** How to get the name of a parse node
+
+The Python dispatch table for =literate-org-node-name=. Each
+=cl-defmethod= overrides one tree-sitter node type to a human-readable
+section title. The methods are siblings in a dispatch table, so they
+live in one src block here rather than spread across separate
+sub-sections — that keeps the table scannable and avoids depth-6
+nesting that an LLM would otherwise drill into without zooming out.
+
+Two name-bearing nodes plus six trivial constants fold into two
+=defconst= alists consulted by one catch-all =cl-defmethod= (same
+shape used by the Rust and TSX sections). The five nodes with
+per-shape logic keep their own specialised methods:
+=decorated_definition= chains its decorators; =assignment= /
+=augmented_assignment= / =call= truncate the rendered source via
+=literate-org-max-title-size= and fall back to the =:left= /
+=:function= field when over the cap; =expression_statement= unwraps
+its first child.
+
+#+BEGIN_SRC elisp
+(defconst literate-org-python--name-labels
+  '((function_definition . "Function")
+    (class_definition    . "Class"))
+  "Python node types whose section title is \"<label> <:name>\".")
+
+(defconst literate-org-python--constant-labels
+  '((try_statement         . "Try statement")
+    (while_statement       . "While statement")
+    (string                . "String")
+    (comment               . "Comment")
+    (import                . "Import")
+    (import_from_statement . "Import"))
+  "Python node types whose section title is a fixed string.")
+
+;; Catch-all: alist lookup; on miss, fall through to the generic default.
+(cl-defmethod literate-org-node-name ((_language (eql python)) node-type node)
+  (cond
+    ((alist-get node-type literate-org-python--name-labels)
+     (format "%s %s"
+             (alist-get node-type literate-org-python--name-labels)
+             (tsc-node-text (tsc-get-child-by-field node :name))))
+    ((alist-get node-type literate-org-python--constant-labels))
+    (t (cl-call-next-method))))
+
+;; decorated_definition — chain of @decorators followed by the underlying definition.
+(cl-defmethod literate-org-node-name ((language (eql python))
+                                      (_node-type (eql decorated_definition)) node)
+  (let* ((name-list nil)
+         (index 0)
+         (child (tsc-get-nth-child node index)))
+    (while (eq 'decorator (tsc-node-type child))
+      (setf name-list (nconc name-list (list (tsc-node-text (tsc-get-nth-child child 1)))))
+      (incf index)
+      (setf child (tsc-get-nth-child node index)))
+    (format "@%s: %s" (mapconcat 'identity name-list " ")
+            (literate-org-node-name language (tsc-node-type child) child))))
+
+;; assignment / augmented_assignment — source text, or :left child when too long.
+;; Two cl-defmethods because dispatch is on node-type, but body is identical.
+(cl-defmethod literate-org-node-name ((_language (eql python))
+                                      (_node-type (eql assignment)) node)
+  (let ((code (dired-replace-in-string "\n" " " (tsc-node-text node))))
+    (if (<= (length code) literate-org-max-title-size)
+      (format "Assignment %s" code)
+      (format "Assignment %s" (tsc-node-text (tsc-get-child-by-field node :left))))))
+
+(cl-defmethod literate-org-node-name ((_language (eql python))
+                                      (_node-type (eql augmented_assignment)) node)
+  (let ((code (dired-replace-in-string "\n" " " (tsc-node-text node))))
+    (if (<= (length code) literate-org-max-title-size)
+      (format "Assignment %s" code)
+      (format "Assignment %s" (tsc-node-text (tsc-get-child-by-field node :left))))))
+
+;; call — source text, or :function child when too long.
+(cl-defmethod literate-org-node-name ((_language (eql python))
+                                      (_node-type (eql call)) node)
+  (let ((call-code (dired-replace-in-string "\n" " " (tsc-node-text node))))
+    (if (<= (length call-code) literate-org-max-title-size)
+      (format "Call %s" call-code)
+      (format "Call %s" (tsc-node-text (tsc-get-child-by-field node :function))))))
+
+;; expression_statement — recurse into the wrapped expression.
+(cl-defmethod literate-org-node-name ((language (eql python))
+                                      (_node-type (eql expression_statement)) node)
+  (let ((new-node (tsc-get-nth-child node 0)))
+    (literate-org-node-name language (ts-node-type new-node) new-node)))
+#+END_SRC
+
+***** get the next code block index
+
+The Python and TSX scanners share the same shape — walk the
+=source_file= children, classify each node as one of:
+
+  - *import-like* (Python =import_statement= / =import_from_statement=,
+    TSX =import_statement=); collapse contiguous runs (including
+    glue comments) into one "Import statements" block.
+
+  - *definition* (Python class / function / decorated_definition;
+    TSX type / enum / interface / lexical_declaration / variable_
+    declarator / export_statement / function_declaration); emit
+    one block per definition titled via =literate-org-node-name=.
+
+  - *expression_statement*: unwrap (Python: docstring / assignment
+    with optional docstring follow-up / fallback; TSX: same path
+    works because the case shape is grammar-agnostic).
+
+  - *trailing comment* on the last child of the source file: emit
+    as its own block when nothing follows.
+
+The Rust scanner uses a different classification (item / use-like /
+prelude with attribute + doc handling) and stays as its own
+=cl-defmethod=. The shared helper accepts the language-specific
+import-type and definition-type sets as parameters so Python and
+TSX collapse to thin wrappers.
+
+#+BEGIN_SRC elisp
+(defun literate-org--scan-flat-with-import-group
+    (language root start-index import-types def-types)
+  "Walk ROOT's children from START-INDEX classifying nodes for the
+flat import-then-defs grammar pattern (Python, TSX).
+
+IMPORT-TYPES is a list of node-type symbols treated as import-like.
+DEF-TYPES is a list of node-type symbols treated as definitions —
+each emits its own block titled via `literate-org-node-name'.
+
+Returns =(NEXT-INDEX . TITLE)= as a `values' tuple, matching the
+generic contract of `literate-org-next-code-block-index'."
+  (cl-block nil
+    (let* ((max-index (1- (tsc-count-children root)))
+           (current-index start-index)
+           (current-node nil)
+           (current-node-type nil)
+           (next-index nil)
+           (next-node-type nil)
+           (next-node nil)
+           (collected-valid-node-types nil)
+           (previous-node nil)
+           (previous-node-type nil))
+      (while (<= current-index max-index)
+        (setf previous-node current-node)
+        (setf previous-node-type current-node-type)
+        (setf current-node (ts-get-nth-child root current-index))
+        (setf current-node-type (ts-node-type current-node))
+        (unless (eq 'comment current-node-type)
+          (push current-node-type collected-valid-node-types))
+
+        (when (= current-index max-index)
+          (return (values max-index
+                          (literate-org-node-name
+                           language current-node-type current-node))))
+        (setf next-index (1+ current-index)
+              next-node (ts-get-nth-child root next-index)
+              next-node-type (ts-node-type next-node))
+        (cond
+          ;; Trailing comment after a non-import — close the previous
+          ;; def's block at the comment boundary.
+          ((eq current-node-type 'comment)
+           (if (and previous-node-type
+                    (not (eq previous-node-type 'comment))
+                    (memq (first collected-valid-node-types) import-types)
+                    (not (or (memq next-node-type import-types)
+                             (eq next-node-type 'comment))))
+             (return (values (1- current-index)
+                             (literate-org-node-name
+                              language previous-node-type previous-node)))
+             (incf current-index)))
+          ;; Import-like run — collapse contiguous imports (with glue comments).
+          ((memq current-node-type import-types)
+           (cond ((or (memq next-node-type import-types)
+                      (eq next-node-type 'comment))
+                  (incf current-index))
+                 (t
+                  (return (values current-index "Import statements")))))
+          ;; Definition — emit its title and stop.
+          ((memq current-node-type def-types)
+           (return (values current-index
+                           (literate-org-node-name
+                            language current-node-type current-node))))
+          ;; expression_statement — unwrap one level, dispatch on inner.
+          ((eq current-node-type 'expression_statement)
+           (let* ((first-child-node (ts-get-nth-child current-node 0))
+                  (first-child-node-type (ts-node-type first-child-node)))
+             (cl-case first-child-node-type
+               (comment
+                (incf next-index)
+                (setf next-node (ts-get-nth-child root next-index))
+                (setf next-node-type (ts-node-type next-node)))
+               (string
+                (return (values current-index "Docstring")))
+               (assignment
+                (if (and (eq 'expression_statement next-node-type)
+                         (eq 'string (ts-node-type (ts-get-nth-child next-node 0))))
+                  (incf current-index)
+                  (return (values current-index
+                                  (literate-org-node-name
+                                   language first-child-node-type first-child-node)))))
+               (t
+                (return (values current-index
+                                (literate-org-node-name
+                                 language first-child-node-type first-child-node)))))))
+          (t
+           (incf current-index)))))))
+
+(cl-defmethod literate-org-next-code-block-index ((language (eql python))
+                                                  root start-index)
+  (literate-org--scan-flat-with-import-group
+   language root start-index
+   '(import_statement import_from_statement)
+   '(decorated_definition class_definition function_definition)))
+#+END_SRC
+
+**** Rust
+
+Rust's tree-sitter grammar is clean: every top-level item
+(=function_item=, =struct_item=, =enum_item=, =trait_item=, =union_item=,
+=mod_item=, =const_item=, =static_item=, =type_item=, =macro_definition=,
+=impl_item=, =foreign_mod_item=) is a direct child of =source_file=, and
+most carry a =:name= field. The dispatch mirrors Python's; only a few
+Rust-specific shapes need hand-coding:
+
+- Outer attributes (=#[derive(...)]=) and doc comments (=///=) precede
+  the item they decorate, so =next-code-block-index= slides past them
+  and the item's heading absorbs them.
+- Contiguous =use= / =extern crate= declarations fold into one "Use
+  declarations" block, the same way Python collapses =import_statement=
+  runs.
+- Inner attributes (=#![...]=) at the file top must be skipped before
+  scanning for the =//!= module doc — otherwise a crate that opens with
+  =#![allow(dead_code)]= loses its module comment.
+- Top-level macro invocations come in two shapes: =lazy_static! { ... }=
+  parses as a direct =macro_invocation=, while =include_str!(...);=
+  wraps one in an =expression_statement=. Both emit "Macro call <name>"
+  via the =:macro= field.
+
+***** file extension and module comment
+
+Extension =.rs=. The module comment is the contiguous run of =//!= lines
+at the top, *after* any leading =inner_attribute_item= /
+=attribute_item= nodes — the gap that bit the prototype on crates
+opening with =#![allow(...)]=.
+
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-file-extension ((_language (eql rust)))
+  "rs")
+
+(cl-defmethod literate-org-module-comment ((language (eql rust)) node)
+  (when (eq 'source_file (tsc-node-type node))
+    (let* ((index 0)
+           (count (tsc-count-children node))
+           (child nil))
+      ;; Skip past leading #![...] / #[...] before scanning for //! lines.
+      (while (and (< index count)
+                  (memq (tsc-node-type
+                         (setq child (tsc-get-nth-child node index)))
+                        '(inner_attribute_item attribute_item)))
+        (cl-incf index))
+      (let ((parts nil))
+        (while (and (< index count)
+                    (eq 'line_comment
+                        (tsc-node-type
+                         (setq child (tsc-get-nth-child node index))))
+                    (string-prefix-p "//!" (tsc-node-text child)))
+          (push (string-trim-left (substring (tsc-node-text child) 3))
+                parts)
+          (cl-incf index))
+        (when parts
+          (mapconcat #'identity (nreverse parts) "\n"))))))
+#+END_SRC
+
+***** How to get the name of a parse node
+
+Most of Rust's top-level items are name-bearing (function / struct /
+enum / trait / union / const / static / type / mod / macro_definition)
+and need exactly the same dispatch shape: =(format "<Label> %s"
+(tsc-node-text (tsc-get-child-by-field node :name)))=. The remaining
+nodes either render as a fixed string (use, extern crate, attribute,
+comment, …) or carry per-shape logic (=impl_item= renders
+=impl <Trait> for <Type>=; =macro_invocation= reads =:macro=;
+=expression_statement= unwraps).
+
+We keep two alists — =--name-labels= for the :name-pulling node
+types, =--constant-labels= for the trivial fixed-string ones — and
+one catch-all =cl-defmethod (eql rust)= that consults them. The
+per-shape methods (impl / macro_invocation / expression_statement)
+keep their own =cl-defmethod=s and shadow the catch-all because
+specifying node-type as =(eql X)= is more specific than =t=.
+
+#+BEGIN_SRC elisp
+(defconst literate-org-rust--name-labels
+  '((function_item    . "Function")
+    (struct_item      . "Struct")
+    (enum_item        . "Enum")
+    (trait_item       . "Trait")
+    (union_item       . "Union")
+    (const_item       . "Const")
+    (static_item      . "Static")
+    (type_item        . "Type")
+    (mod_item         . "Mod")
+    (macro_definition . "Macro"))
+  "Rust node types whose section title is \"<label> <:name>\".
+One alist row replaces what used to be ten 3-line `cl-defmethod's.")
+
+(defconst literate-org-rust--constant-labels
+  '((use_declaration          . "Use")
+    (extern_crate_declaration . "Extern crate")
+    (foreign_mod_item         . "Extern block")
+    (attribute_item           . "Attribute")
+    (inner_attribute_item     . "Inner attribute")
+    (line_comment             . "Comment")
+    (block_comment            . "Comment"))
+  "Rust node types whose section title is a fixed string irrespective
+of node content.")
+
+;; Catch-all: any rust node-type that isn't shadowed by a more
+;; specific cl-defmethod is dispatched by alist lookup.
+(cl-defmethod literate-org-node-name ((_language (eql rust)) node-type node)
+  (cond
+    ((alist-get node-type literate-org-rust--name-labels)
+     (format "%s %s"
+             (alist-get node-type literate-org-rust--name-labels)
+             (tsc-node-text (tsc-get-child-by-field node :name))))
+    ((alist-get node-type literate-org-rust--constant-labels))
+    (t (cl-call-next-method))))
+
+;; impl_item — :type required, :trait optional. Not in the alist
+;; because the result depends on which fields are present.
+(cl-defmethod literate-org-node-name ((_language (eql rust))
+                                      (_node-type (eql impl_item)) node)
+  (let* ((trait-node (ignore-errors (tsc-get-child-by-field node :trait)))
+         (type-node  (ignore-errors (tsc-get-child-by-field node :type)))
+         (trait-text (and trait-node (tsc-node-text trait-node)))
+         (type-text  (and type-node  (tsc-node-text type-node))))
+    (if trait-text
+      (format "Impl %s for %s" trait-text (or type-text "?"))
+      (format "Impl %s" (or type-text "?")))))
+
+;; macro_invocation — :macro field gives the macro path (e.g. "lazy_static",
+;; "include_str", "my_crate::register"); fall back to the whole node text.
+(cl-defmethod literate-org-node-name ((_language (eql rust))
+                                      (_node-type (eql macro_invocation)) node)
+  (let ((macro-node (ignore-errors (tsc-get-child-by-field node :macro))))
+    (format "Macro call %s" (tsc-node-text (or macro-node node)))))
+
+;; expression_statement — recurse into the wrapped expression.
+(cl-defmethod literate-org-node-name ((language (eql rust))
+                                      (_node-type (eql expression_statement)) node)
+  (let ((inner (tsc-get-nth-child node 0)))
+    (literate-org-node-name language (tsc-node-type inner) inner)))
+#+END_SRC
+
+***** get the next code block index
+
+Three node sets drive the scan: *items* (own block), *use-like*
+declarations (folded into one "Use declarations" block), and *preludes*
+(attributes / comments, slide forward into the next item). An
+=expression_statement= wrapping a =macro_invocation= also counts as an
+item — that's how =include_str!(...);= gets its own block instead of
+falling through.
+
+#+BEGIN_SRC elisp
+;; defconst rather than defvar — these are semantic constants over the
+;; tree-sitter-rust grammar, and we want a reload of this org file to
+;; refresh them even if a prototype with the same name was eval'd earlier.
+(defconst literate-org-rust--item-types
+  '(function_item struct_item enum_item trait_item union_item
+    mod_item const_item static_item type_item macro_definition
+    impl_item foreign_mod_item macro_invocation)
+  "Top-level Rust node types that get their own org section.")
+
+(defconst literate-org-rust--use-like-types
+  '(use_declaration extern_crate_declaration)
+  "Rust top-level nodes that collapse into one \"Use declarations\" block.")
+
+(defun literate-org-rust--expr-stmt-is-macro-call-p (node)
+  "Non-nil if NODE is an `expression_statement' wrapping a `macro_invocation'."
+  (and (eq 'expression_statement (tsc-node-type node))
+       (> (tsc-count-children node) 0)
+       (eq 'macro_invocation
+           (tsc-node-type (tsc-get-nth-child node 0)))))
+
+(defun literate-org-rust--doc-comment-p (node)
+  "Non-nil if NODE is a Rust *doc* comment (=///= or =//!=).
+Doc comments belong to the item that follows, so the use-grouping pass
+must NOT swallow them — they should slide forward to the next item."
+  (and (eq 'line_comment (tsc-node-type node))
+       (string-match-p "\\`//[/!]" (tsc-node-text node))))
+
+(cl-defmethod literate-org-next-code-block-index ((language (eql rust))
+                                                  root start-index)
+  (cl-block nil
+    (let* ((max-index (1- (tsc-count-children root)))
+           (idx start-index))
+      (while (<= idx max-index)
+        (let* ((node (tsc-get-nth-child root idx))
+               (type (tsc-node-type node)))
+          (cond
+            ;; Use-like run — collapse contiguous use/extern_crate.
+            ;; Plain line_comment is allowed as glue (e.g. `// re-exports`
+            ;; between two `use` lines), but *doc* comments (=///= / =//!=)
+            ;; belong to the next item and must NOT be swallowed here.
+            ((memq type literate-org-rust--use-like-types)
+             (let ((end idx))
+               (while (and (< end max-index)
+                           (let* ((nxt (tsc-get-nth-child root (1+ end)))
+                                  (nxt-type (tsc-node-type nxt)))
+                             (or (memq nxt-type literate-org-rust--use-like-types)
+                                 (and (eq nxt-type 'line_comment)
+                                      (not (literate-org-rust--doc-comment-p nxt))))))
+                 (cl-incf end))
+               (cl-return (cl-values end "Use declarations"))))
+            ;; Real item — emit its title.
+            ((memq type literate-org-rust--item-types)
+             (cl-return (cl-values idx
+                                   (literate-org-node-name language type node))))
+            ;; expression_statement wrapping macro_invocation also counts.
+            ((literate-org-rust--expr-stmt-is-macro-call-p node)
+             (cl-return (cl-values idx
+                                   (literate-org-node-name language type node))))
+            ;; Prelude (attributes / comments / inner attributes / anything
+            ;; we don't recognise) — slide forward; if we're already at the
+            ;; end, emit it verbatim so the caller terminates.
+            (t
+             (if (= idx max-index)
+               (cl-return (cl-values idx
+                                     (literate-org-node-name language type node)))
+               (cl-incf idx)))))))))
+#+END_SRC
+
+**** vue
+***** How to get the name of a parse node
+
+The TSX dispatch table for =literate-org-node-name=. Vue SFC code
+blocks fall through to TSX via =literate-org-alias-language= — even
+though this subsection lives under =**** vue=, every =cl-defmethod=
+dispatches on =(eql tsx)=. The =:kind= prefix on =lexical_declaration=
+preserves =let= / =const= / =var= in the section title — losing it
+silently merges three semantically different declarations into one
+heading.
+
+Same alist-pair-plus-catch-all shape as the Python and Rust
+sections: five name-bearing nodes (function / type alias / enum /
+interface / variable_declarator) plus three constants (string,
+comment, import) fold into two =defconst=s; the three per-shape
+methods (=export_statement= recurses into =:declaration= or =:value=,
+=lexical_declaration= prepends =:kind=, =expression_statement=
+unwraps) keep their own specialised dispatch.
+
+#+BEGIN_SRC elisp
+(defconst literate-org-tsx--name-labels
+  '((function_declaration   . "Function")
+    (type_alias_declaration . "Type")
+    (enum_declaration       . "Enum")
+    (interface_declaration  . "Interface")
+    (variable_declarator    . "Variable"))
+  "TSX node types whose section title is \"<label> <:name>\".")
+
+(defconst literate-org-tsx--constant-labels
+  '((string  . "String")
+    (comment . "Comment")
+    (import  . "Import"))
+  "TSX node types whose section title is a fixed string.")
+
+;; Catch-all: alist lookup; on miss, fall through to the generic default.
+(cl-defmethod literate-org-node-name ((_language (eql tsx)) node-type node)
+  (cond
+    ((alist-get node-type literate-org-tsx--name-labels)
+     (format "%s %s"
+             (alist-get node-type literate-org-tsx--name-labels)
+             (tsc-node-text (tsc-get-child-by-field node :name))))
+    ((alist-get node-type literate-org-tsx--constant-labels))
+    (t (cl-call-next-method))))
+
+;; export_statement — recurse into :declaration if present, else show :value source.
+(cl-defmethod literate-org-node-name ((language (eql tsx))
+                                      (_node-type (eql export_statement)) node)
+  (format "Export %s"
+          (let ((declaration (tsc-get-child-by-field node :declaration)))
+            (if declaration
+              (literate-org-node-name language (tsc-node-type declaration) declaration)
+              (let ((value (tsc-get-child-by-field node :value)))
+                (if value
+                  (tsc-node-text value)))))))
+
+;; lexical_declaration — render as "<kind> <inner-name>" (e.g. "let foo").
+(cl-defmethod literate-org-node-name ((language (eql tsx))
+                                      (_node-type (eql lexical_declaration)) node)
+  (format "%s %s"
+          (tsc-node-text (tsc-get-child-by-field node :kind))
+          (let ((sub-node (tsc-get-nth-child node 1)))
+            (literate-org-node-name language
+                                    (tsc-node-type sub-node)
+                                    sub-node))))
+
+;; expression_statement — recurse into the wrapped expression.
+(cl-defmethod literate-org-node-name ((language (eql tsx))
+                                      (_node-type (eql expression_statement)) node)
+  (let ((new-node (tsc-get-nth-child node 0)))
+    (literate-org-node-name language (ts-node-type new-node) new-node)))
+#+END_SRC
+
+***** get the next code block index
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-next-code-block-index ((language (eql vue))
+                                                  root start-index)
+  (let* ((current-index start-index)
+         (current-node (ts-get-nth-child root current-index))
+         (current-node-type (ts-node-type current-node)))
+    (values current-index
+            (literate-org-node-name
+             language current-node-type current-node))))
+#+END_SRC
+
+***** org properties for a module
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-properties-for-a-module ((language (eql vue)) module-name path)
+  (list (cons "LITERATE_ORG_MODULE" module-name)
+        (cons "LITERATE_SOURCE_FILE" path)
+        (cons "header-args" (format ":noweb yes :tangle %s" path))
+        (cons "header-args:tsx" (format ":noweb yes :noweb-ref %s-script :tangle no" module-name))
+        (cons "header-args:vue-html" (format ":noweb yes :noweb-ref %s-template :tangle no" module-name))
+        (cons "header-args:css" (format ":noweb yes :noweb-ref %s-style :tangle no" module-name))))
+#+END_SRC
+
+***** determine treesit parser language in current buffer
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-treesit-parser-language ((language (eql vue)))
+  'html)
+#+END_SRC
+
+
+
+***** get pieces of code blocks in a source file
+To investigate the parse tree, we can use Emacs command [[https://github.com/emacs-mirror/emacs/blob/master/admin/notes/tree-sitter/starter-guide#query-references][treesit-explore-mode]]
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-get-code-blocks-in-current-buffer ((language (eql vue))
+                                                              module-name section-level)
+  (let* ((language (literate-org-alias-language language))
+         (tree (literate-org-parse-tree-for-current-file language))
+         (root (tsc-root-node tree))
+         (count-of-children (tsc-count-children root))
+         (module-comment (when (> count-of-children 0)
+                           (literate-org-module-comment language root)))
+         (main-items nil)
+         (comment-blocks nil)
+         (script-blocks nil)
+         (elements-blocks nil)
+         (style-blocks nil)
+         (code-blocks nil))
+    (cl-loop for index from 0 below count-of-children
+             for node = (ts-get-nth-child root index)
+             for children-count = (tsc-count-children node)
+             for node-type = (tsc-node-type node)
+             for node-start-text = (when (> children-count 0)
+                                     (tsc-node-text (tsc-get-nth-child node 0)))
+             for node-end-text = (when (> children-count 0)
+                                   (tsc-node-text (tsc-get-nth-child node (1- children-count))))
+             for node-body-noweb-ref = nil
+             for body = (if (> children-count 0)
+                          (string-join (loop for i from 1 below (1- children-count)
+                                             collect (tsc-node-text (tsc-get-nth-child node i))))
+                          (tsc-node-text node))
+             do (labels ((%build (node-type &key language 
+                                            mode
+                                            (literate-lang (symbol-name language))
+                                            (indent 0))
+                           (values
+                            (format "%s<<%s-%s>>"
+                                    (string-join (loop repeat indent collect " "))
+                                    module-name node-type)
+                            (with-temp-buffer
+                              (insert body)
+                              ;; (when mode
+                              ;;   (funcall mode)
+                              ;;   (prettier-prettify))
+                              (cons 
+                               (make-literate-org-code-block
+                                :title (format "%s of %s" node-type module-name)
+                                :properties (list (cons "literate-lang" literate-lang))
+                                :level section-level)
+                               (cdr
+                                (literate-org-get-code-blocks-in-current-buffer
+                                 language
+                                 (format "%s-" module-name node-type)
+                                 (1+ section-level))))))))
+                  (ecase node-type
+                    (script_element
+                     (multiple-value-bind (noweb-ref blocks)
+                         (%build "script" :mode 'typescript-ts-mode :language 'tsx)
+                       (setf node-body-noweb-ref noweb-ref
+                             script-blocks (nconc comment-blocks blocks))))
+                    (element
+                     (multiple-value-bind (noweb-ref blocks)
+                         (%build "template" :mode 'vue-mode :language 'vue-html :indent 2)
+                       (setf node-body-noweb-ref noweb-ref
+                             elements-blocks (nconc comment-blocks blocks))))
+                    (style_element
+                     (multiple-value-bind (noweb-ref blocks)
+                         (%build "style" :language 'css)
+                       (setf node-body-noweb-ref noweb-ref
+                             style-blocks (nconc comment-blocks blocks))))
+                    (comment
+                     (let ((block (make-literate-org-code-block
+                                   :title (format "Comment %s" module-name)
+                                   :body body
+                                   :language 'vue
+                                   :level (1+ section-level))))
+                     (setf node-body-noweb-ref nil
+                           comment-blocks
+                           (nconc comment-blocks (list block)))))))
+             (when node-body-noweb-ref
+               (setf comment-blocks nil)
+               (let ((node-text (format "%s\n%s\n%s\n"
+                                        node-start-text
+                                        node-body-noweb-ref
+                                        node-end-text)))
+                 (setf main-items (nconc main-items (list node-text))))))
+    (setf code-blocks
+            (cons (make-literate-org-code-block
+                   :title (format "Main wrapper %s" module-name)
+                   :body (string-join main-items"\n")
+                   :language 'vue
+                   :level section-level)
+                  (nconc script-blocks elements-blocks style-blocks)))
+    (cons module-comment code-blocks)))
+#+END_SRC
+
+
+**** vue-html
+***** file extension and treesit parser language
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-file-extension ((language (eql vue-html)))
+  "vue")
+
+(cl-defmethod literate-org-treesit-parser-language ((language (eql vue-html)))
+  'html)
+#+END_SRC
+
+
+
+
+***** literate-org-node-name
+
+vue-html nodes (HTML-template syntax) don't expose a structured =:name=
+field for most elements — the AST is mostly tags/attributes/text. The
+default override returns the first child's source text if any, falling
+back to the whole node's text. This is one method, not a dispatch
+table, so it lives directly in this section instead of an inner
+=****** default= sub-section that would push nesting to depth 6.
+
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-node-name ((language (eql vue-html)) node-type node)
+  (aif (tsc-get-nth-child node 0)
+    (tsc-node-text it)
+    (tsc-node-text node)))
+#+END_SRC
+
+***** literate-org-next-code-block-index
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-next-code-block-index ((language (eql vue-html))
+                                                  root start-index)
+  (let* ((current-index start-index)
+         (current-node (ts-get-nth-child root current-index))
+         (current-node-type (ts-node-type current-node)))
+    (values current-index
+            (literate-org-node-name
+             language current-node-type current-node))))
+#+END_SRC
+**** css
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-next-code-block-index ((language (eql css))
+                                                  root start-index)
+  (let* ((current-index (1- (tsc-count-children root)))
+         (current-node (ts-get-nth-child root current-index))
+         (current-node-type (ts-node-type current-node)))
+    (values current-index
+            (literate-org-node-name
+             language current-node-type current-node))))
+#+END_SRC
+
+
+**** tsx
+***** alias language
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-alias-language ((language (eql ts)))
+  'tsx)
+#+END_SRC
+
+***** get the next code block index
+
+Shares the flat import-then-defs scanner with Python via
+=literate-org--scan-flat-with-import-group=; only the import-type
+set and def-type set differ.
+
+#+BEGIN_SRC elisp
+(cl-defmethod literate-org-next-code-block-index ((language (eql tsx))
+                                                  root start-index)
+  (literate-org--scan-flat-with-import-group
+   language root start-index
+   '(import_statement)
+   '(export_statement enum_declaration interface_declaration
+                      type_alias_declaration
+                      lexical_declaration
+                      variable_declarator
+                      function_declaration)))
+#+END_SRC
+
+** Export
+We use native org tangle features.
+* Run python code in specified module
+:PROPERTIES:
+:literate-lang: elisp
+:END:
+** setup current module in python REPL
+*** a special variable for current module name in python REPL
+#+BEGIN_SRC elisp
+(defvar literate-org-current-module nil
+        "The current python module name to be used when execute a code.")
+#+END_SRC
+*** display namespace in the mode line in buffer for python REPL 
+#+BEGIN_SRC elisp
+(defun literate-org-current-namespace-in-repl ()
+  `(
+    "/"
+    ,(or literate-org-current-module "*")
+    "/"))
+(add-to-list 'mode-line-misc-info
+             `(inferior-python-mode (" [" literate-org-current-namespace-in-repl "] ")))
+#+END_SRC
+*** a comint input sender to exec code in a namespace.
+#+BEGIN_SRC elisp
+(defun literate-org-comint-input-sender (proc string)
+  (with-current-buffer (process-buffer proc)
+    (if (eq major-mode 'inferior-python-mode)
+      (let ((new-string (format "__PYTHON_EL_eval(%s, %s)\n"
+                                (python-shell--encode-string string)
+                                (python-shell--encode-string (or (buffer-file-name)
+                                                                 "<string>")))))
+        (comint-simple-send proc new-string))
+      (comint-simple-send proc string))))
+#+END_SRC
+
+** setup python shell eval setup code
+#+BEGIN_SRC elisp
+(defun literate-org-setup-shell-eval-setup-code ()
+  (setf comint-input-sender (function literate-org-comint-input-sender))
+  (setf python-shell-eval-setup-code
+  "\
+def __PYTHON_EL_eval(source, filename, module=None):
+    import ast, sys
+    import os
+    if sys.version_info[0] == 2:
+        from __builtin__ import compile, eval, globals
+    else:
+        from builtins import compile, eval, globals
+    try:
+        p, e = ast.parse(source, filename), None
+    except SyntaxError:
+        t, v, tb = sys.exc_info()
+        sys.excepthook(t, v, tb.tb_next)
+        return
+    if p.body and isinstance(p.body[-1], ast.Expr):
+        e = p.body.pop()
+    try:
+        g = globals()
+        if module is None and 'python_repl_module_name' in globals():
+           module = globals()['python_repl_module_name']
+        if module is not None:
+           g = sys.modules[module].__dict__
+        exec(compile(p, filename, 'exec'), g, g)
+        if e:
+            return eval(compile(ast.Expression(e.value), filename, 'eval'), g, g)
+    except Exception:
+        t, v, tb = sys.exc_info()
+        sys.excepthook(t, v, tb.tb_next)")
+  )
+#+END_SRC
+* Org buffer maintenance
+:PROPERTIES:
+:LITERATE_ORG_LANGUAGE: elisp
+:END:
+
+Three commands that operate on the *current org buffer itself* — not
+on tangled output, not on remote modules. They cover the three things
+authors most often need to do mid-edit: wipe a stale subtree
+(=clear-subtree=), reload module bindings after retangling
+(=reload=), and tangle just the section under point (=tangle current
+section=) without re-tangling the whole 3000-line file.
+
+** clear subtree
+#+BEGIN_SRC elisp
+(defun literate-org-clear-subtree ()
+  (interactive)
+  (org-mark-subtree) ;; mark the current subtree
+  (forward-line) ;; move point forward, so the headline isn't in the region
+  (when (string-prefix-p ":PROPERTIES:" (thing-at-point 'line t))
+    (search-forward ":END:")
+    (forward-line))
+  (delete-region (region-beginning) (region-end)) ;; delete the rest
+)
+#+END_SRC
+
+** reload file or modules
+#+BEGIN_SRC elisp
+(defun literate-org-reload ()
+  "Reload the current org subtree by clearing and re-importing modules.
+This function clears the current subtree and then imports source files
+back into the org structure, effectively refreshing the literate org
+content from the underlying source files."
+  (interactive)
+  (literate-org-clear-subtree)
+  (literate-org-import))
+#+END_SRC
+** tangle current section
+#+BEGIN_SRC elisp
+(defun literate-org-tangle-current-section ()
+    "Tangle all code blocks in the current section that have LITERATE_ORG_MODULE property."
+    (interactive)
+    (save-excursion
+      (save-restriction
+        ;; Narrow to current section
+        (org-narrow-to-subtree)
+
+        ;; Go to the beginning of the narrowed region
+        (goto-char (point-min))
+
+        ;; Loop through all LITERATE_ORG_MODULE properties in the section
+        (while (re-search-forward "^:LITERATE_ORG_MODULE:" nil t)
+          ;; Find the next code block
+          (when (re-search-forward "^#\\+BEGIN_SRC" nil t)
+            ;; Move point inside the code block
+            (forward-line 1)
+
+            ;; Tangle this code block
+            (literate-org-tangle-current-file))))))
+#+END_SRC
+
+* Jupyter notebook import
+:PROPERTIES:
+:literate-lang: elisp
+:END:
+
+Importing an existing =.ipynb= into this project's literate-org
+structure. Two stages: convert the notebook's markdown cells to org
+prose (so the document reads like the rest of the project), then
+parse code cells into properly-headered =#+begin_src= blocks. Each
+stage gets a subsection below.
+
+** convert markdown to org syntax
+*** lua filter to remove PROPERTIES
+#+BEGIN_SRC elisp
+(defvar literate-org-lua-filter-remove-properties
+    "
+function Div(elem)
+  -- Check if the Div is an Org PROPERTIES drawer
+  if elem.classes:includes(\"PROPERTIES\") then
+    -- Remove the entire PROPERTIES block by returning nothing
+    return {}
+  end
+end
+"
+  "A lua filter to remove PROPERTIES drawer.")
+#+END_SRC
+
+*** main
+#+BEGIN_SRC elisp
+(defun literate-org-markdown-to-org (str)
+  (let* ((lua-filter-file (make-temp-file "literate-org-md-to-org" nil ".lua"))
+         (src-file (make-temp-file "literate-org-md-to-org" nil ".md"))
+         (dest-file (format "%s.org" src-file)))
+    (with-temp-file lua-filter-file
+      (insert literate-org-lua-filter-remove-properties))
+    (with-temp-file src-file
+      (insert str))
+    (shell-command (format "pandoc -f markdown -t org --lua-filter=\"%s\" -o \"%s\" \"%s\""
+                           lua-filter-file dest-file src-file))
+    (unwind-protect
+        (with-temp-buffer
+          (insert-file-contents dest-file)
+          (buffer-string))
+      (delete-file lua-filter-file)
+      (delete-file src-file)
+      (delete-file dest-file))))
+#+END_SRC
+
+*** Tangle-only prefix patterns
+
+When exporting an org section back to an ipynb cell, we only tangle
+code blocks whose heading title starts with one of these prefixes —
+the data-driven node-name dispatch produces titles like "Function
+foo", "Class Bar", "Import …", and "@decorator" methods.  Everything
+else (Assignment, Call, Try statement, Comment, …) stays in the
+section but is *not* re-exported to the notebook cell.
+
+#+BEGIN_SRC elisp
+(defvar literate-org-ipynb-tangled-prefix-patterns
+    '("Function " "Class " "Import" "@"))
+#+END_SRC
+
+** parse a notebook file
+#+BEGIN_SRC elisp
+(defun literate-org-import-ipynb-file (file)
+  (interactive "f")
+  (let* ((data (json-read-file file))
+         (cells (coerce (cdr (assoc 'cells data)) 'list))
+         (current-org-level (org-current-level)))
+    (dolist (cell cells)
+      (let ((cell-type (cdr (assoc 'cell_type cell)))
+            (source (string-join (coerce (cdr (assoc 'source cell)) 'list))))
+        (cond ((string= cell-type "code")
+               (if (string-prefix-p "!" source) 
+                 (progn
+                   (loop repeat (1+ current-org-level) do (insert "*"))
+                   (insert " A shell command" "\n")
+                   (insert "#+BEGIN_SRC " "sh" "\n")
+                   (insert (subseq source 1))
+                   (insert "\n#+END_SRC\n"))
+                 (let ((src-file (make-temp-file "literate-org-ipynb-code" nil ".py"))
+                       (language 'python))
+                   (with-temp-file src-file
+                     (insert source))
+                   (let ((code-blocks
+                          (with-current-buffer (find-file-noselect src-file)
+                            (cdr (literate-org-get-code-blocks-in-current-buffer
+                                  language "" 1)))))
+                     (delete-file src-file)
+                     (loop for block in code-blocks do
+                       (loop repeat (literate-org-code-block-level block) do (insert "*"))
+                       (insert " " (literate-org-code-block-title block) "\n")
+                       (insert "#+BEGIN_SRC " (literate-org-babel-language-name (literate-org-code-block-language block)))
+                       (if (loop for prefix in literate-org-ipynb-tangled-prefix-patterns
+                                 never (string-prefix-p prefix (literate-org-code-block-title block)))
+                         (insert " :tangle no"))
+                       (insert "\n" (literate-org-code-block-body block))
+                       (insert "\n#+END_SRC\n"))))))
+              ((string= cell-type "markdown")
+               (insert (literate-org-markdown-to-org source) "\n")
+               (setf current-org-level (org-current-level))))))))
+#+END_SRC
+
+* Tips
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+** how to start django server in REPL
+#+BEGIN_SRC python
+import os
+import django
+from django.core.management import call_command
+from threading import Thread
+
+# Set up Django environment
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
+django.setup()
+
+# Function to start the server
+def start_server():
+    call_command('runserver', '127.0.0.1:8000', '--noreload')
+
+# Start the server in a new thread
+server_thread = Thread(target=start_server)
+server_thread.start()
+
+print("Django server started on http://127.0.0.1:8000")
+#+END_SRC
+* References
+- [[https://peps.python.org/pep-0302/][PEP 302 -- New Import Hooks]]
+- [[https://nbdev.fast.ai/tutorials/tutorial.html][nbdev]] (Create delightful software with Jupyter Notebooks)
+  - [[https://hallmx.github.io/nbd_colab/][nbd_colab]]
+- [[https://emacs-tree-sitter.github.io/api/inspecting/][tree-sitter]]

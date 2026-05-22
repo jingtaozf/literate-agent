@@ -1,0 +1,224 @@
+#+TITLE: literate-org Architecture
+#+OPTIONS: toc:2
+
+* Purpose
+
+This file is the *invariant ledger* — what's true about the system that
+isn't obvious from reading any single file. Future-you (and any future
+agent) reads this first.
+
+If a fact here contradicts the code, the code is wrong: the doc is the
+spec, not a description.
+
+* Module map
+
+| Module                                | Tangle target                                                   | Role                                                                              |
+|---------------------------------------+-----------------------------------------------------------------+-----------------------------------------------------------------------------------|
+| =literate_python.__init__=             | =literate_python/__init__.py=                                    | Package init; thin                                                                |
+| =literate_python.__main__=             | =literate_python/__main__.py=                                    | =python -m literate_python= entry → starts Flask server                           |
+| =literate_python.loader=               | =literate_python/loader.py=                                      | =LiterateModuleFinder=, =LiterateImporter=, in-memory module spec store           |
+| =literate_python.reloader=             | =literate_python/reloader.py=                                    | =extract_imports_from_code=, =ModuleReloader= dependency walker, hot-reload propagation |
+| =literate_python.server=               | =literate_python/server.py=                                      | Flask =/lpy/execute=, =/lpy/register=, =/lpy/status=; =server_locals= cross-request map |
+| =literate_python.sections=             | =literate_python/sections.py=                                    | =optimal_clusters= (silhouette KMeans) — semantic clustering of code blocks       |
+| =literate_python.inspector=            | =literate_python/inspector.py=                                   | =_inspect= multimethod for serialising Python values to JSON-friendly shapes      |
+| =literate_python.tests.test_server=    | =literate_python/tests/test_server.py=                           | locals-propagation tests                                                          |
+| =literate_python.tests.test_hot_reload=| =literate_python/tests/test_hot_reload.py=                       | end-to-end =process_a_message= round-trips with hot reload                        |
+
+The Emacs Lisp side has no tangle target — =literate-elisp-load=
+reads the org file directly. See =literate-org.org= sections under
+"A minor mode for literate org", "Source Code Execution",
+"Sync between org files and source files", etc.
+
+* Invariants
+
+These hold throughout the runtime. Breaking one is a regression.
+
+** Importer
+
+- =LiterateImporter= must sit on =sys.meta_path= *before* any literate
+  =import= happens. =register_literate_module_finder()= installs it
+  and is *idempotent* (guards against double-install via instance check).
+- The in-memory dict =inMemoryModules= stores =module-spec dicts= keyed
+  by the fully-qualified module name. =register_literate_modules(list)=
+  appends; nothing currently retires entries on its own.
+- A module name *must* match its =:LITERATE_ORG_MODULE:= property. The
+  importer resolves =foo.bar= by looking up =inMemoryModules["foo.bar"]=
+  with a fallback to =inMemoryModules["foo.bar.__init__"]=.
+
+** Hot reload
+
+- =ModuleReloader.modules= is keyed by module name; entries hold
+  =top_level_names=, =imports= (=ImportData= list), =imported_by=.
+- A module's =imported_by= is *populated lazily* when other modules
+  declare imports from it; if a dependent isn't yet known, propagation
+  silently skips it. This is intentional — load order can't always
+  be assumed.
+- =update_dependent_modules(source)= bails early if =source= isn't in
+  =sys.modules= or wasn't tracked. Both early-bail conditions are
+  silent; callers can't distinguish "no dependents" from "source not
+  tracked". If you ever need to surface the difference, change return
+  type, not log message.
+
+** Server
+
+- =server_locals= is a *process-global* dict, mutated cross-request on
+  =/lpy/execute= when =type == "exec"= and the executed code rebinds a
+  top-level name that's already in =server_locals=. This is *intentional*
+  — it's how the Emacs side observes locals across requests.
+- The server runs Flask in single-process, single-thread mode by
+  default (=use_reloader=False=). Concurrency-correctness assumptions
+  rely on this. Switching to a threaded WSGI runner without auditing
+  every =server_locals= access would be a regression (see
+  Lens #15 in the AI-codebase-mastery research — concurrency 2× error
+  rate when AI extends single-thread code to multi-thread).
+- =/lpy/execute= runs *arbitrary* Python in the chosen module
+  namespace. **Not safe to expose beyond localhost.**
+
+** Tangle pipeline
+
+- =literate-org.org= is the source of truth for both Python and Emacs Lisp.
+  =literate_python/*.py= are tangle artefacts; humans on the team may
+  edit them directly when they don't use Emacs, but the maintainer's
+  AI agent must not (PreToolUse hook enforces).
+- =literate-org-tangle-buffer= is the *whole-buffer* tangle path
+  (after-save-hook target + emacsclient hook target). It runs
+  =org-babel-tangle= followed by =poetry run black= over the .py
+  output directories. Black is required because per-block formatting
+  via =python-black-org-mode-block= can't enforce inter-definition
+  rules (PEP 8 two-blank-line) — that needs post-tangle awareness.
+- =literate-org-tangle-current-file= is the *point-based* legacy path,
+  retained as an =M-x= interactive command; not bound to any hook.
+
+** Lint contracts
+
+- =make check-structure= passes ⇔ =literate-org.org= has no depth>5,
+  no =Functions/Helpers/Utilities/Misc/Things/Stuff= grab-bag headings,
+  every section that tangles to =literate_python/*.py= has at least
+  one prose line before its first src block.
+- =make check-nl-outline= passes ⇔ every Python function in
+  =literate_python/= whose body is ≥40 lines has =# # = partition
+  comments, each covering ≥3 source lines.
+- Both are pre-commit gates; HEAD is required to pass.
+
+* Trust boundaries
+
+#+begin_example
+,#+begin_src text
+   ┌─────────────────────────────────────────────────────────┐
+   │  literate-org.org   (source of truth)                   │
+   │  - prose                                                 │
+   │  - python src blocks (:tangle ./literate_python/...)    │
+   │  - elisp src blocks  (no tangle; loaded directly)       │
+   └────────────┬────────────────────────────────────────────┘
+                │ tangle (PostToolUse hook OR after-save-hook)
+                ▼
+   ┌─────────────────────────────────────────────────────────┐
+   │  literate_python/*.py                                   │
+   │  - generated (idempotent, Black-formatted)              │
+   │  - editable by team members who don't use Emacs         │
+   │  - PreToolUse hook rejects AI agent direct edits        │
+   └────────────┬────────────────────────────────────────────┘
+                │ python -m literate_python
+                ▼
+   ┌─────────────────────────────────────────────────────────┐
+   │  Flask server on $LITERATE_PYTHON_HOST:$PORT            │
+   │  - /lpy/execute  arbitrary code in chosen module        │
+   │  - /lpy/register  registers org-derived module specs    │
+   │  - /lpy/status                                           │
+   │  *** TRUSTED BOUNDARY: localhost ONLY ***               │
+   └─────────────────────────────────────────────────────────┘
+,#+end_src
+#+end_example
+
+* Things that look refactorable but aren't
+
+** The big per-language node-name dispatch blocks
+
+In =literate-org.org= near lines 2645 (Python), 2825 (TSX, mislabeled
+under "vue"), and 3050 (vue-html), the cl-defmethod for
+=literate-org-node-name= is consolidated into one src block per language
+with =;; <node-type>= comments between methods.
+
+This violates "one block = one meaningful step" mildly but
+intentionally — see commit =6f4ccfb=. The rationale: a dispatch table
+is *one* logical step (an override surface for one language). Spreading
+it across nine separate sub-sections drove depth-6 nesting and made the
+table un-scannable.
+
+If you find yourself wanting to "clean this up by splitting", read
+the commit message first.
+
+** =literate-org-tangle-current-file= and =literate-org-tangle-buffer= coexist
+
+- =-current-file=: point-based, interactive (=M-x=). Tangles the block at
+  point. Useful when you've made one specific edit and want a fast
+  per-block tangle.
+- =-buffer=: whole-buffer (no point dependency). Bound to the
+  after-save-hook and to =literate-org-tangle-by-path=. Idempotent;
+  ~3-5 s for the current org file size.
+
+Both stay. Don't unify.
+
+** =Co-Authored-By:= is forbidden
+
+Per user's global rule. Don't try to "improve" commit messages by
+adding it. The strict-LP discipline gives per-section attribution via
+the org prose, which is richer than per-line trailers. See
+=tasks/lessons.md= for the deferred-to-later decision.
+
+** literate-elisp does not expand noweb
+
+Python tangle goes through =org-babel-tangle= and *does* support noweb
+references (=:noweb yes=, =<<chunk-name>>=). Elisp loads through
+=literate-elisp-load= which reads src blocks one at a time and *does
+not expand noweb*. Adding =:noweb yes= to an elisp block silently breaks
+loading.
+
+This came up during the Bucket B1 architecture pass — see commits
+=0832e4b=, =9ccf92b=, =6f4ccfb=.
+
+* External contracts
+
+** Environment variables
+
+| Var                         | Default     | Used by                      |
+|-----------------------------+-------------+------------------------------|
+| =LITERATE_PYTHON_HOST=        | =127.0.0.1=  | =literate_python.__main__=    |
+| =LITERATE_PYTHON_PORT=        | =7330=       | =literate_python.__main__=    |
+| =LITERATE_ORG_NO_AUTO_TANGLE= | unset       | =.claude/hooks/tangle-org-buffer.sh= — bypass auto-tangle |
+| =CLAUDE_PROJECT_DIR=          | (set by Claude Code) | hook scripts |
+
+** HTTP endpoints
+
+| Path           | Method | Body                                      | Returns                                |
+|----------------+--------+-------------------------------------------+----------------------------------------|
+| =/lpy/status=    | GET    | —                                         | =200 ok=                                |
+| =/lpy/register=  | POST   | JSON: list of =module-spec= dicts          | =200= + JSON ack                        |
+| =/lpy/execute=   | POST   | JSON: =type=, =code=, =module=, optional   | =200= + JSON: =result/locals/stdout/stderr/updated_modules= |
+
+** Make targets (canonical list)
+
+| Target              | Effect                                                   |
+|---------------------+----------------------------------------------------------|
+| =make build=          | =poetry build=                                            |
+| =make publish=        | =poetry publish --build= (token required)                 |
+| =make lint=           | =black .= + =flake8=                                       |
+| =make check-structure= | structural lint over =literate-org.org=                  |
+| =make check-nl-outline=| NL-outline lint over =literate_python/*.py=              |
+| =make tangle FILE=...= | batch tangle (emacs --batch + Black)                     |
+| =make index=          | regenerate =INDEX.org=                                    |
+| =make secret-scan=    | gitleaks across all files                                 |
+| =make dev=            | marimo notebook                                           |
+| =make server=         | start Flask server                                        |
+
+* When to update this file
+
+- A new module is added under =literate_python/= → add a row to *Module map*.
+- An invariant becomes provable code (e.g. =register_literate_module_finder=
+  becomes truly idempotent or stops being so) → update *Invariants*.
+- A new env var is introduced → *External contracts*.
+- A "this looks refactorable but isn't" trap is discovered → *Things
+  that look refactorable*.
+
+The file should grow slowly. If it's becoming a wiki, push detail down
+into =literate-org.org= prose and keep this as the index.

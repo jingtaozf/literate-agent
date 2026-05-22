@@ -1,0 +1,86 @@
+[tool.poetry]
+name = "literate_python"
+version = "0.0.6"
+description = "Develop Python modules in Org files."
+authors = ["Jingtao Xu <jingtaozf@gmail.com>"]
+license = "MIT"
+# PEP-621 `[project].readme` (below) is the canonical reference; PyPI
+# renders Markdown but not org-mode, so the distribution-side README is
+# README.md. The richer README.org is the repo-side doc and links into
+# AGENTS.md / ARCHITECTURE.org.
+
+[tool.poetry.dependencies]
+python = "^3.10"
+flask = "^3.0.3"
+orgparse = "^0.4.20231004"
+multimethod = "^2.0"
+sentence-transformers = "^3.4.1"
+scikit-learn = "^1.6.1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+flake8 = "^7.1.1"
+marimo = "^0.8.7"
+openai = "^1.43.0"
+ipykernel = "^6.29.5"
+ipython = "^8.27.0"
+jupyterlab = "^4.2.5"
+bumpver = "^2023.1129"
+build = "^1.2.2"
+twine = "^5.1.1"
+vulture = "^2.16"
+
+[tool.vulture]
+# Dead-code analysis. Three suppression layers:
+#   1. vulture_whitelist.py — explicit references for symbols vulture's
+#      static scan can't see (Python import-protocol, Flask routes,
+#      multimethod dispatch surfaces, pytest discovery).
+#   2. ignore_decorators — multimethod overloads via @_inspect.register.
+#   3. ignore_names — CPython module attrs set on dynamically-created
+#      modules, ModuleData dataclass fields seen via getattr, and the
+#      pytest test_* discovery convention.
+# min_confidence = 60 catches top-level dead functions (which 80 misses).
+paths = ["literate_python", "vulture_whitelist.py"]
+min_confidence = 60
+ignore_decorators = ["@_inspect.register"]
+ignore_names = [
+    "__loader__", "__path__", "__package__",
+    "last_modified", "old_objects",
+    "test_*", "test1",
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+[project]
+name = "literate_python"
+description = "Develop Python modules in Org files."
+dynamic = ["version"]
+# We try to keep dependencies to a minimum, to avoid conflicts with
+# user environments;we need a very compelling reason for each dependency added.
+# Dependencies should have lower bounds, which should be as loose as possible.
+dependencies = [
+    "flask",
+    "orgparse",
+    "multimethod",
+    # for packaging.version; not sure what the lower bound is.
+    "packaging",
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+]
+
+[project.urls]
+Homepage = "https://github.com/jingtaozf/literate-org"

@@ -1,0 +1,6 @@
+include LICENSE
+include README.md
+include README.org
+include AGENTS.md
+include ARCHITECTURE.org
+recursive-exclude * __pycache__
