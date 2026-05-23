@@ -283,6 +283,32 @@ lp-sync-bootstrap lp/$SUB/client.org   # re-stamp SHA back to test state
 This sequence is the canonical "first useful sync" — proves the
 engine works against real source.
 
+* Cosmetic side effects (not failures)
+:PROPERTIES:
+:CUSTOM_ID: cosmetic-side-effects
+:END:
+
+These are *expected diff artifacts* that don't affect correctness.
+Mentioning here so they're not confused with real failure modes.
+
+** Pass A full-body replace strips trailing blank lines
+:PROPERTIES:
+:CUSTOM_ID: trailing-blank-strip
+:END:
+
+When =Pass A modify-full-body= fires (block contains exactly one
+def in =:CONTAINS_DEFS:=), the entire src block body is replaced
+with the source def's text via Python =ast.get_source_segment=.
+That function does NOT preserve trailing blank-line padding the
+.org may have had.
+
+Net effect: .org diff shows one removed blank line just before
+=#+END_SRC=. Tangle output is still byte-equiv with source — the
+cosmetic strip aligns the .org with what source actually has.
+
+E2E run 2026-05-23 confirmed: source diff empty after apply +
+tangle, despite .org showing the blank-line removal.
+
 * Common failure modes
 :PROPERTIES:
 :CUSTOM_ID: failure-modes
