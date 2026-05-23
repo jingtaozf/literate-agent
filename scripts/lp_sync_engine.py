@@ -435,7 +435,12 @@ class OrgFileParser:
             # Heading
             m = HEADING_RE.match(line)
             if m and not in_src:
-                if current_block is not None and current_block.src_lang:
+                # Include EVERY heading in org.blocks — even drawer-only
+                # ones (no #+begin_src). Inheritance walk relies on the
+                # full hierarchy to propagate :header-args from ancestor
+                # to descendant. Consumers that only care about src-bearing
+                # blocks can filter with `b.src_lang`.
+                if current_block is not None:
                     org.blocks.append(current_block)
                 depth = len(m.group(1))
                 current_block = OrgBlock(
@@ -519,7 +524,7 @@ class OrgFileParser:
                 for cm in NOWEB_CHUNK_RE.finditer(line):
                     current_block.chunk_refs_in_body.append(cm.group(1))
 
-        if current_block is not None and current_block.src_lang:
+        if current_block is not None:
             org.blocks.append(current_block)
 
         # Post-pass: propagate inherited :noweb-ref and :tangle path from

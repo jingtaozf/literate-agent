@@ -230,6 +230,11 @@ def v4_tangle_paths(files: list[Path]) -> list[dict]:
         for block in org.blocks:
             if not block.tangle_path or block.tangle_path == "no":
                 continue
+            # Template placeholder paths (e.g. `../../repos/<sub>/...`)
+            # have literal `<>` brackets — they're intentionally
+            # unresolvable. Skip V4 for these.
+            if "<" in block.tangle_path or ">" in block.tangle_path:
+                continue
             target = (f.parent / block.tangle_path).resolve()
             # Allow target to not yet exist (file to be created), but
             # parent dir must exist; otherwise tangle would fail.

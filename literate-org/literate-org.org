@@ -634,6 +634,9 @@ Mapping from org structure to Python packages:
 :header-args: :tangle ./literate_python/__init__.py
 :END:
 **** Assignment __version__
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: __version__
+:END:
 #+BEGIN_SRC python
 __version__ = "0.0.5"
 
@@ -672,11 +675,17 @@ import orgparse
 
 #+END_SRC
 **** logger
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: logger
+:END:
 #+BEGIN_SRC python
 logger = logging.getLogger(__name__)
 
 #+END_SRC
 **** in-memory module storage
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: register_literate_modules
+:END:
 
 A process-global =inMemoryModules= dict holds loaded module specs so
 =LiterateImporter= can hand back the right code without re-parsing
@@ -697,6 +706,9 @@ def register_literate_modules(module_spec_list: list) -> None:
 
 #+END_SRC
 **** find a module
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _get_module_spec
+:END:
 #+BEGIN_SRC python
 def _get_module_spec(fullname: str) -> bool:
     return inMemoryModules.get(fullname) or inMemoryModules.get(fullname + ".__init__")
@@ -704,6 +716,9 @@ def _get_module_spec(fullname: str) -> bool:
 #+END_SRC
 
 **** a literate module importer
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: LiterateImporter LiterateImporter.find_module LiterateImporter.load_module
+:END:
 #+BEGIN_SRC python
 class LiterateImporter(object):
     def find_module(self, fullname: str, _path=None):
@@ -730,6 +745,9 @@ class LiterateImporter(object):
 
 #+END_SRC
 **** Register the Loader with the Import System
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: LiterateModuleFinder LiterateModuleFinder.find_spec
+:END:
 #+BEGIN_SRC python
 class LiterateModuleFinder(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, _path, _target=None):
@@ -740,6 +758,9 @@ class LiterateModuleFinder(importlib.abc.MetaPathFinder):
 
 #+END_SRC
 **** a routine to register the finder
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: register_literate_module_finder
+:END:
 #+BEGIN_SRC python
 def register_literate_module_finder():
     sys.meta_path = [
@@ -750,6 +771,9 @@ def register_literate_module_finder():
 
 #+END_SRC
 **** operations with org files
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: build_org_model_from_local_python_package
+:END:
 
 Three I/O entry points the importer needs once it has been wired into
 =sys.meta_path=. =load_literate_modules_from_org_file= reads a path
@@ -797,6 +821,9 @@ from sklearn.metrics import silhouette_score
 
 #+END_SRC
 **** optimal_clusters
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: optimal_clusters
+:END:
 #+BEGIN_SRC python
 def optimal_clusters(definitions, embeddings, min_k=2, max_k=10, threshold=0.05):
     """
@@ -872,6 +899,9 @@ def optimal_clusters(definitions, embeddings, min_k=2, max_k=10, threshold=0.05)
 
 #+END_SRC
 **** example
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: test_optimal_clusters
+:END:
 #+BEGIN_SRC python
 # Example usage:
 def test_optimal_clusters():
@@ -924,11 +954,17 @@ import logging
 
 #+END_SRC
 **** Logger setup
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: logger
+:END:
 #+BEGIN_SRC python
 logger = logging.getLogger(__name__)
 
 #+END_SRC
 **** ImportData dataclass
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: ImportData
+:END:
 #+BEGIN_SRC python
 @dataclass
 class ImportData:
@@ -941,6 +977,9 @@ class ImportData:
 
 #+END_SRC
 **** ModuleInfo dataclass
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: ModuleInfo
+:END:
 #+BEGIN_SRC python
 @dataclass
 class ModuleInfo:
@@ -953,6 +992,9 @@ class ModuleInfo:
 
 #+END_SRC
 **** Extract imports from AST
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: extract_imports_from_code
+:END:
 #+BEGIN_SRC python
 def extract_imports_from_code(code: str, module_name: str) -> List[ImportData]:
     """Extract import statements from Python code."""
@@ -1001,6 +1043,9 @@ def extract_imports_from_code(code: str, module_name: str) -> List[ImportData]:
 
 #+END_SRC
 **** ModuleReloader class
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: ModuleReloader ModuleReloader.__init__ ModuleReloader.clear_stale_modules ModuleReloader.find_dependent_modules ModuleReloader.get_import_info ModuleReloader.register_module ModuleReloader.track_module_execution ModuleReloader.update_dependent_modules
+:END:
 #+BEGIN_SRC python
 class ModuleReloader:
     """Manages module dependencies and hot reloading."""
@@ -1182,22 +1227,34 @@ from literate_python.reloader import ModuleReloader
 
 #+END_SRC
 **** Assignment logger
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: logger
+:END:
 #+BEGIN_SRC python
 logger = logging.getLogger(__name__)
 
 #+END_SRC
 **** Assignment app
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: app
+:END:
 #+BEGIN_SRC python
 app = Flask(__name__)
 
 #+END_SRC
 **** Module reloader instance
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: module_reloader
+:END:
 #+BEGIN_SRC python
 # Global module reloader instance
 module_reloader = ModuleReloader()
 
 #+END_SRC
 **** collect names in a code
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: get_top_level_names
+:END:
 #+BEGIN_SRC python
 def get_top_level_names(code):
     tree = ast.parse(code)
@@ -1229,6 +1286,9 @@ def get_top_level_names(code):
 #+END_SRC
 
 **** locals in current port
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: server_locals
+:END:
 #+BEGIN_SRC python
 #: app locals in current port
 server_locals = {}
@@ -1236,6 +1296,9 @@ server_locals = {}
 #+END_SRC
 
 **** ensure a module is loaded
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: ensure_module
+:END:
 #+BEGIN_SRC python
 def ensure_module(module_name, module_create_method):
     """Ensure a module is loaded and return it."""
@@ -1267,6 +1330,9 @@ def ensure_module(module_name, module_create_method):
 #+END_SRC
 
 **** Function process_a_message
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: process_a_message
+:END:
 #+BEGIN_SRC python
 def process_a_message(message):
     # # Capture buffers and the slots that will hold the response.
@@ -1365,6 +1431,9 @@ def process_a_message(message):
 
 #+END_SRC
 **** register
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: register
+:END:
 #+BEGIN_SRC python
 def register(request):
     # Get JSON data
@@ -1389,6 +1458,9 @@ def register(request):
 #+END_SRC
 
 **** @app.route('/lpy/register, methods=['POST']): register literate modules
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: register_router
+:END:
 #+BEGIN_SRC python
 @app.route("/lpy/register", methods=["POST"])
 def register_router():
@@ -1396,6 +1468,9 @@ def register_router():
 
 #+END_SRC
 **** execute
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _execute
+:END:
 #+BEGIN_SRC python
 def _execute(request):
     # Get JSON data
@@ -1414,6 +1489,9 @@ def _execute(request):
 #+END_SRC
 
 **** @app.route('/execute', methods=['POST']): Function execute
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: execute
+:END:
 #+BEGIN_SRC python
 @app.route("/lpy/execute", methods=["POST"])
 def execute():
@@ -1422,6 +1500,9 @@ def execute():
 #+END_SRC
 
 **** status
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _status
+:END:
 #+BEGIN_SRC python
 def _status(request):
     return jsonify({"status": "ok"})
@@ -1429,6 +1510,9 @@ def _status(request):
 #+END_SRC
 
 **** status router
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: status
+:END:
 #+BEGIN_SRC python
 @app.route("/lpy/status", methods=["GET"])
 def status():
@@ -1437,6 +1521,9 @@ def status():
 #+END_SRC
 
 **** Function run_web_server
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: run_server
+:END:
 #+BEGIN_SRC python
 def run_server():
     host = "127.0.0.1"
@@ -1477,6 +1564,9 @@ from literate_python.server import process_a_message
 
 #+END_SRC
 **** Test extract imports from code
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: TestExtractImports TestExtractImports.test_from_import TestExtractImports.test_from_import_with_alias TestExtractImports.test_import_with_alias TestExtractImports.test_simple_import TestExtractImports.test_wildcard_import
+:END:
 #+BEGIN_SRC python
 class TestExtractImports(unittest.TestCase):
     """Test the import extraction functionality."""
@@ -1529,6 +1619,9 @@ class TestExtractImports(unittest.TestCase):
 
 #+END_SRC
 **** Test ModuleReloader
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: TestModuleReloader TestModuleReloader.setUp TestModuleReloader.tearDown TestModuleReloader.test_find_dependent_modules TestModuleReloader.test_register_module TestModuleReloader.test_track_module_execution TestModuleReloader.test_update_dependent_modules_with_alias
+:END:
 #+BEGIN_SRC python
 class TestModuleReloader(unittest.TestCase):
     """Test the ModuleReloader class."""
@@ -1643,6 +1736,9 @@ from module_a import value as my_value
 
 #+END_SRC
 **** Test integration with process_a_message
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: TestProcessMessageIntegration TestProcessMessageIntegration.setUp TestProcessMessageIntegration.tearDown TestProcessMessageIntegration.test_exec_with_hot_reload TestProcessMessageIntegration.test_exec_with_import_alias
+:END:
 #+BEGIN_SRC python
 class TestProcessMessageIntegration(unittest.TestCase):
     """Test hot reload integration with process_a_message."""
@@ -1800,6 +1896,9 @@ def compute():
 
 #+END_SRC
 **** Run all tests
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: run_all_tests
+:END:
 #+BEGIN_SRC python
 def run_all_tests():
     """Run all hot reload tests."""
@@ -2103,6 +2202,9 @@ from multimethod import multimethod
 #+END_SRC
 *** Utility functions
 **** stringify a variable
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: stringify_val
+:END:
 #+BEGIN_SRC python
 def stringify_val(member):
     key, val = member
@@ -2114,6 +2216,9 @@ def stringify_val(member):
 
 #+END_SRC
 **** is trash
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: is_trash
+:END:
 #+BEGIN_SRC python
 def is_trash(member):
     key, val = member
@@ -2126,6 +2231,9 @@ def is_trash(member):
 
 #+END_SRC
 **** Turns a non-primitive obj into a dictionary of its fields and their values.
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _pyinspect_inspect_object
+:END:
 #+BEGIN_SRC python
 def _pyinspect_inspect_object(obj):
     """
@@ -2137,6 +2245,9 @@ def _pyinspect_inspect_object(obj):
 
 #+END_SRC
 **** Surrounds string key with extra quotes
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _pyinspect_add_quotes
+:END:
 #+BEGIN_SRC python
 def _pyinspect_add_quotes(key):
     """
@@ -2153,6 +2264,9 @@ def _pyinspect_add_quotes(key):
 
 #+END_SRC
 **** trim_seq
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: trim_seq
+:END:
 #+BEGIN_SRC python
 def trim_seq(seq, elem_cap):
     if type(seq) is dict:
@@ -2162,6 +2276,9 @@ def trim_seq(seq, elem_cap):
 
 #+END_SRC
 **** Returns a new dictionary with the first n pairs from d
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _pyinspect_take_dict
+:END:
 #+BEGIN_SRC python
 def _pyinspect_take_dict(d: Dict, n: int):
     "Returns a new dictionary with the first n pairs from d"
@@ -2179,6 +2296,9 @@ def _pyinspect_take_dict(d: Dict, n: int):
 #+END_SRC
 *** Dispatches the appropriate inspection according to obj type
 **** generic method
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _inspect
+:END:
 #+BEGIN_SRC python
 @multimethod
 def _inspect(obj) -> dict:
@@ -2186,6 +2306,9 @@ def _inspect(obj) -> dict:
 
 #+END_SRC
 **** str
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: str) -> dict:
@@ -2193,6 +2316,9 @@ def _(obj: str) -> dict:
 
 #+END_SRC
 **** bool
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: bool) -> dict:
@@ -2200,6 +2326,9 @@ def _(obj: bool) -> dict:
 
 #+END_SRC
 **** int
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: int) -> dict:
@@ -2207,6 +2336,9 @@ def _(obj: int) -> dict:
 #+END_SRC
 
 **** float
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: float) -> dict:
@@ -2214,12 +2346,18 @@ def _(obj: float) -> dict:
 #+END_SRC
 
 **** complex
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: complex) -> dict:
     return {"type": "complex", "value": obj}
 #+END_SRC
 **** tuple
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: tuple) -> dict:
@@ -2231,6 +2369,9 @@ def _(obj: tuple) -> dict:
 #+END_SRC
 
 **** list
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: list) -> dict:
@@ -2242,6 +2383,9 @@ def _(obj: list) -> dict:
 #+END_SRC
 
 **** dict
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: dict) -> dict:
@@ -2253,6 +2397,9 @@ def _(obj: dict) -> dict:
 #+END_SRC
 
 **** datetime
+:PROPERTIES:
+:LITERATE_ORG_CONTAINS_DEFS: _
+:END:
 #+BEGIN_SRC python
 @_inspect.register  # type: ignore
 def _(obj: datetime) -> dict:
