@@ -33,7 +33,7 @@
   stages: [pre-commit]
 
 - id: lp-audit-anchors
-  name: LP audit :CUSTOM_ID: coverage on multi-ref sections
+  name: "LP audit :CUSTOM_ID: coverage on multi-ref sections"
   description: |
     Targeted check — flags multi-referenced headings missing
     :CUSTOM_ID:. Useful as a soft gate on PRs introducing new
