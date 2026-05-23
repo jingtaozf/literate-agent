@@ -8,6 +8,9 @@
 #+PROPERTY: literate-insert-header no
 #+PROPERTY: header-args :results silent :session :tangle no
 #+PROPERTY: LITERATE_ORG_EXPORT_DIRECTORY: ./literate_python
+#+PROPERTY: LITERATE_ORG_SOURCE_SHA 186d1a7555bb35a1472a7ab4ef3957831639d621
+#+PROPERTY: LITERATE_ORG_SOURCE_SHA_DATE 2026-05-23T07:07:41Z
+#+PROPERTY: LITERATE_ORG_TREESIT_GRAMMAR_HASH 186d1a7555bb35a1472a7ab4ef3957831639d621
 * Table of Contents                                            :noexport:TOC:
 - [[#introduction][Introduction]]
 - [[#a-minor-mode-for-literate-org][A minor mode for literate org]]
@@ -626,6 +629,7 @@ Mapping from org structure to Python packages:
 :END:
 *** __init__
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.__init__
 :header-args: :tangle ./literate_python/__init__.py
 :END:
@@ -636,6 +640,7 @@ __version__ = "0.0.5"
 #+END_SRC
 *** __main__
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.__main__
 :header-args: :tangle ./literate_python/__main__.py
 :END:
@@ -651,6 +656,7 @@ run_server()
 #+END_SRC
 *** literate module loader
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.loader
 :header-args: :tangle ./literate_python/loader.py
 :END:
@@ -773,6 +779,7 @@ def build_org_model_from_local_python_package(_package_path: str) -> str:
 #+END_SRC
 *** build hierarchical code structure
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.sections
 :header-args: :tangle ./literate_python/sections.py
 :END:
@@ -901,6 +908,7 @@ def test_optimal_clusters():
 
 *** module reloader
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.reloader
 :header-args: :tangle ./literate_python/reloader.py
 :END:
@@ -1143,6 +1151,7 @@ class ModuleReloader:
 
 *** web server
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.server
 :header-args: :tangle ./literate_python/server.py
 :END:
@@ -1449,11 +1458,13 @@ def run_server():
 :END:
 *** test update locals in marimo notebook automatically 
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.tests.test_server
 :header-args: :tangle ./literate_python/tests/test_server.py
 :END:
 *** test hot reload functionality
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.tests.test_hot_reload
 :header-args: :tangle ./literate_python/tests/test_hot_reload.py
 :END:
@@ -2078,6 +2089,7 @@ plain hash without worrying about prior writes.
 #+END_SRC
 * Python inspector for Emacs
 :PROPERTIES:
+:LITERATE_ORG_BLOCK_KIND: atomic
 :LITERATE_ORG_MODULE: literate_python.inspector
 :header-args: :tangle ./literate_python/inspector.py
 :END:

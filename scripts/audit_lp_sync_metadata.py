@@ -59,10 +59,22 @@ def parse_iso8601(s: str) -> bool:
 
 def has_tangle(text: str) -> bool:
     """Check whether file contains at least one real :tangle target
-    (excluding :tangle no)."""
-    for m in TANGLE_RE.finditer(text):
-        if m.group(1) != "no":
-            return True
+    (excluding :tangle no).
+
+    Scans only CONTEXTS where :tangle is meaningful (#+begin_src lines,
+    :header-args inside drawer, #+PROPERTY: header-args), ignoring
+    prose mentions like `the =:tangle <path>= header...` or ASCII
+    diagram annotations.
+    """
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not (line.lower().startswith("#+begin_src")
+                or stripped.startswith(":header-args")
+                or (line.startswith("#+PROPERTY:") and ":tangle" in line)):
+            continue
+        for m in TANGLE_RE.finditer(line):
+            if m.group(1) != "no":
+                return True
     return False
 
 
