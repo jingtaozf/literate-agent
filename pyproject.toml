@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "literate-agent-scripts"
 version = "0.1.0"
 description = "LP source-drift roundtrip protocol — bootstrap, audit, sync engine, protocol verifier"
-readme = "README.org"
+readme = {file = "README.org", content-type = "text/plain"}
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
