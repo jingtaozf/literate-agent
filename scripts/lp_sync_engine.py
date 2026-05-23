@@ -128,6 +128,217 @@ class PythonDefExtractor:
 
 
 # ──────────────────────────────────────────────────────────────────
+# Tree-sitter-based extractors (TypeScript + Rust)
+# ──────────────────────────────────────────────────────────────────
+#
+# Tree-sitter Python bindings load the language grammar as a native
+# library at first use; we lazily import to keep cold-start fast and
+# to avoid hard-failing if a language binding is missing.
+
+class _TreeSitterExtractor:
+    """Base class: AST walk via tree-sitter, dispatched on node-type
+    via subclass-supplied label maps."""
+
+    LANGUAGE_MODULE: str = ""   # e.g. "tree_sitter_typescript"
+    LANGUAGE_ATTR: str = ""     # e.g. "language_typescript" or "language_tsx"
+    DEFINITION_NODE_TYPES: dict[str, str] = {}
+    # node.type → kind label
+
+    # node-type → name-extraction strategy:
+    #   "by-field:<field>"   — node.child_by_field_name(<field>).text
+    #   "first-identifier"   — first descendant of type "identifier"
+    #   "impl-rust"          — special Rust impl-block compound name
+    NAME_STRATEGY: dict[str, str] = {}
+
+    def __init__(self):
+        self._parser = None  # lazy
+
+    def _ensure_parser(self):
+        if self._parser is not None:
+            return
+        try:
+            import tree_sitter
+            module = __import__(self.LANGUAGE_MODULE)
+            language_callable = getattr(module, self.LANGUAGE_ATTR)
+            lang = tree_sitter.Language(language_callable())
+            self._parser = tree_sitter.Parser(lang)
+        except Exception as exc:
+            self._parser = exc  # sentinel: failed
+
+    def extract(self, source: str) -> dict[str, DefInfo]:
+        self._ensure_parser()
+        if not isinstance(self._parser, object) or self._parser is None or isinstance(self._parser, Exception):
+            return {}
+        src_bytes = source.encode("utf-8")
+        try:
+            tree = self._parser.parse(src_bytes)
+        except Exception:
+            return {}
+        result: dict[str, DefInfo] = {}
+        for child in tree.root_node.children:
+            self._handle_node(child, src_bytes, source, result)
+        return result
+
+    def _handle_node(self, node, src_bytes: bytes, source: str,
+                     result: dict[str, DefInfo]) -> None:
+        kind = self.DEFINITION_NODE_TYPES.get(node.type)
+        if kind is None:
+            # Unwrap export_statement / decorator wrappers
+            unwrapped = self._unwrap(node)
+            if unwrapped is None or unwrapped is node:
+                return
+            kind = self.DEFINITION_NODE_TYPES.get(unwrapped.type)
+            if kind is None:
+                return
+            node = unwrapped
+        name = self._extract_name(node, src_bytes)
+        if not name:
+            return
+        body_text = src_bytes[node.start_byte:node.end_byte].decode(
+            "utf-8", errors="replace")
+        start = node.start_point[0] + 1
+        end = node.end_point[0] + 1
+        result[name] = DefInfo(
+            fqn=name, kind=kind, body_text=body_text,
+            body_hash=hashlib.sha256(body_text.encode()).hexdigest()[:16],
+            start_line=start, end_line=end)
+
+    def _unwrap(self, node):
+        """Unwrap export-statement / similar wrappers around a real def."""
+        # Subclass override if needed
+        for child in node.children:
+            if child.type in self.DEFINITION_NODE_TYPES:
+                return child
+        return None
+
+    def _extract_name(self, node, src_bytes: bytes) -> str:
+        strategy = self.NAME_STRATEGY.get(node.type, "by-field:name")
+        if strategy.startswith("by-field:"):
+            field = strategy.split(":", 1)[1]
+            name_node = node.child_by_field_name(field)
+            if name_node is None:
+                return ""
+            return src_bytes[name_node.start_byte:name_node.end_byte].decode(
+                "utf-8", errors="replace")
+        if strategy == "first-identifier":
+            for c in node.children:
+                if c.type in ("identifier", "type_identifier"):
+                    return src_bytes[c.start_byte:c.end_byte].decode(
+                        "utf-8", errors="replace")
+            return ""
+        if strategy == "impl-rust":
+            return self._impl_name_rust(node, src_bytes)
+        return ""
+
+    def _impl_name_rust(self, node, src_bytes: bytes) -> str:
+        # impl Trait for Type → "Trait_for_Type"; impl Type → "Type"
+        trait_node = node.child_by_field_name("trait")
+        type_node = node.child_by_field_name("type")
+        trait = src_bytes[trait_node.start_byte:trait_node.end_byte].decode(
+            "utf-8", errors="replace").strip() if trait_node else ""
+        ty = src_bytes[type_node.start_byte:type_node.end_byte].decode(
+            "utf-8", errors="replace").strip() if type_node else ""
+        ty = re.sub(r"[<>,\s]+", "", ty)
+        if trait:
+            trait = re.sub(r"[<>,\s]+", "", trait)
+            return f"{trait}_for_{ty}"
+        return ty
+
+
+class TypescriptDefExtractor(_TreeSitterExtractor):
+    """Tree-sitter-based TS/TSX extractor (TypeScript grammar)."""
+
+    LANGUAGE_MODULE = "tree_sitter_typescript"
+    LANGUAGE_ATTR = "language_typescript"
+    DEFINITION_NODE_TYPES = {
+        "function_declaration":   "function",
+        "class_declaration":      "class",
+        "interface_declaration":  "interface",
+        "enum_declaration":       "enum",
+        "type_alias_declaration": "type",
+        "lexical_declaration":    "variable",  # const/let
+        "variable_declaration":   "variable",  # var
+    }
+    NAME_STRATEGY = {
+        "function_declaration":   "by-field:name",
+        "class_declaration":      "by-field:name",
+        "interface_declaration":  "by-field:name",
+        "enum_declaration":       "by-field:name",
+        "type_alias_declaration": "by-field:name",
+        # const/let/var: walk to first variable_declarator's name
+        "lexical_declaration":    "first-declarator-name",
+        "variable_declaration":   "first-declarator-name",
+    }
+
+    def _extract_name(self, node, src_bytes: bytes) -> str:
+        strategy = self.NAME_STRATEGY.get(node.type)
+        if strategy == "first-declarator-name":
+            for c in node.children:
+                if c.type == "variable_declarator":
+                    nm = c.child_by_field_name("name")
+                    if nm is not None:
+                        return src_bytes[nm.start_byte:nm.end_byte].decode(
+                            "utf-8", errors="replace")
+            return ""
+        return super()._extract_name(node, src_bytes)
+
+
+class TsxDefExtractor(TypescriptDefExtractor):
+    """TSX variant uses the same TS grammar but ts-tsx flavor."""
+    LANGUAGE_ATTR = "language_tsx"
+
+
+class RustDefExtractor(_TreeSitterExtractor):
+    """Tree-sitter-based Rust extractor."""
+
+    LANGUAGE_MODULE = "tree_sitter_rust"
+    LANGUAGE_ATTR = "language"
+    DEFINITION_NODE_TYPES = {
+        "function_item":   "function",
+        "struct_item":     "struct",
+        "enum_item":       "enum",
+        "trait_item":      "trait",
+        "impl_item":       "impl",
+        "const_item":      "const",
+        "static_item":     "static",
+        "type_item":       "type",
+        "mod_item":        "mod",
+        "union_item":      "union",
+    }
+    NAME_STRATEGY = {
+        "function_item":   "by-field:name",
+        "struct_item":     "by-field:name",
+        "enum_item":       "by-field:name",
+        "trait_item":      "by-field:name",
+        "impl_item":       "impl-rust",
+        "const_item":      "by-field:name",
+        "static_item":     "by-field:name",
+        "type_item":       "by-field:name",
+        "mod_item":        "by-field:name",
+        "union_item":      "by-field:name",
+    }
+
+
+# ──────────────────────────────────────────────────────────────────
+# Language registry
+# ──────────────────────────────────────────────────────────────────
+
+LANGUAGE_EXTRACTORS = {
+    "python":     PythonDefExtractor(),
+    "py":         PythonDefExtractor(),
+    "typescript": TypescriptDefExtractor(),
+    "ts":         TypescriptDefExtractor(),
+    "tsx":        TsxDefExtractor(),
+    "rust":       RustDefExtractor(),
+    "rs":         RustDefExtractor(),
+}
+
+
+def get_extractor(lang: str) -> object | None:
+    return LANGUAGE_EXTRACTORS.get(lang.lower())
+
+
+# ──────────────────────────────────────────────────────────────────
 # Org file parser
 # ──────────────────────────────────────────────────────────────────
 
@@ -288,23 +499,16 @@ class OrgFileParser:
 # ──────────────────────────────────────────────────────────────────
 
 class BlockDefExtractor:
-    """Extract defs from an org src block's content."""
-
-    def __init__(self):
-        self.python = PythonDefExtractor()
+    """Extract defs from an org src block's content via language-specific
+    extractor. Languages without a registered extractor return [].
+    """
 
     def extract_block_defs(self, org: OrgFile, block: OrgBlock) -> list[str]:
-        """Return FQNs of defs inside this block (or via noweb expansion).
-
-        For atomic / skeleton: parse block body directly.
-        For noweb-leaf: parse leaf body directly.
-        Skeletons that contain <<chunks>> get content from the gathered
-        leaves first (caller's responsibility to expand).
-        """
-        if block.src_lang.lower() not in ("python", "py"):
-            return []  # non-Python blocks: defer
+        extractor = get_extractor(block.src_lang or "")
+        if extractor is None:
+            return []
         body = self._extract_body(org, block)
-        defs = self.python.extract(body)
+        defs = extractor.extract(body)
         return sorted(defs.keys())
 
     def _extract_body(self, org: OrgFile, block: OrgBlock) -> str:
@@ -642,8 +846,19 @@ def main() -> int:
 
     if args.extract_defs:
         src = args.extract_defs.read_text(encoding="utf-8", errors="replace")
-        defs = PythonDefExtractor().extract(src)
-        print(f"Extracted {len(defs)} defs from {args.extract_defs}:")
+        ext_to_lang = {
+            ".py": "python",
+            ".ts": "typescript",
+            ".tsx": "tsx",
+            ".rs": "rust",
+        }
+        lang = ext_to_lang.get(args.extract_defs.suffix.lower(), "python")
+        extractor = get_extractor(lang)
+        if extractor is None:
+            print(f"No extractor for language {lang!r} (ext {args.extract_defs.suffix})")
+            return 1
+        defs = extractor.extract(src)
+        print(f"Extracted {len(defs)} defs from {args.extract_defs} (lang={lang}):")
         for fqn in sorted(defs):
             d = defs[fqn]
             print(f"  {d.kind:11s} {fqn} (lines {d.start_line}-{d.end_line}, hash {d.body_hash})")
@@ -685,13 +900,111 @@ def main() -> int:
     return 0
 
 
+def _slugify(text: str) -> str:
+    """Kebab-case slug for use as :CUSTOM_ID:. Mirrors backfill_anchors.py."""
+    s = text.lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s)
+    s = re.sub(r"-+", "-", s)
+    s = s.strip("-")
+    if len(s) > 60:
+        s = s[:60].rstrip("-")
+    return s
+
+
+def _refresh_noweb_parents(org: 'OrgFile', new_lines: list[str]) -> tuple[list[str], int]:
+    """Auto-infer :LITERATE_ORG_NOWEB_PARENT: for noweb-leaf blocks.
+
+    Strategy:
+      1. Build chunk-index: each skeleton block's chunk_refs_in_body
+         (the <<chunk>> names referenced by skeleton's body) maps to
+         the skeleton block.
+      2. For each noweb-leaf with :noweb-ref X, find the skeleton
+         whose body references <<X>>. Set :LITERATE_ORG_NOWEB_PARENT:
+         to skeleton's :CUSTOM_ID: (generating one from heading text
+         if absent).
+
+    Returns (updated_lines, count_set). Edits skeleton blocks too if
+    they need a new :CUSTOM_ID: anchor.
+    """
+    # Build chunk → skeleton anchor map
+    chunk_to_skeleton: dict[str, 'OrgBlock'] = {}
+    for b in org.blocks:
+        if b.block_kind == "skeleton":
+            for chunk_name in b.chunk_refs_in_body:
+                chunk_to_skeleton.setdefault(chunk_name, b)
+
+    set_count = 0
+    # Plan edits bottom-up to keep line indices stable
+    skeleton_anchor_inserts: list[tuple[int, str]] = []
+    leaf_parent_inserts: list[tuple[int, str, OrgBlock]] = []
+
+    for leaf in org.blocks:
+        if leaf.block_kind != "noweb-leaf":
+            continue
+        if leaf.noweb_parent:
+            continue  # already set
+        chunk = leaf.noweb_ref
+        if not chunk:
+            continue
+        skeleton = chunk_to_skeleton.get(chunk)
+        if skeleton is None:
+            continue
+        # Ensure skeleton has a :CUSTOM_ID:
+        if not skeleton.custom_id:
+            skeleton.custom_id = _slugify(skeleton.heading_text)
+            skeleton_anchor_inserts.append((skeleton.heading_line, skeleton.custom_id))
+        leaf.noweb_parent = skeleton.custom_id
+        leaf_parent_inserts.append((leaf.heading_line,
+                                    skeleton.custom_id, leaf))
+        set_count += 1
+
+    # Sort bottom-up
+    all_inserts = (
+        [("anchor", hl, slug, None) for hl, slug in skeleton_anchor_inserts]
+        + [("parent", hl, slug, leaf) for hl, slug, leaf in leaf_parent_inserts]
+    )
+    all_inserts.sort(key=lambda t: -t[1])
+
+    for kind_op, heading_line, slug, _leaf in all_inserts:
+        heading_idx = heading_line - 1
+        # Find or create PROPERTIES drawer
+        scan = heading_idx + 1
+        while scan < len(new_lines) and new_lines[scan].strip() == "":
+            scan += 1
+        if (scan < len(new_lines) and
+            new_lines[scan].strip() == ":PROPERTIES:"):
+            # Find existing key
+            end = scan + 1
+            existing_idx = -1
+            target_key = (":CUSTOM_ID:" if kind_op == "anchor"
+                          else ":LITERATE_ORG_NOWEB_PARENT:")
+            while end < len(new_lines) and new_lines[end].strip() != ":END:":
+                if new_lines[end].strip().startswith(target_key):
+                    existing_idx = end
+                end += 1
+            line_value = (f":CUSTOM_ID: {slug}" if kind_op == "anchor"
+                          else f":LITERATE_ORG_NOWEB_PARENT: {slug}")
+            if existing_idx >= 0:
+                new_lines[existing_idx] = line_value
+            else:
+                new_lines.insert(scan + 1, line_value)
+        else:
+            line_value = (f":CUSTOM_ID: {slug}" if kind_op == "anchor"
+                          else f":LITERATE_ORG_NOWEB_PARENT: {slug}")
+            new_lines.insert(heading_idx + 1, ":PROPERTIES:")
+            new_lines.insert(heading_idx + 2, line_value)
+            new_lines.insert(heading_idx + 3, ":END:")
+
+    return new_lines, set_count
+
+
 def _refresh_defs_main(args) -> int:
     """Re-compute :LITERATE_ORG_CONTAINS_DEFS: on every tangle-bearing
     block of the target .org files via tree-sitter parse of block content.
 
-    For skeleton blocks: expands <<chunks>> by gathering noweb-leaf
-    children whose :noweb-ref matches; concatenates their bodies before
-    parsing.
+    Also auto-infers :LITERATE_ORG_NOWEB_PARENT: for noweb-leaf blocks
+    by matching :noweb-ref name against skeleton blocks' <<chunk>>
+    placeholders. Stamps :CUSTOM_ID: on skeleton blocks that lack one.
     """
     extractor = BlockDefExtractor()
     org_parser = OrgFileParser()
@@ -736,15 +1049,21 @@ def _refresh_defs_main(args) -> int:
                         leaf_body = "\n".join(
                             org.raw_lines[leaf.src_begin_line:leaf.src_end_line - 1])
                         body += "\n" + leaf_body
-            # Parse Python defs from body
-            if (block.src_lang or "").lower() in ("python", "py"):
-                defs = list(PythonDefExtractor().extract(body).keys())
+            # Parse defs via language registry
+            extractor = get_extractor(block.src_lang or "")
+            if extractor is not None:
+                defs = sorted(extractor.extract(body).keys())
             else:
                 defs = []
             if defs and defs != block.contains_defs:
                 updates.append((block, defs))
 
-        if not updates:
+        # Determine if NOWEB_PARENT inference has work to do
+        leaves_needing_parent = [b for b in org.blocks
+                                 if b.block_kind == "noweb-leaf"
+                                 and not b.noweb_parent
+                                 and b.noweb_ref]
+        if not updates and not leaves_needing_parent:
             continue
         if not args.dry_run:
             # Apply updates: insert/update :LITERATE_ORG_CONTAINS_DEFS:
@@ -776,12 +1095,19 @@ def _refresh_defs_main(args) -> int:
                     new_lines.insert(heading_idx + 1, ":PROPERTIES:")
                     new_lines.insert(heading_idx + 2, line_value)
                     new_lines.insert(heading_idx + 3, ":END:")
+            # Pass 2: NOWEB_PARENT inference (uses fresh org parse to keep
+            # block line indices stable after CONTAINS_DEFS edits)
             f.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+            re_org = org_parser.parse(f)
+            re_lines = list(re_org.raw_lines)
+            re_lines, parent_set = _refresh_noweb_parents(re_org, re_lines)
+            if parent_set:
+                f.write_text("\n".join(re_lines) + "\n", encoding="utf-8")
             total_files_updated += 1
-            total_blocks_updated += len(updates)
+            total_blocks_updated += len(updates) + parent_set
         else:
             total_files_updated += 1
-            total_blocks_updated += len(updates)
+            total_blocks_updated += (len(updates) + len(leaves_needing_parent))
         if args.verbose:
             rel = f.relative_to(args.target) if args.all else f
             print(f"  {rel}: {len(updates)} blocks updated")

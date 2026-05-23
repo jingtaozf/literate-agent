@@ -104,13 +104,27 @@ def already_has_sha(org_file: Path) -> bool:
 
 
 def collect_tangle_targets(org_file: Path) -> list[str]:
-    """Return all unique :tangle paths declared in the .org file."""
+    """Return all unique :tangle paths declared in the .org file.
+
+    Only scans CONTEXTS where :tangle is meaningful:
+      - #+begin_src lines (per-block header-args)
+      - :header-args: lines (block-level via PROPERTIES drawer)
+      - #+PROPERTY: header-args lines (file-level default)
+    Prose mentions of `:tangle` (e.g. =:tangle no=.) inside quoted
+    documentation) are excluded — they're not actual tangle targets.
+    """
     targets: list[str] = []
     text = org_file.read_text(encoding="utf-8", errors="replace")
-    for m in TANGLE_RE.finditer(text):
-        path = m.group(1)
-        if path != "no" and path not in targets:
-            targets.append(path)
+    for line in text.splitlines():
+        stripped = line.strip()
+        # Three valid contexts where :tangle is a real header arg
+        if (line.lower().startswith("#+begin_src")
+                or stripped.startswith(":header-args")
+                or line.startswith("#+PROPERTY:") and ":tangle" in line):
+            for m in TANGLE_RE.finditer(line):
+                path = m.group(1)
+                if path != "no" and path not in targets:
+                    targets.append(path)
     return targets
 
 
@@ -156,15 +170,46 @@ def detect_block_kind_for_heading(lines: list[str], heading_idx: int) -> str | N
     if not header_args_text:
         return None
 
+    # The standard noweb-skeleton-with-children pattern (per
+    # lp-noweb-for-big-blocks.md):
+    #
+    #   *** =SomeClass=
+    #   :PROPERTIES:
+    #   :header-args: :tangle no :noweb-ref SomeClass-body   ← for CHILDREN
+    #   :END:
+    #
+    #   #+begin_src python :tangle ./path.py :noweb yes :noweb-ref ""
+    #   class SomeClass:
+    #       <<SomeClass-body>>                                ← this is the SKELETON
+    #   #+end_src
+    #
+    #   **** =method_a=                                       ← child → noweb-leaf
+    #   #+begin_src python
+    #   def method_a(self): ...
+    #   #+end_src
+    #
+    # The parent heading's drawer :header-args :noweb-ref X is the
+    # INHERITANCE hint for descendants. The parent's own src block
+    # uses :noweb-ref "" to opt OUT, with :noweb yes to expand
+    # <<chunks>>. So when both signals coexist:
+    #   - :noweb-ref "" anywhere → block opts out (treat as skeleton if
+    #     :noweb yes also present, atomic otherwise)
+    #   - :noweb yes (without :noweb-ref "" opt-out) → skeleton
+    #   - :noweb-ref X (real value, no opt-out) → noweb-leaf
+
+    has_noweb_opt_out = re.search(r':noweb-ref\s+""', header_args_text)
+    has_noweb_yes = NOWEB_YES_RE.search(header_args_text)
+
+    if has_noweb_yes:
+        return "skeleton"
+
+    if NOWEB_REF_RE.search(header_args_text) and not has_noweb_opt_out:
+        return "noweb-leaf"
+
     has_tangle = TANGLE_RE.search(header_args_text)
     if not has_tangle or has_tangle.group(1) == "no":
-        # noweb-leaf has :tangle no + :noweb-ref
-        if NOWEB_REF_RE.search(header_args_text):
-            return "noweb-leaf"
         return None
 
-    if NOWEB_YES_RE.search(header_args_text):
-        return "skeleton"
     return "atomic"
 
 
@@ -216,10 +261,13 @@ def insert_file_props(text: str, sha: str, sha_date: str, grammar: str) -> str:
     return "".join(lines)
 
 
-def stamp_block_kinds(text: str) -> tuple[str, int]:
+def stamp_block_kinds(text: str, force: bool = False) -> tuple[str, int]:
     """Stamp :LITERATE_ORG_BLOCK_KIND: on every :tangle-bearing heading.
 
     Returns (new_text, blocks_stamped).
+
+    With force=True, re-stamps blocks that already have BLOCK_KIND
+    (used to correct kinds after a detection-logic bugfix).
     """
     lines = text.splitlines(keepends=True)
     n = len(lines)
@@ -250,9 +298,23 @@ def stamp_block_kinds(text: str) -> tuple[str, int]:
             while end_idx < n and not lines[end_idx].strip().startswith(":END:"):
                 end_idx += 1
             drawer = lines[scan:end_idx + 1]
-            has_kind = any("LITERATE_ORG_BLOCK_KIND" in d for d in drawer)
-            if has_kind:
-                # already stamped
+            has_kind_idx = -1
+            for didx, d in enumerate(drawer):
+                if "LITERATE_ORG_BLOCK_KIND" in d:
+                    has_kind_idx = didx
+                    break
+            if has_kind_idx >= 0:
+                if force:
+                    # Replace the existing BLOCK_KIND line with the
+                    # freshly-computed kind (used after a bugfix).
+                    drawer_abs_idx = scan + has_kind_idx
+                    out.extend(lines[i + 1:drawer_abs_idx])
+                    out.append(f":LITERATE_ORG_BLOCK_KIND: {kind}\n")
+                    out.extend(lines[drawer_abs_idx + 1:end_idx + 1])
+                    i = end_idx + 1
+                    stamped += 1
+                    continue
+                # already stamped, no force — skip
                 out.extend(lines[i + 1:end_idx + 1])
                 i = end_idx + 1
                 continue
@@ -272,7 +334,8 @@ def stamp_block_kinds(text: str) -> tuple[str, int]:
     return "".join(out), stamped
 
 
-def bootstrap_file(org_file: Path, dry_run: bool = False) -> tuple[str, dict]:
+def bootstrap_file(org_file: Path, dry_run: bool = False,
+                   force: bool = False) -> tuple[str, dict]:
     """Bootstrap one .org file. Returns (status, details).
 
     Status values:
@@ -303,8 +366,9 @@ def bootstrap_file(org_file: Path, dry_run: bool = False) -> tuple[str, dict]:
         return "skip-no-source", {"reason": "git HEAD lookup failed",
                                   "repo": str(source_repo)}
 
-    if already_has_sha(org_file) and not dry_run:
-        # Already stamped — skip update (idempotent). Could refresh in --force mode (future).
+    if already_has_sha(org_file) and not dry_run and not force:
+        # Already stamped — skip update (idempotent). Use --force to re-stamp
+        # block KINDs (e.g. after a bug fix in detection logic).
         return "ok", {"action": "already-stamped", "sha": sha[:12]}
 
     text = org_file.read_text(encoding="utf-8", errors="replace")
@@ -312,7 +376,7 @@ def bootstrap_file(org_file: Path, dry_run: bool = False) -> tuple[str, dict]:
     grammar = grammar_hash()
 
     new_text = insert_file_props(text, sha, sha_date, grammar)
-    new_text, blocks_stamped = stamp_block_kinds(new_text)
+    new_text, blocks_stamped = stamp_block_kinds(new_text, force=force)
 
     if not dry_run and new_text != text:
         org_file.write_text(new_text, encoding="utf-8")
@@ -332,6 +396,10 @@ def main() -> int:
                         help="recursively process all .org files under target")
     parser.add_argument("--dry-run", "-n", action="store_true",
                         help="show what would be stamped without writing")
+    parser.add_argument("--force", "-f", action="store_true",
+                        help="re-stamp block KINDs even on files that already "
+                             "have LITERATE_ORG_SOURCE_SHA (useful after a "
+                             "bug fix in detection logic)")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
@@ -349,7 +417,7 @@ def main() -> int:
     by_status: dict[str, int] = {}
     failures: list[tuple[Path, dict]] = []
     for f in files:
-        status, details = bootstrap_file(f, dry_run=args.dry_run)
+        status, details = bootstrap_file(f, dry_run=args.dry_run, force=args.force)
         by_status[status] = by_status.get(status, 0) + 1
         if args.verbose:
             try:
