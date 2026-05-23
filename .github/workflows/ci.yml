@@ -66,3 +66,89 @@ jobs:
             emacs -batch --eval "(progn (find-file \"$f\") (org-mode))" 2>&1 \
               | (grep -E "error|Error" && exit 1 || true)
           done
+
+  lp-protocol-self-check:
+    name: LP protocol verify (self)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scripts package + tree-sitter deps
+        run: pip install -e .
+
+      - name: Run V1-V5 invariants on literate-agent + literate-org subtree
+        run: |
+          python3 scripts/lp_protocol_verify.py \
+            literate-org/ \
+            --verbose
+
+  pip-install-smoke:
+    name: pip install smoke (entry points + deps)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: pip install + verify console-script entry points
+        run: |
+          pip install -e .
+          # Each entry point must be callable. --help is a cheap
+          # "did it install + import without crashing" check.
+          for cmd in lp-protocol-verify lp-sync-bootstrap lp-sync-engine \
+                     lp-audit-metadata lp-audit-anchors lp-backfill-anchors; do
+            echo "=== $cmd --help ==="
+            $cmd --help > /dev/null
+          done
+          echo "all 6 entry points installed and callable"
+
+  consumer-integration:
+    name: Pre-commit consumer integration smoke
+    # This job simulates a consumer adopting literate-agent's
+    # pre-commit hook from this very SHA — catches breakage in
+    # .pre-commit-hooks.yaml / pyproject.toml / entry point wiring.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Synthesise a consumer .pre-commit-config.yaml pointing at this SHA
+        run: |
+          cat > /tmp/consumer-config.yaml <<EOF
+          repos:
+            - repo: ${{ github.server_url }}/${{ github.repository }}
+              rev: ${{ github.sha }}
+              hooks:
+                - id: lp-protocol-verify
+          EOF
+          cat /tmp/consumer-config.yaml
+
+      - name: Run pre-commit using the synthesised config + a dummy .org file
+        run: |
+          mkdir -p /tmp/consumer && cd /tmp/consumer
+          git init -q
+          git config user.email ci@example.com
+          git config user.name CI
+          cp /tmp/consumer-config.yaml .pre-commit-config.yaml
+          # Create a minimal .org with valid metadata so the hook passes
+          cat > sample.org <<'ORG'
+          #+TITLE: smoke test
+          ORG
+          git add .pre-commit-config.yaml sample.org
+          git commit -m "init"
+          pre-commit run --all-files

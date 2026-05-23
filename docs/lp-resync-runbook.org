@@ -1,0 +1,367 @@
+#+TITLE: /lp-resync Operational Runbook
+#+SUBTITLE: Step-by-step playbook for syncing upstream source drift back into the LP layer
+
+Operational guide for running =/lp-resync= against a real upstream
+merge — covers prerequisites, command order, expected outputs,
+common failure modes, and rollback procedures.
+
+See also:
+- =skills/lp-resync/SKILL.md= — workflow specification
+- =rules/lp-resync-metadata.md= — schema this runbook assumes
+- =rules/lp-resync-noweb-discipline.md= — noweb-restructure handling
+- =scripts/lp_sync_engine.py= — the engine the workflow calls
+
+* When to run /lp-resync
+:PROPERTIES:
+:CUSTOM_ID: when-to-run
+:END:
+
+Run after *any* of:
+
+- Upstream submodule received commits that touched LP-managed
+  source files (=.py= / =.ts= / =.tsx= / =.rs= under tangled roots).
+- A team member modified source directly (not via .org) — drift
+  is silent until tangle-time, /lp-resync makes it visible.
+- New files added upstream that may belong to existing LP modules.
+- Quarterly cadence per =lp-agent-long-horizon-audit-cadence.md=.
+
+Do NOT run when:
+
+- The .org layer has unpushed edits — they should commit first;
+  /lp-resync's tangle round-trip would conflict.
+- The submodule's working tree is dirty — pre-flight will reject.
+
+* Prerequisites
+:PROPERTIES:
+:CUSTOM_ID: prerequisites
+:END:
+
+1. literate-agent installed + pip-installed for the scripts:
+
+   #+begin_src bash
+   git clone https://github.com/jingtaozf/literate-agent ~/projects/literate-agent
+   cd ~/projects/literate-agent
+   pip install -e .
+   # provides: lp-protocol-verify, lp-sync-engine, lp-sync-bootstrap, etc.
+   #+end_src
+
+2. Project's =.claude/hooks/_env.sh= sets =LITERATE_AGENT_LP_ROOT=
+   and =LITERATE_AGENT_TANGLED_ROOTS=. Example for edo-literate:
+
+   #+begin_src bash
+   export LITERATE_AGENT_LP_ROOT=lp
+   export LITERATE_AGENT_TANGLED_ROOTS=repos/
+   export LITERATE_AGENT_DEFAULT_BRANCH=jt
+   #+end_src
+
+3. Each .org file under =$LITERATE_AGENT_LP_ROOT= has
+   =LITERATE_ORG_SOURCE_SHA= stamped — verify:
+
+   #+begin_src bash
+   lp-protocol-verify $LITERATE_AGENT_LP_ROOT --checks=V1
+   #+end_src
+
+   If files lack SHA, run bootstrap first:
+
+   #+begin_src bash
+   lp-sync-bootstrap --all $LITERATE_AGENT_LP_ROOT
+   lp-sync-engine --refresh-defs --all $LITERATE_AGENT_LP_ROOT
+   #+end_src
+
+* Workflow — single-submodule
+:PROPERTIES:
+:CUSTOM_ID: single-submodule
+:END:
+
+** Phase A: Pre-flight
+:PROPERTIES:
+:CUSTOM_ID: phase-a
+:END:
+
+#+begin_src bash
+SUB=skill-enhance-server   # the target submodule
+TANGLED=$LITERATE_AGENT_TANGLED_ROOTS/$SUB
+
+# Working tree must be clean
+git -C $TANGLED status --porcelain   # must be empty
+git -C $TANGLED branch --show-current  # must equal $LITERATE_AGENT_DEFAULT_BRANCH
+
+# Metadata pre-flight
+lp-protocol-verify $LITERATE_AGENT_LP_ROOT/$SUB --checks=V1
+#+end_src
+
+Expected: zero violations. If Phase A fails, STOP and surface the
+issue — do not proceed with merge.
+
+** Phase B: Merge upstream
+:PROPERTIES:
+:CUSTOM_ID: phase-b
+:END:
+
+#+begin_src bash
+git -C $TANGLED fetch origin
+git -C $TANGLED merge --ff-only origin/main
+#+end_src
+
+Outcomes:
+
+| Outcome | Action |
+|---------+--------|
+| "Already up to date" | Skip to Phase D (no source drift) |
+| Fast-forward succeeded | Capture =HEAD@{1}..HEAD= for Phase C |
+| Non-fast-forward | STOP, ask rebase vs merge |
+
+** Phase C: Code-drift sync (the engine pass)
+:PROPERTIES:
+:CUSTOM_ID: phase-c
+:END:
+
+Run the sync engine in dry-run first to preview changes:
+
+#+begin_src bash
+lp-sync-engine --all $LITERATE_AGENT_LP_ROOT/$SUB --dry-run --verbose
+#+end_src
+
+The output classifies every change into Pass A (modify) / Pass B
+(add) / Pass C (stale). If Pass B or Pass C entries exist, STOP
+and triage:
+
+- Pass B "added" defs need a sensible LP section to live in —
+  the engine reports them but does not auto-insert. Human decides:
+  - Append to an existing umbrella heading
+  - Create a new heading section
+  - Add to =LITERATE_ORG_EXCLUDED_DEFS= (deliberate skip)
+- Pass C "stale" defs get =:STALE: <date> last-seen-at <sha>:=
+  tagged on their block. Human reviews:
+  - Confirm deletion → remove the block entirely
+  - Restore upstream → revert source change
+  - Keep block as historical → no action, =:STALE:= tag stays
+
+When dry-run looks clean, apply:
+
+#+begin_src bash
+lp-sync-engine --all $LITERATE_AGENT_LP_ROOT/$SUB
+#+end_src
+
+** Phase D: New-file triage
+:PROPERTIES:
+:CUSTOM_ID: phase-d
+:END:
+
+After Phase C, check for files that no .org claims:
+
+#+begin_src bash
+# Build the tangle map (.cache/tangle-map.tsv)
+python3 scripts/build_tangle_map.py
+
+# Find source files not in any tangle map
+comm -23 \
+  <(find $TANGLED -name '*.py' -o -name '*.ts' -o -name '*.tsx' -o -name '*.rs' | sort) \
+  <(awk -v sub="$TANGLED" '$1 ~ "^"sub {print $1}' .cache/tangle-map.tsv | sort)
+#+end_src
+
+Each unclaimed file is a candidate for:
+- *Append to existing .org* — when it sits in an LP-covered directory
+- *New .org module* — when it's a new logical unit
+- *EXCLUDED_DEFS / skip* — test fixtures, generated code, vendored
+
+Always report the table before importing.
+
+** Phase E: Doc-changes triage (optional)
+:PROPERTIES:
+:CUSTOM_ID: phase-e
+:END:
+
+If upstream added files under =$TANGLED/docs/=:
+
+#+begin_src bash
+git -C $TANGLED diff --name-status HEAD@{1} HEAD -- docs/
+#+end_src
+
+For each modified or added doc, apply the 4-bucket classifier:
+
+| Bucket | Test | Action |
+|--------+------+--------|
+| narrow inline | describes one current module | augment owning .org's prose |
+| cross-cutting | describes wiring across modules | augment =_project.org= |
+| reference | defines vocabulary / schemas | augment =_project.org= § Glossary |
+| SKIP | historical / process / proposal | drop |
+
+** Phase F: Verify
+:PROPERTIES:
+:CUSTOM_ID: phase-f
+:END:
+
+#+begin_src bash
+# Tangle round-trip must end byte-equivalent
+make tangle-repo REPO=$SUB
+git -C $TANGLED diff --stat   # MUST be empty
+
+# Full protocol audit
+lp-protocol-verify $LITERATE_AGENT_LP_ROOT/$SUB --full
+#+end_src
+
+If tangle diff is non-empty, /lp-resync left work undone — either
+finish manually or STOP. Common cosmetic-drift cases (PEP-8 blank
+lines, ruff formatter style):
+
+#+begin_src bash
+make post-format REPO=$SUB
+git -C $TANGLED diff --stat   # should now be empty
+#+end_src
+
+** Phase G: Commit + push
+:PROPERTIES:
+:CUSTOM_ID: phase-g
+:END:
+
+Only commit after Phase F passes byte-equivalent:
+
+#+begin_src bash
+# Per the cowork rules, declare risk first
+echo "Risk: med — /lp-resync $SUB: <N> Pass-A modifies, <M> Pass-B adds, <K> Pass-C stales"
+
+# Submodule commit (only if jt has independent commits)
+git -C $TANGLED status   # check if commits exist
+git -C $TANGLED push     # only if needed
+
+# Meta-repo: .org changes + submodule pointer
+git add $LITERATE_AGENT_LP_ROOT/$SUB/ $TANGLED
+git commit -m "Risk: med — /lp-resync $SUB from origin/main"
+git push
+#+end_src
+
+* Worked example — simulated upstream merge
+:PROPERTIES:
+:CUSTOM_ID: worked-example
+:END:
+
+The following sequence simulates a real /lp-resync workflow
+end-to-end against an edo-literate submodule. It uses
+=mega-code-oss= because it has the smallest LP layer + a single
+Python language to keep the demo tractable. Run it in a worktree
+to avoid polluting the main branch.
+
+#+begin_src bash
+cd ~/projects/mind-ai/edo-literate
+SUB=mega-code-oss
+
+# 1. Pre-flight audit
+lp-protocol-verify lp/$SUB --checks=V1
+# expect: V1 0 violations
+
+# 2. Pick a function in source, modify body
+cd repos/$SUB
+SRC=mega_code/client/__init__.py
+# Add a comment line inside __getattr__
+sed -i '/def __getattr__/a\    # /lp-resync test marker' $SRC
+git add $SRC
+git commit -m "test: source change for /lp-resync runbook"
+
+# 3. Run engine in dry-run from repo root
+cd ~/projects/mind-ai/edo-literate
+lp-sync-engine lp/$SUB/client.org --dry-run --verbose
+# expect: status=synced; Pass A modify-targeted for __getattr__
+
+# 4. Apply
+lp-sync-engine lp/$SUB/client.org
+# .org's SHA bumps; the comment line appears inside the
+# __getattr__ block; surrounding prose untouched.
+
+# 5. Verify tangle round-trip
+make tangle-repo REPO=$SUB
+git -C repos/$SUB diff --stat   # should be empty (or formatter-only)
+
+# 6. Cleanup
+cd repos/$SUB
+git reset --hard HEAD~1    # drop test commit
+cd ../..
+git checkout lp/$SUB/client.org   # drop engine's .org edit
+lp-sync-bootstrap lp/$SUB/client.org   # re-stamp SHA back to test state
+#+end_src
+
+This sequence is the canonical "first useful sync" — proves the
+engine works against real source.
+
+* Common failure modes
+:PROPERTIES:
+:CUSTOM_ID: failure-modes
+:END:
+
+| Symptom | Cause | Fix |
+|---------+-------+-----|
+| Phase A V1 violation: missing SHA | Legacy .org never bootstrapped | =lp-sync-bootstrap <file>= |
+| Phase B non-fast-forward | Local has independent commits | Rebase or merge — user decides |
+| Phase C dry-run says "no-op" but source clearly changed | Stored SHA equals new SHA somehow | Hand-check =LITERATE_ORG_SOURCE_SHA= in .org file header |
+| Pass A target block not found | Stale =:CONTAINS_DEFS:= after manual edit | =lp-sync-engine --refresh-defs <file>= |
+| Pass B reports 100+ added defs | Major upstream refactor; STOP-and-ask warranted | Triage in batches, not all at once |
+| Phase F tangle diff non-empty after =post-format= | Real content drift, not just formatter | Diff the specific file, decide which side wins per =rules/lp-resync/= conventions |
+| Phase F V6 fails ("tangle drift") | .org's src block doesn't produce post-format source | Same as above — content reconciliation |
+
+* Rollback procedures
+:PROPERTIES:
+:CUSTOM_ID: rollback
+:END:
+
+If something goes wrong mid-workflow:
+
+** Before Phase G (no commit yet)
+:PROPERTIES:
+:CUSTOM_ID: rollback-pre-commit
+:END:
+
+#+begin_src bash
+# Reset all submodule changes
+for sub in $(ls repos/); do
+  [ -d "repos/$sub/.git" ] || [ -f "repos/$sub/.git" ] && \
+    (cd repos/$sub && git checkout .)
+done
+
+# Reset .org changes
+git checkout lp/
+
+# Restore stored SHAs (if you accidentally bumped)
+# This requires git history of the .org files
+git checkout HEAD -- lp/$SUB/
+#+end_src
+
+** After Phase G (commit landed locally, not pushed)
+:PROPERTIES:
+:CUSTOM_ID: rollback-post-commit-pre-push
+:END:
+
+#+begin_src bash
+# Soft-reset the last commit
+git reset HEAD~1
+# Apply rollback procedures above
+#+end_src
+
+** After push (worst case)
+:PROPERTIES:
+:CUSTOM_ID: rollback-post-push
+:END:
+
+Don't force-push (violates =never-rebase-published-branch=). Instead:
+
+#+begin_src bash
+# Make a new commit that undoes the sync
+git revert <bad-sync-sha>
+git push
+#+end_src
+
+* When to escalate
+:PROPERTIES:
+:CUSTOM_ID: escalation
+:END:
+
+STOP and ask the human (not autonomous AI) when:
+
+- Phase C reports cross-file def movement (refactor across modules)
+- Pass B + Pass C combined > 20 entries (major refactor)
+- Phase F shows tangle drift that =post-format= doesn't resolve
+- Phase B non-fast-forward with independent commits on both sides
+- Source repo's tangle target moves to a brand-new directory
+- Tree-sitter grammar version (=LITERATE_ORG_TREESIT_GRAMMAR_HASH=)
+  changes — schema may need re-validation
+
+These are the design-judgment cases the engine can't resolve.
