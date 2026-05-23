@@ -164,6 +164,49 @@ There is also a *cross-audience* hint:
 See `hints/README.org` for the convention and how to add a new
 language.
 
+## Pre-commit integration (LP protocol verification)
+
+Consumer repos can gate `git commit` on .org-file LP protocol
+consistency via the `lp-protocol-verify` hook shipped here. Add to
+your project's `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/jingtaozf/literate-agent
+    rev: main   # or pin a SHA
+    hooks:
+      - id: lp-protocol-verify
+```
+
+Then:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+What it checks (per-staged-.org-file, ~50ms-300ms):
+
+| Invariant | Catches |
+|-----------|---------|
+| V1 schema | missing/malformed SHA, BLOCK_KIND value, NOWEB_PARENT resolve |
+| V2 :CONTAINS_DEFS: | stale def list after manual block edit (without --refresh-defs) |
+| V3 noweb integrity | orphan <<chunk>>; noweb-leaf with bad NOWEB_PARENT |
+| V4 :tangle paths | dangling :tangle target |
+| V5 source parseable | source file with syntax error |
+
+V6 (tangle round-trip, runs `make tangle-all`) is excluded from
+pre-commit — too slow. Run in CI on PR via:
+
+```bash
+python3 scripts/lp_protocol_verify.py <lp-root> --full
+```
+
+Two lighter hooks also available — see `.pre-commit-hooks.yaml`:
+
+- `lp-audit-metadata` — V1 only (faster, no tree-sitter)
+- `lp-audit-anchors` — :CUSTOM_ID: coverage on multi-ref headings
+
 ## LP build / lint commands (typical project layout)
 
 Drop the `templates/Makefile.lp.mk` fragment into your project to

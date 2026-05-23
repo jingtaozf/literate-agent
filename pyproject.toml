@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "literate-agent-scripts"
+version = "0.1.0"
+description = "LP source-drift roundtrip protocol — bootstrap, audit, sync engine, protocol verifier"
+readme = "README.org"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Jingtao Xu", email = "jt@jingtao.net"},
+]
+
+# Tree-sitter is needed by the multi-language def-extractors (TS/Rust).
+# Python uses stdlib ast, no extra dep needed.
+dependencies = [
+    "tree-sitter>=0.25",
+    "tree-sitter-python>=0.23",
+    "tree-sitter-typescript>=0.23",
+    "tree-sitter-rust>=0.23",
+]
+
+[project.urls]
+Homepage = "https://github.com/jingtaozf/literate-agent"
+
+# Console-script entry points. After `pip install literate-agent-scripts`
+# (or after pre-commit installs the package into its hook venv), these
+# commands become available on PATH.
+[project.scripts]
+lp-protocol-verify = "scripts.lp_protocol_verify:main"
+lp-sync-bootstrap = "scripts.lp_sync_bootstrap:main"
+lp-sync-engine = "scripts.lp_sync_engine:main"
+lp-audit-metadata = "scripts.audit_lp_sync_metadata:main"
+lp-audit-anchors = "scripts.audit_anchor_coverage:main"
+lp-backfill-anchors = "scripts.backfill_anchors:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scripts*"]
+exclude = ["literate-org*", "research*", "tests*"]

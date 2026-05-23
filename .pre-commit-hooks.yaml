@@ -1,0 +1,45 @@
+# Hook declarations consumed by `.pre-commit-config.yaml` files in
+# downstream projects. See `README.org § Pre-commit integration` for the
+# consumer-side configuration snippet.
+#
+# Each entry here defines ONE hook id. Consumers select hooks by id in
+# their own `.pre-commit-config.yaml`.
+#
+# Reference: https://pre-commit.com/#new-hooks
+
+- id: lp-protocol-verify
+  name: LP protocol verify
+  description: |
+    Run lp_protocol_verify.py on staged .org files. Checks V1-V5
+    (file-level schema, :CONTAINS_DEFS: consistency, noweb integrity,
+    :tangle path existence, source-file parseable). V6 (tangle
+    round-trip) is excluded — too slow for pre-commit; run in CI.
+  language: python
+  entry: lp-protocol-verify --pre-commit
+  files: \.org$
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: lp-audit-metadata
+  name: LP audit metadata (schema only)
+  description: |
+    Lighter alternative to lp-protocol-verify — only V1 (schema
+    invariants). Faster but does not catch CONTAINS_DEFS drift or
+    noweb integrity issues. Use when V1 alone is enough.
+  language: python
+  entry: lp-audit-metadata --check-presence
+  files: \.org$
+  pass_filenames: true
+  stages: [pre-commit]
+
+- id: lp-audit-anchors
+  name: LP audit :CUSTOM_ID: coverage on multi-ref sections
+  description: |
+    Targeted check — flags multi-referenced headings missing
+    :CUSTOM_ID:. Useful as a soft gate on PRs introducing new
+    cross-references.
+  language: python
+  entry: lp-audit-anchors
+  files: \.org$
+  pass_filenames: false
+  stages: [manual]

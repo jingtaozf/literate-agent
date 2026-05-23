@@ -1,0 +1,20 @@
+# Pre-commit config for literate-agent itself — dogfooding the hook it ships.
+#
+# Activate locally with:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Reference: https://pre-commit.com/
+
+repos:
+  # Self-hosted hook — uses the scripts in this repo directly via
+  # `language: system` to avoid pre-commit re-cloning ourselves.
+  - repo: local
+    hooks:
+      - id: lp-protocol-verify
+        name: LP protocol verify
+        language: system
+        entry: python3 scripts/lp_protocol_verify.py --pre-commit
+        files: \.org$
+        pass_filenames: false
+        stages: [pre-commit]
