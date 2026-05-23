@@ -59,12 +59,16 @@ def parse_iso8601(s: str) -> bool:
 
 def has_tangle(text: str) -> bool:
     """Check whether file contains at least one real :tangle target
-    (excluding :tangle no).
+    (excluding :tangle no AND template placeholders).
 
     Scans only CONTEXTS where :tangle is meaningful (#+begin_src lines,
     :header-args inside drawer, #+PROPERTY: header-args), ignoring
     prose mentions like `the =:tangle <path>= header...` or ASCII
     diagram annotations.
+
+    Template files like _template.org have tangle paths with literal
+    `<sub>` / `<placeholder>` brackets — these are intentionally
+    unresolvable and the file should NOT require a SOURCE_SHA stamp.
     """
     for line in text.splitlines():
         stripped = line.strip()
@@ -73,8 +77,13 @@ def has_tangle(text: str) -> bool:
                 or (line.startswith("#+PROPERTY:") and ":tangle" in line)):
             continue
         for m in TANGLE_RE.finditer(line):
-            if m.group(1) != "no":
-                return True
+            path = m.group(1)
+            if path == "no":
+                continue
+            # Template placeholder — skip
+            if "<" in path or ">" in path:
+                continue
+            return True
     return False
 
 
