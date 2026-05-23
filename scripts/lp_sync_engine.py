@@ -276,9 +276,15 @@ class TypescriptDefExtractor(_TreeSitterExtractor):
             for c in node.children:
                 if c.type == "variable_declarator":
                     nm = c.child_by_field_name("name")
-                    if nm is not None:
-                        return src_bytes[nm.start_byte:nm.end_byte].decode(
-                            "utf-8", errors="replace")
+                    if nm is None:
+                        continue
+                    # Skip destructuring patterns (object_pattern,
+                    # array_pattern) — these aren't simple identifiers
+                    # and produce noisy multi-name extractions.
+                    if nm.type not in ("identifier", "type_identifier"):
+                        return ""
+                    return src_bytes[nm.start_byte:nm.end_byte].decode(
+                        "utf-8", errors="replace")
             return ""
         return super()._extract_name(node, src_bytes)
 
@@ -359,8 +365,17 @@ class OrgBlock:
     heading_text: str
     depth: int
     drawer_props: dict[str, str] = field(default_factory=dict)
+    # Two separate header-args sources, distinguished for inheritance:
+    # - drawer_header_args: from :PROPERTIES: drawer's :header-args: line.
+    #   This is INHERITED by descendants (org-mode native behavior).
+    # - block_header_args: from this block's own #+begin_src line.
+    #   This is the block's OWN args (NOT inherited).
+    drawer_header_args: str = ""
+    block_header_args: str = ""
+    # Legacy field kept for backward compat (no consumers depend on it
+    # anymore, but tests might).
     header_args_text: str = ""
-    src_begin_line: int = 0  # 1-based line of #+begin_src
+    src_begin_line: int = 0
     src_end_line: int = 0
     src_lang: str = ""
     tangle_path: str | None = None
@@ -369,7 +384,7 @@ class OrgBlock:
     noweb_parent: str | None = None
     contains_defs: list[str] = field(default_factory=list)
     custom_id: str | None = None
-    chunk_refs_in_body: list[str] = field(default_factory=list)  # <<chunk>> placeholders this block uses
+    chunk_refs_in_body: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -450,8 +465,9 @@ class OrgFileParser:
                         current_block.noweb_parent = value
                     elif key == "LITERATE_ORG_CONTAINS_DEFS":
                         current_block.contains_defs = value.split()
-                # :header-args:* inside drawer
-                if line.strip().startswith(":header-args"):
+                # :header-args:* inside drawer → inheritance source
+                if line.strip().lower().startswith(":header-args"):
+                    current_block.drawer_header_args += " " + line.strip()
                     current_block.header_args_text += " " + line.strip()
                 continue
 
@@ -468,15 +484,30 @@ class OrgFileParser:
                             lang_match = re.match(r"^(\S+)", full)
                             if lang_match:
                                 current_block.src_lang = lang_match.group(1)
+                        current_block.block_header_args = line.strip()
                         current_block.header_args_text += " " + line.strip()
-                    # tangle path
-                    tm = TANGLE_RE.search(current_block.header_args_text)
-                    if tm:
+                    # tangle path — prefer block-own > drawer-inherited
+                    tm = TANGLE_RE.search(current_block.block_header_args)
+                    if tm and tm.group(1) != "no":
                         current_block.tangle_path = tm.group(1)
-                    # noweb-ref
-                    nm = NOWEB_REF_RE.search(current_block.header_args_text)
+                    else:
+                        tm = TANGLE_RE.search(current_block.drawer_header_args)
+                        if tm and tm.group(1) != "no":
+                            current_block.tangle_path = tm.group(1)
+                    # noweb-ref — block-own first; :noweb-ref "" = opt-out
+                    nm = NOWEB_REF_RE.search(current_block.block_header_args)
                     if nm:
-                        current_block.noweb_ref = nm.group(1)
+                        if nm.group(1) != '""':
+                            current_block.noweb_ref = nm.group(1)
+                        # else: opt-out — leave noweb_ref None even if
+                        # drawer-inherited would set it. The inheritance
+                        # post-pass respects this.
+                    elif (NOWEB_REF_RE.search(current_block.drawer_header_args)
+                          and '""' not in current_block.block_header_args):
+                        # No own :noweb-ref and no opt-out → inherit
+                        m2 = NOWEB_REF_RE.search(current_block.drawer_header_args)
+                        if m2 and m2.group(1) != '""':
+                            current_block.noweb_ref = m2.group(1)
                 continue
             if SRC_END_RE.match(line):
                 in_src = False
@@ -491,7 +522,50 @@ class OrgFileParser:
         if current_block is not None and current_block.src_lang:
             org.blocks.append(current_block)
 
+        # Post-pass: propagate inherited :noweb-ref and :tangle path from
+        # nearest ancestor heading whose drawer's :header-args declares
+        # them. Org-mode applies this inheritance natively at tangle
+        # time; the parser must mirror it for consumers (V3 noweb
+        # integrity, sync engine block-owner lookup).
+        self._propagate_header_args_inheritance(org)
+
         return org
+
+    def _propagate_header_args_inheritance(self, org: 'OrgFile') -> None:
+        """Propagate :header-args declared in ancestor headings' drawers
+        to descendant blocks where the descendant didn't already have its
+        own value. Mirrors org-mode's native header-args inheritance.
+
+        Order:
+          1. Block's own :noweb-ref (from #+begin_src line) — already
+             set during parse; treated as authoritative.
+          2. Block's own :noweb-ref "" — opt-out; do NOT inherit.
+          3. Otherwise: inherit from nearest ancestor's :header-args
+             drawer line.
+        """
+        # ancestor stack of (depth, drawer_header_args)
+        ancestor_args: list[tuple[int, str]] = []
+        for block in org.blocks:
+            depth = block.depth
+            while ancestor_args and ancestor_args[-1][0] >= depth:
+                ancestor_args.pop()
+            inherited_text = ancestor_args[-1][1] if ancestor_args else ""
+
+            # noweb_ref inheritance: only if block lacks own AND didn't opt out
+            if not block.noweb_ref and '""' not in block.block_header_args and inherited_text:
+                m = NOWEB_REF_RE.search(inherited_text)
+                if m and m.group(1) != '""':
+                    block.noweb_ref = m.group(1)
+
+            # tangle_path inheritance: only if block lacks own
+            if not block.tangle_path and inherited_text:
+                m = TANGLE_RE.search(inherited_text)
+                if m and m.group(1) != "no":
+                    block.tangle_path = m.group(1)
+
+            # Push own drawer header-args onto ancestor stack
+            if block.drawer_header_args:
+                ancestor_args.append((depth, block.drawer_header_args))
 
 
 # ──────────────────────────────────────────────────────────────────
