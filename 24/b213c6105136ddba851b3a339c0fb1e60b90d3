@@ -1,0 +1,19 @@
+hooks/lib/tangle_lookup.py
+  s_9e5b6f705733b7::t_ea4cc0998defe7 375-383
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "24b213c6105136ddba851b3a339c0fb1e60b90d3",
+  "prompts": {},
+  "sessions": {
+    "s_9e5b6f705733b7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "edb02e6d-dac5-4474-9237-c237419cb451",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jingtao Xu <jingtaozf@gmail.com>"
+    }
+  }
+}
