@@ -1,0 +1,27 @@
+hooks/warn-oversized-atomic-src.sh
+  s_9e5b6f705733b7::t_2e5402a5af379c 1-253
+scripts/check_org_structure.py
+  s_9e5b6f705733b7::t_074f5c125a8833 95,100-109
+  s_9e5b6f705733b7::t_ec263061030cff 134-135
+  s_9e5b6f705733b7::t_f040e6d87a6763 40
+skills/lp-import/SKILL.md
+  s_9e5b6f705733b7::t_2112821880f157 1-125
+hooks/hooks.json
+  s_9e5b6f705733b7::t_faf5c2b7e53a7f 14-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "994a4b33886e9b090006f30813e894f78f1a3dc4",
+  "prompts": {},
+  "sessions": {
+    "s_9e5b6f705733b7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "edb02e6d-dac5-4474-9237-c237419cb451",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jingtao Xu <jingtaozf@gmail.com>"
+    }
+  }
+}
