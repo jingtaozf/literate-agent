@@ -1,0 +1,22 @@
+literate-org/literate-org.org
+  s_bd1a1542db9c0b::t_4a056386312cd2 3346-3359,3375-3376,3381-3382
+  s_bd1a1542db9c0b::t_c60f55e5773d48 3270-3275
+  s_bd1a1542db9c0b::t_d7f1f5ef74820c 3617-3660
+  s_bd1a1542db9c0b::t_e65251b3004cd9 3313-3318,3320-3321
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "d65f777d4ea8a59fa9731668e409124a313c2d0e",
+  "prompts": {},
+  "sessions": {
+    "s_bd1a1542db9c0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c453d7b1-cad4-42f7-8130-22d547cfb812",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Jingtao Xu <jingtaozf@gmail.com>"
+    }
+  }
+}
