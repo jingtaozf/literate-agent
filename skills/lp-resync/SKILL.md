@@ -50,6 +50,12 @@ User says any of:
   under `<TANGLED_ROOT>` or the literal "all" for batch mode.
 - **Optional**: `--merge-strategy` one of `ff-only` (default) /
   `rebase` / `merge`. If `ff-only` fails the skill STOPS and asks.
+- **Optional**: `--resync-strategy` one of `engine` (default — the
+  3-pass `lp_sync_engine.py` flow that preserves prose) / `reimport`
+  (fast, lossy: Phase-C wholesale re-imports each drifted `.org` via
+  `literate-org-import`, skipping the per-def diff. Prose inside
+  re-imported sections is LOST. See `Phase-C′` below for the
+  trade-offs and the PIN safety check).
 
 ## Hard rules
 
@@ -169,6 +175,120 @@ Per file that the engine could not handle automatically, classify:
 The decision-point at "engine could not auto-resolve" is the most
 common stopping point. Don't push past it autonomously.
 
+## Phase-C′: reimport mode (opt-in, lossy)
+
+Enabled only when the user passes `--resync-strategy=reimport`. This
+mode replaces Phase-C *entirely* — the `lp_sync_engine.py` 3-pass
+flow is skipped. Phase-D / E / F / G still run unchanged.
+
+### When to use
+
+Large mechanical upstream sweeps — formatter runs, auto-refactors,
+dependency bumps that touch many files, whole-module tool rewrites.
+There the per-def diff the engine produces is expensive for the
+agent to triage (dry-run → classify → apply → STOP-case handling,
+multiple LLM round-trips per file) AND the prose is already stale
+across the swept area, so preserving it has little value.
+
+NOT for surgical single-def changes — there the engine's Pass-A
+in-place body replacement is cheaper AND preserves prose.
+
+### Lossy trade-offs (the cost of the fast path)
+
+The user passing `--resync-strategy=reimport` accepts these. Surface
+them in the PR description when committing.
+
+| Lost | Consequence |
+|------|-------------|
+| per-section design rationale prose | reader must reverse-engineer intent from code |
+| `:CUSTOM_ID:` anchors on code sections | `[[file:x.org::#anchor]]` cross-refs from other `.org` may break silently |
+| noweb-restructure skeletons | `literate-org-import-noweb-split` (default `t`) re-derives structure; may not match prior manual shape |
+| `:LITERATE_ORG_EXCLUDED_DEFS` opt-outs | excluded defs come back; must be re-removed by hand |
+
+### Procedure
+
+1. **Compute drift set** (cheap; no content diff):
+
+   ```bash
+   git -C <TANGLED_ROOT>/<sub> rev-parse HEAD              # current upstream tip
+   # For each .org under <LP_ROOT>/<sub>/:
+   #   if its LITERATE_ORG_SOURCE_SHA != HEAD ⇒ drifted
+   # Equivalently — list :tangle target files changed SHA..HEAD:
+   git -C <TANGLED_ROOT>/<sub> diff --name-only <SHA>..HEAD
+   ```
+
+2. **PIN safety check** (hard refusal — do NOT bypass). For each
+   drifted `.org`, grep for `:LITERATE_ORG_PIN: yes`. Any hit →
+   **STOP**. Tell the user which block is pinned and ask them to
+   either manually unpin or fall back to `--resync-strategy=engine`.
+   The engine's PIN safety valve exists exactly for this case;
+   reimport mode does not get to override it.
+
+3. **Per drifted `.org`:**
+
+   a. **Set the language** (CRITICAL — prevents Emacs minibuffer
+      hang). If the `.org` header lacks
+      `#+PROPERTY: LITERATE_ORG_LANGUAGE <lang>`, Edit it in
+      (derive from the `:tangle` path suffix: `.py`→`python`,
+      `.ts`→`typescript`, `.rs`→`rust`, `.el`→`emacs-lisp`). Use
+      the plural `LITERATE_ORG_LANGUAGES` (space-separated) if the
+      file mixes languages. Without this, `literate-org-import-file`
+      falls back to `(read-from-minibuffer "Which language: ")` and
+      freezes single-threaded Emacs — the same hazard
+      `skills/lp-import/SKILL.md` warns about.
+
+   b. **Preserve the prose preamble.** Keep everything from BOF
+      through the last prose-only line before the first
+      `#+begin_src`-bearing section (covers `#+PROPERTY:` lines,
+      `* Overview`, `* Public API`, and any leading prose-only
+      sections). Delete the rest — the per-def code sections that
+      `literate-org-import` is about to regenerate.
+
+   c. **Call import** (precedent: `hooks/tangle-org-buffer.sh`,
+      `skills/lp-import/SKILL.md`):
+
+      ```bash
+      emacsclient -e '(with-current-buffer (find-file-noselect "<LP_ROOT>/<sub>/<x>.org>")
+                        (goto-char (point-max))
+                        (literate-org-import :module-name "<pkg.mod>"
+                                             :module-path "<abs/path/to/source.py>")
+                        (save-buffer))'
+      ```
+
+      `literate-org-import` *appends*; step (b) cleared the old
+      per-def sections so there is no duplication. It dispatches to
+      `literate-org-import-file` for a single source path or
+      `literate-org-import-directory` for a directory walk.
+
+   d. **Fix the tangle path** (open risk carried over from
+      `skills/lp-import/SKILL.md`). The drawer's
+      `:header-args: :tangle` may be written as absolute. Confirm
+      each new section's tangle path is *relative to the `.org`
+      file* (e.g. `../../repos/<sub>/<pkg>/<mod>.py`). Rewrite if
+      not — an absolute path breaks byte-equivalence and the
+      `.cache/tangle-map.tsv` reverse map.
+
+   e. **Re-stamp metadata:**
+
+      ```bash
+      python3 ${LITERATE_AGENT_PLUGIN_ROOT}/scripts/lp_metadata_refresh.py <LP_ROOT>/<sub>/<x>.org
+      # Then bump the file-level LITERATE_ORG_SOURCE_SHA / SHA_DATE
+      # to current upstream HEAD (bootstrap does this if refresh
+      # alone doesn't):
+      python3 ${LITERATE_AGENT_PLUGIN_ROOT}/scripts/lp_sync_bootstrap.py <LP_ROOT>/<sub>/<x>.org
+      ```
+
+4. **Pass-C stale does not apply.** Reimport is wholesale per-file;
+   a def removed upstream simply won't appear in the regenerated
+   sections (implicit delete). Do NOT run the engine's `:STALE:`
+   tagging pass — it has nothing to operate on after reimport.
+   Surface any "def disappeared" surprises at Phase-F if the
+   tangle round-trip fails to match upstream.
+
+Phase-F (verify) is unchanged and remains the safety net: a
+non-empty `git diff --stat` after tangle means import wrote
+something that doesn't round-trip — STOP, treat as a procedure bug.
+
 ## Phase-D: new-file triage
 
 ```bash
@@ -182,9 +302,15 @@ comm -23 <(find <TANGLED_ROOT>/<sub> -name '*.py' -o -name '*.ts' -o -name '*.ts
 Heuristic auto-routing:
 
 - New file in a directory already covered by an `.org` → add a
-  section with `:tangle` header pointing at the new file. Use
-  single-block import for small files, or `literate-org-import`
-  for larger ones.
+  section with `:tangle` header pointing at the new file. **Always
+  use `literate-org-import`** — never a hand-authored single-block
+  import, regardless of how small the file is. There is no
+  "small enough to paste" threshold: even a 10-line file goes
+  through the tool, which emits the canonical per-definition shape
+  with the `:header-args: :tangle` drawer. A hand-written single
+  block reproduces the exact two defects `warn-oversized-atomic-src.sh`
+  exists to catch (oversized atomic block + inline `:tangle`). See
+  the `lp-import` skill for the invocation.
 - New file in a *brand-new directory* → STOP and ask:
   - Create a new `<LP_ROOT>/<sub>/<new-name>.org` (use
     `templates/new-module.org` as template).
@@ -263,6 +389,13 @@ no-auto-commit rule). The commit message should declare risk per
 - **Phase-C engine surface**: Pass B inserted new blocks (review
   location) or Pass C tagged stale (review removal). STOP.
 - **Phase-C file deleted or renamed**: STOP, ask.
+- **Phase-C′ PIN safety check hit** (`--resync-strategy=reimport`
+  only): a drifted `.org` contains `:LITERATE_ORG_PIN: yes`. STOP,
+  ask user to unpin or fall back to `engine` mode.
+- **Phase-C′ post-import byte-equivalence failure** (`--resync-strategy=reimport`
+  only): Phase-F `git diff --stat` non-empty after reimport. STOP —
+  import wrote something that doesn't round-trip; treat as a
+  procedure bug.
 - **Phase-D new directory**: STOP, ask whether to create a new
   `.org`.
 - **Phase-D test / fixture / generated**: STOP, ask whether to
