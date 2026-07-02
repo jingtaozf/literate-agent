@@ -2818,7 +2818,13 @@ just-imported subtree. nil restores the pre-split import output."
 (cl-defun literate-org-import-source-file-to-org
     (language file level module-name &key (with-org-section t))
   (message "literate importing module %s from file %s with language %s" module-name file language)
-  (let* ((new-level (1+ level))
+  ;; Insert with modification hooks inhibited. Source bodies routinely carry
+  ;; sequences an `after-change-functions' consumer chokes on — notably
+  ;; `\(...\)' (LaTeX inline-math delimiters, e.g. a TS regex `/Skill\(...\)/'),
+  ;; which trips org-latex-preview's fragment detector; its error would unwind
+  ;; this loop and silently truncate every block after the first offending one.
+  (let* ((inhibit-modification-hooks t)
+         (new-level (1+ level))
          (import-start (point-marker))
          (code-blocks-info
            (with-temp-buffer ;; To avoid running any hooks in original file, which may cause side effects.
@@ -3852,6 +3858,83 @@ resulting Org buffer text. A test scaffold shared by the import cases."
                "LITERATE_ORG_BLOCK_KIND"
                (literate-org--import-to-string
                 'python "def small():\n    return 1\n" nil))))
+
+;; Regression: importing a body that contains `\(...\)' (LaTeX inline-math
+;; delimiters — routine in TS/JS regexes, e.g. `/Skill\(...\)/') once aborted
+;; the insert loop mid-way. Inserting that body into the Org buffer fired
+;; `org-latex-preview-mode's `after-change-functions' fragment detector, which
+;; errored in `format-spec' and unwound the whole import — silently dropping
+;; every block after the first `\('-bearing one. The fix inserts with
+;; modification hooks inhibited; a stand-in hook that errors on `\(' proves a
+;; hostile change consumer can no longer truncate the import.
+(ert-deftest literate-org-import-not-derailed-by-change-hook ()
+  (let* ((dir (make-temp-file "lo-hook-" t))
+         (src (expand-file-name "m.ts" dir)))
+    (unwind-protect
+        (progn
+          (with-temp-file src
+            (insert "export function alpha(): number {\n\treturn 1;\n}\n\n"
+                    "export const RE = /Skill\\((?:x=)?\"y\"\\)/g;\n\n"
+                    "export function omega(): number {\n\treturn 2;\n}\n"))
+          (with-temp-buffer
+            (org-mode)
+            (insert "* Mod\n:PROPERTIES:\n:header-args: :tangle "
+                    (expand-file-name "out.ts" dir) "\n:END:\n")
+            (goto-char (point-max))
+            ;; Stand-in for org-latex-preview's change detector: error on `\('.
+            (add-hook 'after-change-functions
+                      (lambda (beg end _len)
+                        (when (cl-search "\\(" (buffer-substring-no-properties beg end))
+                          (error "hostile after-change hook fired on \\(")))
+                      nil t)
+            (literate-org-import-source-file-to-org 'ts src 1 "m" :with-org-section nil)
+            ;; No error, and the defs on BOTH sides of the `\('-body survive.
+            (dolist (s '("alpha" "Skill" "omega"))
+              (goto-char (point-min))
+              (should (search-forward s nil t)))))
+      (delete-directory dir t))))
+
+;; Sibling guard for the standalone resplit path: `literate-org-resplit-buffer'
+;; re-emits split code through `literate-org--resplit-section', which already
+;; binds `inhibit-modification-hooks' around its delete+emit. This locks that
+;; a hostile `after-change' consumer (the same `\(' class as above) cannot
+;; derail a resplit — the hook is attached AFTER the buffer is built, so it
+;; only observes the resplit's own re-emit.
+(ert-deftest literate-org-resplit-not-derailed-by-change-hook ()
+  (with-temp-buffer
+    (org-mode)
+    ;; Two functions each over `literate-org-noweb-min-chunk-lines' (10) so
+    ;; `--file-units' yields two separate units and the block actually splits;
+    ;; the `\(' regex lives inside the second so its emit runs under the hook.
+    (insert "* Mod\n:PROPERTIES:\n:LITERATE_ORG_BLOCK_KIND: atomic\n"
+            ":header-args: :tangle /tmp/lo-resplit-hook.ts\n:END:\n\n"
+            "Atomic import.\n\n#+BEGIN_SRC tsx\n"
+            "export function alpha(): number {\n"
+            "\tconst a1 = 1;\n\tconst a2 = 2;\n\tconst a3 = 3;\n\tconst a4 = 4;\n"
+            "\tconst a5 = 5;\n\tconst a6 = 6;\n\tconst a7 = 7;\n\tconst a8 = 8;\n"
+            "\tconst a9 = 9;\n\tconst a10 = 10;\n\treturn a1 + a10;\n}\n\n"
+            "export function omega(): number {\n"
+            "\tconst RE = /Skill\\((?:x=)?\"y\"\\)/g;\n"
+            "\tconst b1 = 1;\n\tconst b2 = 2;\n\tconst b3 = 3;\n\tconst b4 = 4;\n"
+            "\tconst b5 = 5;\n\tconst b6 = 6;\n\tconst b7 = 7;\n\tconst b8 = 8;\n"
+            "\treturn RE.test(\"z\") ? b1 : b8;\n}\n"
+            "#+END_SRC\n")
+    (add-hook 'after-change-functions
+              (lambda (beg end _len)
+                (when (cl-search "\\(" (buffer-substring-no-properties beg end))
+                  (error "hostile after-change hook fired on \\(")))
+              nil t)
+    (let ((literate-org-resplit-threshold 2))
+      (literate-org-resplit-buffer))
+    ;; The block must genuinely split (emit ran under the hostile hook) — else
+    ;; the survival checks below would pass vacuously on an unsplit block.
+    (let ((n 0))
+      (goto-char (point-min))
+      (while (re-search-forward "^#\\+begin_src" nil t) (setq n (1+ n)))
+      (should (> n 1)))
+    (dolist (s '("alpha" "Skill" "omega"))
+      (goto-char (point-min))
+      (should (search-forward s nil t)))))
 #+END_SRC
 **** Python
 ***** module comment for a language
